@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import StartPage from '../../frontend/pages/FirstPage.vue'; 
 import SecondPage from '../../frontend/pages/SecondPage.vue';
+// import AssetGrowthSimulator from '../../frontend/pages/AssetGrowthSimulator.vue';
 
 // Define your routes as before
 const routes = [
@@ -19,6 +20,11 @@ const routes = [
     component: SecondPage,
     props: true
   },
+  // {
+  //   path: '/assetgrowth',
+  //   name: 'AssetPage',
+  //   component: AssetGrowthSimulator,
+  // }
 ];
 
 // Create a router instance using createRouter and createWebHistory

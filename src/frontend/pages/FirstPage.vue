@@ -92,7 +92,15 @@
           </template>
         </tbody>
       </table>
-      <button v-if="displaySimulation" @click="updateValuesForNextMonth">Next Month</button>
+      <div class="input-row">
+        <label for="userInterestRate">Interest Rate (% per month):</label>
+        <input type="number" v-model="userInterestRate" id="userInterestRate" placeholder="Enter interest rate (e.g., 5 for 5%)">
+        <button v-if="displaySimulation" @click="updateValuesForNextMonth" class="go-btn">Next Month</button>
+      </div>
+      <div v-if="displaySimulation" class="chart-container" style="position: relative; height:40vh; width:80vw">
+        <canvas id="growthChart"></canvas>
+      </div>
+
   </div>
 
 
@@ -114,7 +122,12 @@ export default {
       savedGroups: [],
       displaySimulation: false,
       simulationMonths: 0,
+      userInterestRate: 5,
+      growthChart: null, // To store the chart instance
     };
+  },
+  mounted() {
+    this.renderGrowthChart(); // Initialize the chart
   },
   methods: {
     addGroup() {
@@ -254,7 +267,7 @@ export default {
   calculateFutureValue(currentValue) {
     // 12 months at 5% growth per month
     const months = 1;
-    const rate = 0.05;
+    const rate = this.interestRate;
     return currentValue * (Math.pow(1 + rate, months));
   },
 
@@ -271,7 +284,7 @@ export default {
     this.simulationMonths++;
     this.savedGroups.forEach(group => {
       // Define the growth rate
-      const rate = 0.05;
+      const rate = this.interestRate;
 
       // Loop over each asset type and calculate the new value
       Object.keys(group.monthlyValues).forEach(assetType => {
@@ -283,34 +296,98 @@ export default {
         }
       });
     });
+
+    this.$nextTick(() => { // Ensure DOM updates complete before re-rendering chart
+        this.renderGrowthChart(); // Re-render the chart with new data
+      });
   },
   calculateNextMonthValue(currentValue) {
     const rate = 0.05;
     return currentValue * (1 + rate);
   },
+  renderGrowthChart() {
+    // Ensure there's data to render
+    if (!this.savedGroups.length || !this.savedGroups[0].monthlyValues.equity.length) {
+      console.warn("No data available to chart.");
+      return;
+    }
 
+    // Prepare the labels, including the starting point
+    const labels = ['Start', ...Array.from({ length: this.simulationMonths }, (_, i) => `Month ${i + 1}`)];
+
+    // Prepare datasets, including the starting values
+    const datasets = this.savedGroups.flatMap(group => {
+      return Object.keys(group.monthlyValues).map(assetType => {
+        // Prepend the starting value for each asset type to its monthly values
+        // This assumes that group[assetType] contains the starting value for that asset type
+        const startingValue = group[assetType];
+        const monthlyValues = group.monthlyValues[assetType];
+        const dataWithStartingValue = [startingValue, ...monthlyValues];
+
+        return {
+          label: `${group.name} - ${assetType.charAt(0).toUpperCase() + assetType.slice(1)}`,
+          data: dataWithStartingValue,
+          borderColor: this.getRandomColor(),
+          fill: false,
+        };
+      });
+    });
+
+    // Chart configuration
+    const chartData = { labels, datasets };
+
+    // Clean up previous chart instance if it exists
+    if (this.growthChart) {
+      this.growthChart.destroy();
+    }
+
+    // Initialize the chart with the new data
+    this.growthChart = new Chart(document.getElementById('growthChart'), {
+      type: 'line',
+      data: chartData,
+      options: {
+        scales: {
+          y: {
+            beginAtZero: true,
+          },
+        },
+      },
+    });
+  },
+
+    getRandomColor() {
+      const letters = '0123456789ABCDEF';
+      let color = '#';
+      for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+      }
+      return color;
+    },
   },
   computed: {
-  preparedGroups() {
-    return this.savedGroups.map(group => {
-      // Transform monthlyValues to start from the second entry to skip the starting value duplication
-      const monthlyValuesTransformed = Object.keys(group.monthlyValues).reduce((acc, assetType) => {
-        // Skip the first value (index 0) to avoid showing it twice
-        acc[assetType] = group.monthlyValues[assetType].slice(1);
-        return acc;
-      }, {});
+    preparedGroups() {
+      return this.savedGroups.map(group => {
+        // Transform monthlyValues to start from the second entry to skip the starting value duplication
+        const monthlyValuesTransformed = Object.keys(group.monthlyValues).reduce((acc, assetType) => {
+          // Skip the first value (index 0) to avoid showing it twice
+          acc[assetType] = group.monthlyValues[assetType].slice(1);
+          return acc;
+        }, {});
 
-      // Return the transformed group with updated monthlyValues
-      return {
-        ...group,
-        monthlyValues: monthlyValuesTransformed,
-      };
-    });
-  }
+        // Return the transformed group with updated monthlyValues
+        return {
+          ...group,
+          monthlyValues: monthlyValuesTransformed,
+        };
+      });
+    },
+    interestRate() {
+      return this.userInterestRate/100;
+    },
 },
 };
 </script>
 
 <style scoped>
-@import url('../styles//StartStyles.css');
+  @import url('../styles//StartStyles.css');
 </style>
