@@ -24,6 +24,7 @@ import InvestmentCalculator from '../components/InvestmentCalculator/InvestmentC
 
 export default {
   name: 'SecondPage',
+  props: ['groups'],
   components: {
     InvestmentCalculator
   },

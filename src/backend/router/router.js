@@ -1,8 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import StartPage from '../pages/FirstPage.vue'; 
-import SecondPage from '../pages/SecondPage.vue';
-import Simulation from '../pages/Simulation.vue';
+import StartPage from '../../frontend/pages/FirstPage.vue'; 
+import SecondPage from '../../frontend/pages/SecondPage.vue';
 
+// Define your routes as before
 const routes = [
   {
     path: '/',
@@ -12,7 +12,6 @@ const routes = [
     path: '/firstpage',
     name: 'StartPage',
     component: StartPage,
-    props: true
   },
   {
     path: '/secondpage',
@@ -20,16 +19,11 @@ const routes = [
     component: SecondPage,
     props: true
   },
-  {
-    path: '/simulation',
-    name: 'Simulation',
-    component: Simulation,
-    props: true
-  }
 ];
 
+// Create a router instance using createRouter and createWebHistory
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(process.env.BASE_URL),
   routes
 });
 

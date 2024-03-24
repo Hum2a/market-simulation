@@ -40,8 +40,62 @@
       </div>
     </div>
     <button @click="addGroup" class="add-group-btn">Add Group</button>
-    <button @click="goToNextPage" class="go-btn">Go</button>
+    <button @click="startSimulation" class="go-btn">Go</button>
+    <button @click="saveData" class="save-btn">Save</button>
   </div>
+
+  <div v-if="displaySimulation" class="simulation-table">
+    <h2>Simulation Data</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Group Name</th>
+          <th>Equity</th>
+          <th>Bonds</th>
+          <th>Real Estate</th>
+          <th>Bank Accounts</th>
+          <th>Other</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(group, index) in savedGroups" :key="index">
+          <td>{{ group.name }}</td>
+          <td>{{ group.equity }}</td>
+          <td>{{ group.bonds }}</td>
+          <td>{{ group.realEstate }}</td>
+          <td>{{ group.banks }}</td>
+          <td>{{ group.other }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Asset Growth Projections</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Group Name</th>
+            <th>Asset Type</th>
+            <th>Starting Value</th>
+            <th v-for="n in simulationMonths" :key="n">After {{ n }} Month(s)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template v-for="group in preparedGroups" :key="group.name">
+            <tr v-for="assetType in ['equity', 'bonds', 'realEstate', 'banks', 'other']" :key="`${group.name}-${assetType}`">
+              <td>{{ group.name }}</td>
+              <td>{{ assetType.charAt(0).toUpperCase() + assetType.slice(1) }}</td>
+              <td>{{ group[assetType] }}</td>
+              <template v-for="(value, index) in group.monthlyValues[assetType]" :key="`${group.name}-${assetType}-${index}`">
+                <td>{{ value.toFixed(2) }}</td>
+              </template>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+      <button v-if="displaySimulation" @click="updateValuesForNextMonth">Next Month</button>
+  </div>
+
+
 </template>
 
 <script>
@@ -56,7 +110,10 @@ export default {
         { name: 'Group 2', equity: '', bonds: '', realEstate: '', banks: '', other: '' },
         { name: 'Group 3', equity: '', bonds: '', realEstate: '', banks: '', other: '' },
         { name: 'Group 4', equity: '', bonds: '', realEstate: '', banks: '', other: '' }
-      ]
+      ],
+      savedGroups: [],
+      displaySimulation: false,
+      simulationMonths: 0,
     };
   },
   methods: {
@@ -73,6 +130,19 @@ export default {
         });
       }
     },
+    saveData() {
+      this.savedGroups = this.groups.map(group => ({
+        ...group,
+        monthlyValues: {
+          equity: [Number(group.equity)],
+          bonds: [Number(group.bonds)],
+          realEstate: [Number(group.realEstate)],
+          banks: [Number(group.banks)],
+          other: [Number(group.other)]
+        }
+      }));
+      this.displaySimulation = true;
+    },
     editGroupName(index) {
       const newName = prompt("Enter new group name:", this.groups[index].name);
       if (newName && newName.trim() !== '') {
@@ -82,9 +152,14 @@ export default {
     removeGroup(index) {
       this.groups.splice(index, 1);
     },
-    goToNextPage() {
-      console.log('Navigating to SecondPage...');
-      this.$router.push({ name: 'SecondPage', params: { groups: this.groups } });
+    startSimulation() {
+      this.saveData(); // Ensure data is saved
+      if (this.savedGroups.length > 0) {
+        this.displaySimulation = true; // Show the simulation table
+        this.calculateAndDisplayFutureValues(); // Calculate future values
+      } else {
+        alert("Please add and save your data before proceeding.");
+      }
     },
     generateRandomValues(index) {
       this.groups[index].equity = Math.floor(Math.random() * 1001);
@@ -173,122 +248,69 @@ export default {
         }
       });
     },
-    getTotalValue(group) {
-      return group.equity + group.bonds + group.realEstate + group.banks + group.other;
-    }
+  getTotalValue(group) {
+    return Number(group.equity) + Number(group.bonds) + Number(group.realEstate) + Number(group.banks) + Number(group.other);
+  },
+  calculateFutureValue(currentValue) {
+    // 12 months at 5% growth per month
+    const months = 1;
+    const rate = 0.05;
+    return currentValue * (Math.pow(1 + rate, months));
+  },
+
+  calculateAndDisplayFutureValues() {
+    this.savedGroups.forEach(group => {
+      group.futureEquity = this.calculateFutureValue(Number(group.equity));
+      group.futureBonds = this.calculateFutureValue(Number(group.bonds));
+      group.futureRealEstate = this.calculateFutureValue(Number(group.realEstate));
+      group.futureBanks = this.calculateFutureValue(Number(group.banks));
+      group.futureOther = this.calculateFutureValue(Number(group.other));
+    });
+  },
+  updateValuesForNextMonth() {
+    this.simulationMonths++;
+    this.savedGroups.forEach(group => {
+      // Define the growth rate
+      const rate = 0.05;
+
+      // Loop over each asset type and calculate the new value
+      Object.keys(group.monthlyValues).forEach(assetType => {
+        // Only calculate new values if there are already existing monthly values
+        if (group.monthlyValues[assetType].length > 0) {
+          const lastValue = group.monthlyValues[assetType][group.monthlyValues[assetType].length - 1];
+          const newValue = lastValue * (1 + rate);
+          group.monthlyValues[assetType].push(newValue);
+        }
+      });
+    });
+  },
+  calculateNextMonthValue(currentValue) {
+    const rate = 0.05;
+    return currentValue * (1 + rate);
+  },
+
+  },
+  computed: {
+  preparedGroups() {
+    return this.savedGroups.map(group => {
+      // Transform monthlyValues to start from the second entry to skip the starting value duplication
+      const monthlyValuesTransformed = Object.keys(group.monthlyValues).reduce((acc, assetType) => {
+        // Skip the first value (index 0) to avoid showing it twice
+        acc[assetType] = group.monthlyValues[assetType].slice(1);
+        return acc;
+      }, {});
+
+      // Return the transformed group with updated monthlyValues
+      return {
+        ...group,
+        monthlyValues: monthlyValuesTransformed,
+      };
+    });
   }
+},
 };
 </script>
 
 <style scoped>
-h1 {
-  text-align: center;
-  margin-bottom: 20px;
-  color: #FF0000; /* Red color */
-}
-
-.groups {
-  display: flex;
-  flex-wrap: wrap;
-}
-
-.group {
-  margin-right: 20px;
-  margin-bottom: 20px;
-  background-color: #000000; /* Black background */
-  padding: 20px;
-  border-radius: 10px;
-  color: #FFFFFF; /* White text color */
-  width: 300px; /* Set a fixed width for each group container */
-}
-
-.group-header {
-  margin-bottom: 15px;
-}
-
-.group-content {
-  display: flex;
-  flex-direction: column;
-}
-
-.inputs {
-  display: flex;
-  flex-direction: column;
-}
-
-.input-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.input-row label {
-  flex: 1; /* Take up remaining space */
-  margin-right: 10px; /* Add some spacing between label and input */
-}
-
-.input-row input {
-  flex: 2; /* Take up more space than label */
-}
-
-.add-group-btn {
-  background-color: #FF0000; /* Red button */
-  color: #FFFFFF; /* White text color */
-  padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.add-group-btn:hover {
-  background-color: #990000; /* Darker red on hover */
-}
-
-.edit-group-btn {
-  background-color: transparent;
-  border: none;
-  color: #FFFFFF; /* White text color */
-  font-size: 1em;
-  cursor: pointer;
-}
-
-.edit-group-btn:hover {
-  color: #FF0000; /* Red color on hover */
-}
-
-.remove-group-btn {
-  background-color: transparent;
-  border: none;
-  color: #FFFFFF; /* White text color */
-  font-size: 1em;
-  cursor: pointer;
-}
-
-.remove-group-btn:hover {
-  color: #FF0000; /* Red color on hover */
-}
-
-.go-btn {
-  background-color: #FF0000; /* Red button */
-  color: #FFFFFF; /* White text color */
-  padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  margin-top: 20px; /* Add margin between buttons */
-  transition: background-color 0.3s;
-}
-
-.go-btn:hover {
-  background-color: #990000; /* Darker red on hover */
-}
-
-/* Style for pie charts */
-.pie-chart {
-  width: 300px; /* Set a fixed width */
-  height: 300px; /* Set a fixed height */
-  margin-top: 2px;
-}
+@import url('../styles//StartStyles.css');
 </style>
