@@ -14,26 +14,26 @@
           <div class="inputs">
             <div class="input-row">
               <label for="equity">Equity:</label>
-              <input type="text" v-model="group.equity" id="equity">
+              <input type="text" v-model="group.equity" id="equity" class="modern-input">
             </div>
             <div class="input-row">
               <label for="bonds">Bonds:</label>
-              <input type="text" v-model="group.bonds" id="bonds">
+              <input type="text" v-model="group.bonds" id="bonds" class="modern-input">
             </div>
             <div class="input-row">
               <label for="realEstate">Real Estate:</label>
-              <input type="text" v-model="group.realEstate" id="realEstate">
+              <input type="text" v-model="group.realEstate" id="realEstate" class="modern-input">
             </div>
             <div class="input-row">
               <label for="banks">Bank Accounts:</label>
-              <input type="text" v-model="group.banks" id="banks">
+              <input type="text" v-model="group.banks" id="banks" class="modern-input">
             </div>
             <div class="input-row">
               <label for="other">Other:</label>
-              <input type="text" v-model="group.other" id="other">
+              <input type="text" v-model="group.other" id="other" class="modern-input">
             </div>
           </div>
-          <button @click="generateRandomValues(index)">Generate Random Values</button>
+          <button @click="generateRandomValues(index)" class="modern-button">Generate Random Values</button>
           <!-- Pie chart -->
           <canvas :id="'pieChart_' + index" class="pie-chart"></canvas>
         </div>
@@ -41,8 +41,8 @@
     </div>
     <button @click="addGroup" class="add-group-btn">Add Group</button>
     <button @click="startSimulation" class="go-btn">Go</button>
-    <button @click="saveData" class="save-btn">Save</button>
   </div>
+  <!-- <GroupCreation :groups="groups" @editGroupName="editGroupName" @removeGroup="removeGroup" @addGroup="addGroup" :generateRandomValues="generateRandomValues"></GroupCreation> -->
 
   <div v-if="displaySimulation" class="simulation-table">
     <h2>Simulation Data</h2>
@@ -94,8 +94,30 @@
       </table>
       <div class="input-row">
         <label for="userInterestRate">Interest Rate (% per month):</label>
-        <input type="number" v-model="userInterestRate" id="userInterestRate" placeholder="Enter interest rate (e.g., 5 for 5%)">
-        <button v-if="displaySimulation" @click="updateValuesForNextMonth" class="go-btn">Next Month</button>
+        <input type="number" v-model="userInterestRate" id="userInterestRate" placeholder="Enter interest rate (e.g., 5 for 5%)" class="modern-input">
+        <button v-if="displaySimulation" @click="updateValuesForNextMonth" class="modern-button">Next Month</button>
+        <div v-if="displaySimulation" class="simulation-control">
+          <select v-model="selectedEvent" class="modern-picker">
+            <option value="noEvent">No Event</option>
+            <option value="interestHike">Interest Rate Hike</option>
+            <option value="technologicalDisruption">Technological Disruption in a Sector</option>
+            <option value="politicalInstability">Political Instability</option>
+            <option value="centralBankImplementsQuantitativeEasing">Central Bank Implements Quantitative Easing</option>
+            <option value="cybersecurityBreachImpactingBanks">Cybersecurity Breach Impacting Banks</option>
+            <option value="DiscoveryOfValuableNaturalResources">Discovery of Valuable Natural Resources</option>
+            <option value="IncreaseInConsumerConfidence">Increase in Consumer Confidence</option>
+            <option value="majorCorporationBankruptcy">Major Corporation Bankruptcy</option>
+            <option value="naturalDisaster">Natural Disaster</option>
+            <option value="realEstateBoom">Real Estate Boom</option>
+            <option value="stringentEnvironmentalRegulations">Stringent Environmental Regulations</option>
+            <option value="suddenInflationSpike">Sudden Inflation Spike</option>
+            <option value="taxReformFavoringCorporateProfits">Tax Reform Favoring Corporate Profits</option>
+            <option value="surgeInGlobalTourism">Surge in Global Tourism</option>
+          </select>
+          <button @click="applyEventEffect" class="modern-button">Apply Event</button>
+          <button @click="showEventCreation = true" class="modern-button">Create Event</button>
+          <EventCreationPage v-if="showEventCreation" @close="showEventCreation = false" />
+        </div>
       </div>
       <div v-if="displaySimulation" class="chart-container" style="position: relative; height:40vh; width:80vw">
         <canvas id="growthChart"></canvas>
@@ -108,9 +130,25 @@
 
 <script>
 import Chart from 'chart.js'; // Import Chart.js
+import { adjustGrowthRatesForInterestRateHike } from '../../backend/simulation/events/interestRateHike.js';
+import { TechnologicalDisruptionInASectorEffects } from '../../backend/simulation/events/TechnologicalDisruptionInASector.js';
+import { PoliticalInstabilityEffects } from '../../backend/simulation/events/PoliticalInstability.js';
+import { CentralBankImplementsQuantitativeEasingEffects } from '../../backend/simulation/events/CentralBankImplementsQuantitativeEasing.js';
+import { CybersecurityBreachImpactingBanksEffects } from '../../backend/simulation/events/CybersecurityBreachImpactingBanks.js';
+import { DiscoveryOfValuableNaturalResourcesEffects } from '../../backend/simulation/events/DiscoveryOfValuableNaturalResources.js';
+import { IncreaseInConsumerConfidenceEffects } from '../../backend/simulation/events/IncreaseInConsumerConfidence.js';
+import { MajorCorporationBankruptcyEffects } from '../../backend/simulation/events/MajorCorporationBankruptcy.js';
+import { NaturalDisasterEffects } from '../../backend/simulation/events/NaturalDisaster.js'
+import { RealEstateBoomEffects }from '../../backend/simulation/events/RealEstateBoom.js';
+import { StringentEnvironmentalRegulationsEffects } from '../../backend/simulation/events/StringentEnvironmentalRegulations.js'; 
+import { SuddenInflationSpikeEffects } from '../../backend/simulation/events/SuddenInflationSpike.js';
+import { TaxReformFavoringCorporateProfitsEffects } from '../../backend/simulation/events/TaxReformFavoringCorporateProfits.js';
+import { SurgeInGlobalTourismEffects } from '../../backend/simulation/events/SurgeInGlobalTourism.js'
+import EventCreationPage from '../components/EventCreator.vue';
 
 export default {
   name: 'StartPage',
+  components: {EventCreationPage},
   data() {
     return {
       groups: [
@@ -124,6 +162,26 @@ export default {
       simulationMonths: 0,
       userInterestRate: 5,
       growthChart: null, // To store the chart instance
+      selectedEvent: 'noEvent', // To track the selected event
+      eventEffects: {
+        noEvent: { equity: {X: 1, Y: 1}, bonds: {X: 1, Y: 1}, realEstate: {X: 1, Y: 1}, banks: {X: 1, Y: 1}, other: {X: 1, Y: 1} },
+        interestHike: adjustGrowthRatesForInterestRateHike(),
+        technologicalDisruption: TechnologicalDisruptionInASectorEffects(),
+        politicalInstability: PoliticalInstabilityEffects(),
+        centralBankImplementsQuantitativeEasing: CentralBankImplementsQuantitativeEasingEffects(),
+        cybersecurityBreachImpactingBanks: CybersecurityBreachImpactingBanksEffects(),
+        DiscoveryOfValuableNaturalResources: DiscoveryOfValuableNaturalResourcesEffects(),
+        IncreaseInConsumerConfidence: IncreaseInConsumerConfidenceEffects(),
+        majorCorporationBankruptcy: MajorCorporationBankruptcyEffects(),
+        naturalDisaster: NaturalDisasterEffects(),
+        realEstateBoom: RealEstateBoomEffects(),
+        stringentEnvironmentalRegulations: StringentEnvironmentalRegulationsEffects(),
+        suddenInflationSpike: SuddenInflationSpikeEffects(),
+        taxReformFavoringCorporateProfits: TaxReformFavoringCorporateProfitsEffects(),
+        surgeInGlobalTourism: SurgeInGlobalTourismEffects(),
+      },
+      currentEffect: { equity: {X: 1, Y: 1}, bonds: {X: 1, Y: 1}, realEstate: {X: 1, Y: 1}, banks: {X: 1, Y: 1}, other: {X: 1, Y: 1} },
+      showEventCreation: false, 
     };
   },
   mounted() {
@@ -264,43 +322,49 @@ export default {
   getTotalValue(group) {
     return Number(group.equity) + Number(group.bonds) + Number(group.realEstate) + Number(group.banks) + Number(group.other);
   },
-  calculateFutureValue(currentValue) {
-    // 12 months at 5% growth per month
-    const months = 1;
-    const rate = this.interestRate;
-    return currentValue * (Math.pow(1 + rate, months));
-  },
-
-  calculateAndDisplayFutureValues() {
-    this.savedGroups.forEach(group => {
-      group.futureEquity = this.calculateFutureValue(Number(group.equity));
-      group.futureBonds = this.calculateFutureValue(Number(group.bonds));
-      group.futureRealEstate = this.calculateFutureValue(Number(group.realEstate));
-      group.futureBanks = this.calculateFutureValue(Number(group.banks));
-      group.futureOther = this.calculateFutureValue(Number(group.other));
-    });
-  },
-  updateValuesForNextMonth() {
-    this.simulationMonths++;
-    this.savedGroups.forEach(group => {
-      // Define the growth rate
+  
+  calculateFutureValue(assetType, currentValue) {
+      const months = 1;
       const rate = this.interestRate;
+      const { X, Y } = this.currentEffect[assetType]; // Use currentEffect for X and Y values
+      
+      return currentValue * Math.pow(1 + rate * X * Y, months);
+    },
 
-      // Loop over each asset type and calculate the new value
-      Object.keys(group.monthlyValues).forEach(assetType => {
-        // Only calculate new values if there are already existing monthly values
-        if (group.monthlyValues[assetType].length > 0) {
-          const lastValue = group.monthlyValues[assetType][group.monthlyValues[assetType].length - 1];
-          const newValue = lastValue * (1 + rate);
-          group.monthlyValues[assetType].push(newValue);
-        }
+    calculateAndDisplayFutureValues() {
+      this.savedGroups.forEach(group => {
+        ['equity', 'bonds', 'realEstate', 'banks', 'other'].forEach(assetType => {
+          const futureValueKey = `future${assetType.charAt(0).toUpperCase() + assetType.slice(1)}`;
+          group[futureValueKey] = this.calculateFutureValue(assetType, Number(group[assetType]));
+        });
       });
-    });
+    },
 
-    this.$nextTick(() => { // Ensure DOM updates complete before re-rendering chart
+    updateValuesForNextMonth() {
+      // First, apply the event effect to adjust the multipliers based on the selected event
+      this.applyEventEffect();
+
+      this.simulationMonths++;
+      this.savedGroups.forEach(group => {
+        // Now, loop over each asset type in the group to update its value
+        Object.keys(group.monthlyValues).forEach(assetType => {
+          if (group.monthlyValues[assetType].length > 0) {
+            const lastValue = group.monthlyValues[assetType][group.monthlyValues[assetType].length - 1];
+            // Use the currentEffect multipliers directly in the growth rate calculation
+            const { X, Y } = this.currentEffect[assetType];
+            const rate = this.interestRate * X * Y; // Adjusted growth rate incorporating the event effect
+            
+            const newValue = lastValue * (1 + rate);
+            group.monthlyValues[assetType].push(newValue);
+          }
+        });
+      });
+
+      this.$nextTick(() => {
         this.renderGrowthChart(); // Re-render the chart with new data
       });
-  },
+    },
+
   calculateNextMonthValue(currentValue) {
     const rate = 0.05;
     return currentValue * (1 + rate);
@@ -362,6 +426,17 @@ export default {
         color += letters[Math.floor(Math.random() * 16)];
       }
       return color;
+    },
+    applyEventEffect() {
+      // Update currentEffect based on the selected event
+      this.currentEffect = this.eventEffects[this.selectedEvent];
+    },
+    resetMultipliers() {
+      this.groups.forEach(group => {
+        // Reset logic, setting X (and Y if used) back to 1
+        group.equityMultiplier = 1;
+        // Repeat for other asset types
+      });
     },
   },
   computed: {
