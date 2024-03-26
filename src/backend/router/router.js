@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import StartPage from '../../frontend/pages/FirstPage.vue'; 
-import SecondPage from '../../frontend/pages/SecondPage.vue';
 import GroupCreation from '../../frontend/pages/GroupCreation.vue';
 import SimulationPage from '../../frontend/pages/Simulation.vue';
 import SimulationControls from '../../frontend/pages/SimulationControls.vue';
@@ -15,12 +14,6 @@ const routes = [
     path: '/firstpage',
     name: 'StartPage',
     component: StartPage,
-  },
-  {
-    path: '/secondpage',
-    name: 'SecondPage',
-    component: SecondPage,
-    props: true
   },
   {
     path: '/groupcreation',

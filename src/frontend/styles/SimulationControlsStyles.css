@@ -200,8 +200,8 @@ input[type=number]:hover {
   }
 
   .generate-random-button {
-    background-color: #4CAF50; /* Green background */
-    color: white;
+    background-color: #FFD700; /* Yellow background */
+    color: #000080;
     border: none;
     padding: 10px 20px;
     border-radius: 5px;
@@ -308,6 +308,52 @@ input[type=number]:hover {
   .toggle-event-list-button:active {
     background-color: #cc0000; /* Even darker red on active/click */
     transform: scale(0.95); /* Slightly smaller on click */
+  }
+  .download-template-button {
+    background-color: navy; /* Navy blue background */
+    color: yellow; /* Yellow text */
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background-color 0.3s, transform 0.2s;
+  }
+
+  .download-template-button:hover {
+    background-color: #45a049; /* Darker shade of green */
+    transform: translateY(-2px); /* Slight raise effect */
+  }
+
+  .download-template-button:active {
+    background-color: #3e8e41; /* Even darker green on click */
+    transform: translateY(1px); /* Push effect */
+  }
+  .custom-file-upload {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: navy; /* Navy blue background */
+    color: yellow; /* Yellow text */
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s;
+  }
+  
+  .custom-file-upload span {
+    font-size: 16px;
+  }
+  
+  .custom-file-upload:hover {
+    background-color: #45a049; /* Darker shade of green */
+    transform: translateY(-2px);
+  }
+  
+  /* You might already have styles for input[type="file"], ensure they are not conflicting */
+  input[type="file"] {
+    display: none; /* Hide the actual input */
   }
   
   

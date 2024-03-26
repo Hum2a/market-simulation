@@ -40,11 +40,18 @@
         </button>
         <button type="submit" class="save-button">Save</button>
         <button type="button" class="generate-random-button" @click="generateRandomValues">Generate Random Values</button>
-        <input 
-            type="file" 
-            @change="handleFileUpload" 
-            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" 
-            />
+        <button @click="downloadTemplate" class="download-template-button">
+          Download Excel Template
+        </button>
+        <label class="custom-file-upload">
+          <input 
+            type="file"
+            @change="handleFileUpload"
+            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+            style="display: none;" />
+          <span>Upload File</span>
+        </label>
+
       </form>
     </div>
 
@@ -133,69 +140,70 @@
         const hue = (index * 137) % 360; // Use a simple algorithm to generate a hue
         return `hsl(${hue}, 70%, 80%)`; // Return a light color with moderate saturation
     },
-        handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+      handleFileUpload(event) {
+          const file = event.target.files[0];
+          if (!file) return;
 
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const data = e.target.result;
-                const workbook = XLSX.read(data, { type: 'binary' });
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const data = e.target.result;
+            const workbook = XLSX.read(data, { type: 'binary' });
 
-                // Assuming the first sheet is the one you're interested in
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
 
-                // Convert sheet to JSON
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-                // Process jsonData to update the assetChanges data structure
-                this.processUploadedData(jsonData);
-            };
-            reader.readAsBinaryString(file);
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            this.processUploadedData(jsonData);
+          };
+          reader.readAsBinaryString(file);
         },
+
         processUploadedData(data) {
-            // Reset assetChanges
-            this.assetChanges = [];
+          data.shift(); // Remove header row
+          
+          // Determine the unique years from the data to establish the total number of years
+          const uniqueYears = new Set();
+          data.forEach(row => {
+            const yearMatch = row[0].match(/\d+/);
+            if (yearMatch) {
+              uniqueYears.add(yearMatch[0]);
+            }
+          });
+          const yearsCount = uniqueYears.size;
 
-            // Remove the headers as they are not needed for data processing
-            data.shift();
-
-            // Process the rows
-            data.forEach((row) => {
-                // Extract the year number from the 'Year' column (assumes it's in the format "Year 1", "Year 2", etc.)
-                let yearMatch = row[0].match(/\d+/);
-                let year = yearMatch ? parseInt(yearMatch[0], 10) - 1 : null;
-                
-                // Check if the quarter value is among the expected quarters
-                let quarter = this.quarters.includes(row[1]) ? row[1] : null;
-
-                // If the year or quarter couldn't be determined, skip this row
-                if (year === null || quarter === null) return;
-
-                // Initialize the asset structure for the year if not already done
-                if (!this.assetChanges[year]) {
-                this.assetChanges[year] = this.quarters.reduce((acc, quarter) => {
-                    acc[quarter] = this.assets.reduce((innerAcc, asset) => {
-                    innerAcc[asset] = 0;
-                    return innerAcc;
-                    }, {});
-                    return acc;
-                }, {});
-                }
-
-                // Assign the values for each asset
-                this.assets.forEach((asset, index) => {
-                // The asset values are expected to start at the 3rd column index (index 2)
-                let value = row[index + 2]; // Adjust the +2 if the assets start at a different column
-                if (!isNaN(parseFloat(value)) && isFinite(value)) {
-                    this.assetChanges[year][quarter][asset] = parseFloat(value);
-                }
-                });
+          // Initialize asset changes structure with the new years count if it changed
+          if (this.years !== yearsCount) {
+            this.years = yearsCount; // This will trigger the watcher to reinitialize assetChanges
+            this.$nextTick(() => {
+              this.populateAssetChangesWithData(data);
             });
+          } else {
+            this.populateAssetChangesWithData(data);
+          }
+        },
 
-            // After processing all rows, update the years state variable to match the length of assetChanges
-            this.years = this.assetChanges.length;
+        populateAssetChangesWithData(data) {
+          // Clear existing data in assetChanges
+          this.initializeAssetChanges(this.years);
+
+          // Populate assetChanges with the data
+          data.forEach(row => {
+            const yearMatch = row[0].match(/\d+/);
+            const year = yearMatch ? parseInt(yearMatch[0], 10) : null;
+            const quarter = this.quarters.includes(row[1]) ? row[1] : null;
+            if (year === null || quarter === null) return;
+
+            this.assets.forEach((asset, index) => {
+              let value = row[index + 2]; // Adjust if assets start at a different column
+              if (!isNaN(parseFloat(value)) && isFinite(value)) {
+                this.assetChanges[year - 1][quarter][asset] = parseFloat(value);
+              }
+            });
+          });
+        },
+        downloadTemplate() {
+          const url = '../assets/templates/SimulationControlTemplate.xlsx';
+          window.open(url, '_blank');
         },
         quarterClicked(yearIndex, quarter) {
             this.selectedYear = yearIndex;
