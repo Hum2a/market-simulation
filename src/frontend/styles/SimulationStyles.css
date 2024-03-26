@@ -1,0 +1,97 @@
+
+/* Simulation table styling */
+.simulation-table {
+    margin-top: 30px;
+    text-align: center;
+    width: 100%;
+    color: #FFD700; /* Yellow text color */
+  }
+  
+  .simulation-table h2 {
+    color: #FF0000; /* Red color for the table heading */
+    margin-bottom: 20px;
+  }
+
+  
+table {
+    width: 100%;
+    border-collapse: collapse; /* Collapse borders */
+  }
+  
+  table, th, td {
+    border: 1px solid #FFD700; /* Yellow borders for table */
+  }
+  
+  th {
+    background-color: #000080; /* Black background for header */
+    color: #FFFFFF; /* White text color */
+    padding: 10px;
+    font-size: 1.1em;
+  }
+  
+  td {
+    background-color: #001f3f; /* Slightly lighter black for data cells */
+    color: #FFFFFF; /* White text color */
+    padding: 8px;
+  }
+  
+  tr:nth-child(even) {
+    background-color: #2C2C2C; /* Even darker shade for alternate rows */
+  }
+  
+  /* Hover effect for rows */
+  tr:hover {
+    background-color: #001340; /* Dark grey on hover */
+  }
+  
+  /* Style adjustments for buttons within the table, if any */
+.table-btn {
+    background-color: #FF0000; /* Red button */
+    color: #FFFFFF; /* White text */
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .table-btn:hover {
+    background-color: #C70000; /* Darker red on hover */
+  }
+
+  .modern-picker {
+    background-color: #000; /* Black background */
+    color: #fff; /* White text */
+    border: 1px solid #ff0000; /* Red border */
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 16px;
+    -webkit-appearance: none; /* Removes default style of select in WebKit browsers */
+    -moz-appearance: none; /* Removes default style of select in Firefox */
+    appearance: none; /* Removes default style of select in modern browsers */
+    transition: border-color 0.3s;
+  }
+  
+  .modern-picker:focus {
+    outline: none;
+    border-color: #ff4500; /* Brighter red border on focus */
+  }
+  
+  /* Style for the select dropdown arrow */
+  .modern-picker {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="%23ffffff" d="M7 10l5 5 5-5z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 24px;
+  }
+
+  .event-creation-widget {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    border: 2px solid red;
+    padding: 20px;
+    z-index: 100; /* Ensure it appears above other content */
+  }

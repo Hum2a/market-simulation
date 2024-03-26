@@ -225,6 +225,6 @@ export default {
 </script>
   
   <style>
-    @import url('../styles//StartStyles.css');
+    @import url('../styles/SimulationStyles.css');
   </style>
   

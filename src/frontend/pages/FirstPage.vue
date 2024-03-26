@@ -464,5 +464,5 @@ export default {
 </script>
 
 <style scoped>
-  @import url('../styles//StartStyles.css');
+  @import url('../styles/GroupCreationStyles.css');
 </style>
