@@ -200,6 +200,6 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
 </script>
   
 <style scoped>
-    @import url('../styles/StartStyles.css');
+    @import url('../styles/GroupCreationStyles.css');
 </style>
   
