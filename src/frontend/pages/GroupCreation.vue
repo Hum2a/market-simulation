@@ -52,6 +52,15 @@
       <button @click="addGroup" class="add-group-btn">Add Group</button>
       <button @click="saveGroups" class="modern-button">Go to Simulation</button>
     </div>
+
+    <div class="modal" v-if="showModal">
+      <div class="modal-content">
+        <span class="close" @click="toggleModal">&times;</span>
+        <h3>Add a new group</h3>
+        <input type="text" v-model="newGroupName" placeholder="Enter group name">
+        <button @click="confirmAddGroup">Confirm</button>
+      </div>
+    </div>
   </template>
   
 <script>
@@ -82,15 +91,26 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
         ],
         showCalculator: false,
         showSimulationControls: false,
+        showModal: false,
+        newGroupName: '',
       };
     },
     methods: {
       addGroup() {
-        const groupName = prompt("Enter group name:");
-        if (groupName) {
+        this.toggleModal();
+      },
+      toggleModal() {
+        this.showModal = !this.showModal;
+      },
+      confirmAddGroup() {
+        if (this.newGroupName.trim()) {
           this.groups.push({
-            name: groupName, equity: '', bonds: '', realEstate: '', banks: '', other: ''
+            name: this.newGroupName.trim(), equity: '', bonds: '', realEstate: '', banks: '', other: ''
           });
+          this.newGroupName = ''; // Reset the input value
+          this.toggleModal(); // Close the modal
+        } else {
+          alert('Please enter a group name.');
         }
       },
       editGroupName(index) {
