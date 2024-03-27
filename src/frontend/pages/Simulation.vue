@@ -1,230 +1,279 @@
 <template>
-    <div>
-      <div v-if="displaySimulation" class="simulation-table">
-        <h2>Simulation Data</h2>
+  <div>
+    <div v-if="displaySimulation" class="simulation-table">
+      <h2>Simulation Data</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Group Name</th>
+            <th>Equity</th>
+            <th>Bonds</th>
+            <th>Real Estate</th>
+            <th>Bank Accounts</th>
+            <th>Other</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(group, index) in groups" :key="index">
+            <td>{{ group.name }}</td>
+            <td>{{ group.equity }}</td>
+            <td>{{ group.bonds }}</td>
+            <td>{{ group.realestate }}</td>
+            <td>{{ group.banks }}</td>
+            <td>{{ group.other }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Asset Changes from Firebase</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Quarter</th>
+              <th>Equity Growth (%)</th>
+              <th>Bonds Growth (%)</th>
+              <th>Real Estate Growth (%)</th>
+              <th>Bank Accounts Growth (%)</th>
+              <th>Other Growth (%)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template v-for="(yearData, yearIndex) in assetChanges" :key="'year-' + yearIndex">
+              <template v-for="(change, quarter) in yearData" :key="'quarter-' + quarter">
+                <tr>
+                  <td>{{ quarter }}</td>
+                  <td>{{ change.Equity }}</td>
+                  <td>{{ change.Bonds }}</td>
+                  <td>{{ change.RealEstate }}</td>
+                  <td>{{ change.Banks }}</td>
+                  <td>{{ change.Other }}</td>
+                </tr>
+              </template>
+            </template>
+          </tbody>
+        </table>
+
+      <h2>Detailed Asset Growth Projections</h2>
         <table>
           <thead>
             <tr>
               <th>Group Name</th>
-              <th>Equity</th>
-              <th>Bonds</th>
-              <th>Real Estate</th>
-              <th>Bank Accounts</th>
-              <th>Other</th>
+              <th>Asset Type</th>
+              <th>Initial Value</th> <!-- Explicitly add "Initial Value" header -->
+              <th v-for="n in simulationYears * 4" :key="'quarter-header-' + n">Q{{ n }}</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(group, index) in groups" :key="index">
-              <td>{{ group.name }}</td>
-              <td>{{ group.futureEquity }}</td>
-              <td>{{ group.futureBonds }}</td>
-              <td>{{ group.futureRealEstate }}</td>
-              <td>{{ group.futureBanks }}</td>
-              <td>{{ group.futureOther }}</td>
-            </tr>
+            <template v-for="(growthData, groupName) in detailedGrowth" :key="groupName">
+              <tr v-for="assetType in Object.keys(growthData)" :key="groupName + '-' + assetType">
+                <td>{{ groupName }}</td>
+                <td>{{ assetType }}</td>
+                <td>{{ growthData[assetType][0].toFixed(2) }}</td>
+                <template v-for="(value, index) in growthData[assetType].slice(1)" :key="groupName + '-' + assetType + '-' + index">
+                  <td>{{ value.toFixed(2) }}</td>
+                </template>
+              </tr>
+            </template>
           </tbody>
         </table>
 
-        <h2>Asset Growth Projections</h2>
-        <table>
-            <thead>
-            <tr>
-                <th>Group Name</th>
-                <th>Asset Type</th>
-                <th>Starting Value</th>
-                <th v-for="n in simulationMonths" :key="'month-header-' + n">After {{ n }} Month(s)</th>
-            </tr>
-            </thead>
-            <tbody>
-                <template v-for="(group, index) in groups" :key="'group-' + index">
-                    <tr v-for="assetType in ['equity', 'bonds', 'realEstate', 'banks', 'other']" :key="`${group.name}-${assetType}`">
-                    <td>{{ group.name }}</td>
-                    <td>{{ assetType.charAt(0).toUpperCase() + assetType.slice(1) }}</td>
-                    <td>{{ group[assetType] }}</td>
-                    <td v-for="n in simulationMonths" :key="`${group.name}-${assetType}-${n}`">{{ calculateFutureValue(group[assetType], n) }}</td>
-                    </tr>
-                </template>
-            </tbody>
-        </table>
-        </div>
-        <button v-if="!displaySimulation" @click="startSimulation" class="modern-button">Start Simulation</button>
-        <button v-if="displaySimulation" @click="updateValuesForNextMonth" class="modern-button">Next Month</button>
-        <button v-if="displaySimulation" @click="updateValuesForNextQuarter" class="modern-button">Next Quarter</button>
-        <div class="interest-rate-input">
-            <label for="interestRate">Change Interest Rate (%):</label>
-            <input type="number" id="interestRate" v-model="interestRateComputed" step="1" class="modern-input" />
-        </div>
-        <div v-if="displaySimulation" class="simulation-control">
-            <select v-model="selectedEvent" class="modern-picker">
-                <option value="noEvent">No Event</option>
-                <option value="interestHike">Interest Rate Hike</option>
-                <option value="technologicalDisruption">Technological Disruption in a Sector</option>
-                <option value="politicalInstability">Political Instability</option>
-                <option value="centralBankImplementsQuantitativeEasing">Central Bank Implements Quantitative Easing</option>
-                <option value="cybersecurityBreachImpactingBanks">Cybersecurity Breach Impacting Banks</option>
-                <option value="DiscoveryOfValuableNaturalResources">Discovery of Valuable Natural Resources</option>
-                <option value="IncreaseInConsumerConfidence">Increase in Consumer Confidence</option>
-                <option value="majorCorporationBankruptcy">Major Corporation Bankruptcy</option>
-                <option value="naturalDisaster">Natural Disaster</option>
-                <option value="realEstateBoom">Real Estate Boom</option>
-                <option value="stringentEnvironmentalRegulations">Stringent Environmental Regulations</option>
-                <option value="suddenInflationSpike">Sudden Inflation Spike</option>
-                <option value="taxReformFavoringCorporateProfits">Tax Reform Favoring Corporate Profits</option>
-                <option value="surgeInGlobalTourism">Surge in Global Tourism</option>
-            </select>
-            <button @click="applyEventEffect" class="modern-button">Apply Event</button>
-            </div>
-    </div>
+        <asset-growth-chart :chart-data="generateChartData()"></asset-growth-chart>
+
+      </div>
+      <button v-if="!displaySimulation" @click="startSimulation" class="modern-button">Start Simulation</button>
+      <button v-if="displaySimulation" @click="updateValuesForNextMonth" class="modern-button">Next Month</button>
+      <button v-if="displaySimulation" @click="updateValuesForNextQuarter" class="modern-button">Next Quarter</button>
+  </div>
 </template>
-  
+
 <script>
 
-import { getFirestore, collection, getDocs } from 'firebase/firestore';
-import { adjustGrowthRatesForInterestRateHike } from '../../backend/simulation/events/interestRateHike.js';
-import { TechnologicalDisruptionInASectorEffects } from '../../backend/simulation/events/TechnologicalDisruptionInASector.js';
-import { PoliticalInstabilityEffects } from '../../backend/simulation/events/PoliticalInstability.js';
-import { CentralBankImplementsQuantitativeEasingEffects } from '../../backend/simulation/events/CentralBankImplementsQuantitativeEasing.js';
-import { CybersecurityBreachImpactingBanksEffects } from '../../backend/simulation/events/CybersecurityBreachImpactingBanks.js';
-import { DiscoveryOfValuableNaturalResourcesEffects } from '../../backend/simulation/events/DiscoveryOfValuableNaturalResources.js';
-import { IncreaseInConsumerConfidenceEffects } from '../../backend/simulation/events/IncreaseInConsumerConfidence.js';
-import { MajorCorporationBankruptcyEffects } from '../../backend/simulation/events/MajorCorporationBankruptcy.js';
-import { NaturalDisasterEffects } from '../../backend/simulation/events/NaturalDisaster.js'
-import { RealEstateBoomEffects }from '../../backend/simulation/events/RealEstateBoom.js';
-import { StringentEnvironmentalRegulationsEffects } from '../../backend/simulation/events/StringentEnvironmentalRegulations.js'; 
-import { SuddenInflationSpikeEffects } from '../../backend/simulation/events/SuddenInflationSpike.js';
-import { TaxReformFavoringCorporateProfitsEffects } from '../../backend/simulation/events/TaxReformFavoringCorporateProfits.js';
-import { SurgeInGlobalTourismEffects } from '../../backend/simulation/events/SurgeInGlobalTourism.js'
+import { getFirestore, collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import AssetGrowthChart from '../components/charts/AssetGrowthChart.vue';
 
 export default {
-    name: 'SimulationPage',
+  name: 'SimulationPage',
+  components: {
+    AssetGrowthChart,
+  },
   data() {
-    return {
-      groups: [],
-      displaySimulation: false,
-      simulationMonths: 0,
-      interestRate: 0.05,
-      selectedEvent: 'noEvent', // Tracks the selected event
-      eventEffects: {
-        noEvent: { equity: {X: 1, Y: 1}, bonds: {X: 1, Y: 1}, realEstate: {X: 1, Y: 1}, banks: {X: 1, Y: 1}, other: {X: 1, Y: 1} },
-        interestHike: adjustGrowthRatesForInterestRateHike(),
-        technologicalDisruption: TechnologicalDisruptionInASectorEffects(),
-        politicalInstability: PoliticalInstabilityEffects(),
-        centralBankImplementsQuantitativeEasing: CentralBankImplementsQuantitativeEasingEffects(),
-        cybersecurityBreachImpactingBanks: CybersecurityBreachImpactingBanksEffects(),
-        DiscoveryOfValuableNaturalResources: DiscoveryOfValuableNaturalResourcesEffects(),
-        IncreaseInConsumerConfidence: IncreaseInConsumerConfidenceEffects(),
-        majorCorporationBankruptcy: MajorCorporationBankruptcyEffects(),
-        naturalDisaster: NaturalDisasterEffects(),
-        realEstateBoom: RealEstateBoomEffects(),
-        stringentEnvironmentalRegulations: StringentEnvironmentalRegulationsEffects(),
-        suddenInflationSpike: SuddenInflationSpikeEffects(),
-        taxReformFavoringCorporateProfits: TaxReformFavoringCorporateProfitsEffects(),
-        surgeInGlobalTourism: SurgeInGlobalTourismEffects(),
-    },
-    currentEffect: { equity: {X: 1, Y: 1}, bonds: {X: 1, Y: 1}, realEstate: {X: 1, Y: 1}, banks: {X: 1, Y: 1}, other: {X: 1, Y: 1} },
-    };
+      return {
+          groups: [],
+          displaySimulation: false,
+          simulationMonths: 0,
+          simulationYears: 1,
+          assetChanges: [],
+          detailedGrowth: {},
+          currentQuarterIndex: 0,
+      };
   },
   async created() {
-    await this.fetchGroups();
+      await this.fetchGroups();
+      await this.fetchAssetChanges();
   },
-  computed: {
-    // Adjusted computed property with getter and setter for interestRate
-    interestRateComputed: {
-        get() {
-        // When getting the value, convert it back to a percentage for display
-        return this.interestRate * 100;
-        },
-        set(value) {
-        // When setting the value, convert the input percentage to a decimal
-        this.interestRate = Number(value) / 100;
-        }
-    }
-},
   methods: {
-    async fetchGroups() {
-      const db = getFirestore();
-      const querySnapshot = await getDocs(collection(db, "groups"));
-      this.groups = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-    },
-
-    startSimulation() {
-        this.simulationMonths += 1;
-        this.groups = this.groups.map(group => {
-            if (!group.monthlyValues) { // Initialize monthlyValues if not present
-            group.monthlyValues = {};
-            }
-
-            const assetTypes = ['equity', 'bonds', 'realEstate', 'banks', 'other'];
-            assetTypes.forEach(assetType => {
-            if (!group.monthlyValues[assetType]) {
-                group.monthlyValues[assetType] = [group[assetType]]; // Initialize with starting value
-            } else {
-                // Assuming calculateFutureValue can calculate the next month value based on the last month
-                const lastValue = group.monthlyValues[assetType].slice(-1)[0]; // Get last month value
-                group.monthlyValues[assetType].push(this.calculateFutureValue(lastValue, 1)); // Calculate & push new value
-            }
-            });
-
-            return group;
+      async fetchGroups() {
+        const db = getFirestore();
+        const querySnapshot = await getDocs(collection(db, "groups"));
+        this.groups = querySnapshot.docs.map(doc => {
+          // Map document data to include future values initialized to current values
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            futureEquity: data.equity,
+            futureBonds: data.bonds,
+            futureRealEstate: data.realestate,
+            futureBanks: data.banks,
+            futureOther: data.other,
+          };
         });
-
-        this.displaySimulation = true;
-        },
-
-    calculateFutureValue(currentValue, months) {
-        return currentValue * Math.pow((1 + this.interestRate), months);
-  },
-
-    updateValuesForNextMonth() {
-        this.simulationMonths += 1;
-        this.groups = this.groups.map(group => {
-            const assetTypes = ['equity', 'bonds', 'realEstate', 'banks', 'other'];
-
-            assetTypes.forEach(assetType => {
-            const lastValue = group.monthlyValues[assetType].slice(-1)[0]; // Get last month value
-            group.monthlyValues[assetType].push(this.calculateFutureValue(lastValue, 1)); // Push new value
-            });
-
-            return group;
-        });
-    },
-
-    updateValuesForNextQuarter() {
-    // Advance the simulation by three months
-    for (let i = 0; i < 3; i++) {
-        this.simulationMonths++;
-        this.groups.forEach(group => {
-            const assetTypes = ['equity', 'bonds', 'realEstate', 'banks', 'other'];
-            assetTypes.forEach(assetType => {
-                const lastValueIndex = group.monthlyValues[assetType]?.length - 1;
-                let lastValue = group.monthlyValues[assetType]?.[lastValueIndex] || parseFloat(group[assetType]);
-                
-                const futureValue = this.calculateFutureValue(assetType, lastValue);
-                if (!group.monthlyValues[assetType]) {
-                    group.monthlyValues[assetType] = [lastValue]; // Initialize with starting value if not present
-                }
-                group.monthlyValues[assetType].push(futureValue);
-            });
-        });
-    }
-},
-
-    applyEventEffect() {
-        if (this.eventEffects[this.selectedEvent]) {
-        this.currentEffect = this.eventEffects[this.selectedEvent];
+      },
+      async fetchAssetChanges() {
+        const db = getFirestore();
+        const docRef = doc(db, 'Simulation Controls', 'Controls');
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          this.assetChanges = data.assetChanges;
+          this.simulationYears = data.years || 1; // Assuming your document includes a 'years' field
+          // Initialize detailedGrowth based on the fetched years
+          this.initializeDetailedGrowth();
         } else {
-        console.error("Selected event effect is not defined.");
+          console.log("No such document!");
         }
+      },
+      initializeDetailedGrowth() {
+        // Prepare detailedGrowth with initial values for each group and asset type
+        this.groups.forEach(group => {
+          if (!this.detailedGrowth[group.name]) {
+            this.detailedGrowth[group.name] = {};
+          }
+          ['Equity', 'Bonds', 'RealEstate', 'Banks', 'Other'].forEach(asset => {
+            if (!this.detailedGrowth[group.name][asset]) {
+              this.detailedGrowth[group.name][asset] = [parseFloat(group[asset.toLowerCase()]) || 0]; // Initial value
+            }
+          });
+        });
+      },
+      startSimulation() {
+          this.displaySimulation = true;
+          this.currentQuarterIndex = 0;
+      },
+
+      applyAssetChanges() {
+        const quarters = ['Jan-Mar', 'Apr-Jun', 'Jul-Sep', 'Oct-Dec'];
+
+        for (let year = 0; year < this.simulationYears; year++) {
+          quarters.forEach(quarter => {
+            this.groups.forEach(group => {
+              ['Equity', 'Bonds', 'RealEstate', 'Banks', 'Other'].forEach(asset => {
+                const lastValueIndex = this.detailedGrowth[group.name][asset].length - 1;
+                let lastValue = this.detailedGrowth[group.name][asset][lastValueIndex];
+                const growthRate = this.assetChanges[year][quarter][asset] / 100;
+                const newValue = lastValue * (1 + growthRate);
+                this.detailedGrowth[group.name][asset].push(newValue);
+              });
+            });
+          });
+        }
+      },
+      updateValuesForNextMonth() {
+          // Implement logic as needed for updating values for the next month
+          this.simulationMonths += 1;
+      },
+
+      updateValuesForNextQuarter() {
+        // Check if the next quarter's data is available
+        const totalQuarters = this.simulationYears * 4;
+        if (this.currentQuarterIndex >= totalQuarters) {
+          console.warn("No more quarters left to simulate.");
+          return;
+        }
+
+        // Calculate which year and quarter we're working on
+        const year = Math.floor(this.currentQuarterIndex / 4);
+        const quarterIndex = this.currentQuarterIndex % 4;
+        const quarters = ['Jan-Mar', 'Apr-Jun', 'Jul-Sep', 'Oct-Dec'];
+        const currentQuarter = quarters[quarterIndex];
+
+        // Assuming `assetChanges` is structured as [{ "Jan-Mar": {...}, "Apr-Jun": {...}, ... }, { ... }]
+        // Where each object represents a year and each key in the object is a quarter with its growth rates
+        const assetChangesForQuarter = this.assetChanges[year] ? this.assetChanges[year][currentQuarter] : null;
+
+        if (!assetChangesForQuarter) {
+          console.warn(`No data available for year ${year + 1}, quarter ${currentQuarter}`);
+          return;
+        }
+
+        // Now apply the asset changes for this quarter to each group
+        this.groups.forEach(group => {
+          Object.keys(assetChangesForQuarter).forEach(assetType => {
+            const growthRate = assetChangesForQuarter[assetType] / 100; // Convert percentage to a decimal
+            const currentValue = group[assetType.toLowerCase()];
+            const newValue = currentValue * (1 + growthRate);
+            group[assetType.toLowerCase()] = newValue;
+
+            // Update the detailed growth projections
+            if (!this.detailedGrowth[group.name][assetType]) {
+              this.detailedGrowth[group.name][assetType] = [];
+            }
+            this.detailedGrowth[group.name][assetType].push(newValue);
+          });
+        });
+
+        // Advance to the next quarter for the next button press
+        this.currentQuarterIndex++;
+
+        // Optionally, invoke any method to refresh or update dependent UI elements here, if necessary
+      },
+      generateChartData() {
+        const datasets = [];
+        // Start with 'Initial Value', followed by the quarters
+        const labels = ['Initial Value'].concat(Array.from({ length: this.simulationYears * 4 }, (_, i) => `Q${i + 1}`));
+
+        Object.entries(this.detailedGrowth).forEach(([groupName, assets]) => {
+          Object.entries(assets).forEach(([assetType, values]) => {
+            // Create a copy of the values array starting from the second element
+            const adjustedValues = [values[0]].concat(values.slice(1, this.currentQuarterIndex + 1));
+
+            // Fill the rest of the array with nulls up to the total number of quarters
+            while (adjustedValues.length < this.simulationYears * 4 + 1) {
+              adjustedValues.push(null);
+            }
+
+            const dataset = {
+              label: `${groupName} - ${assetType}`,
+              data: adjustedValues,
+              fill: false,
+              borderColor: this.getRandomColor(),
+            };
+            datasets.push(dataset);
+          });
+        });
+
+        return {
+          labels,
+          datasets
+        };
+      },
+
+
+
+      getRandomColor() {
+        // This is a simple method to generate random colors. You might want to customize this.
+        const letters = '0123456789ABCDEF';
+        let color = '#';
+        for (let i = 0; i < 6; i++) {
+          color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+      }
     },
-    
-  },
 };
 </script>
-  
-  <style>
-    @import url('../styles/SimulationStyles.css');
-  </style>
-  
+
+<style>
+@import url('../styles/SimulationStyles.css');
+</style>

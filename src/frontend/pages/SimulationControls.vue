@@ -96,7 +96,7 @@
     data() {
       return {
         years: 1,
-        assets: ['Equity', 'Bonds', 'Real Estate', 'Bank Accounts', 'Other'],
+        assets: ['Equity', 'Bonds', 'RealEstate', 'Banks', 'Other'],
         quarters: ['Jan-Mar', 'Apr-Jun', 'Jul-Sep', 'Oct-Dec'],
         assetChanges: [],
         showEventModal: false,
@@ -250,9 +250,10 @@
         },
 
         getRandomNumber() {
-            // Generate a random number within a range and fix to 2 decimal places
-            return parseFloat((Math.random() * (100 - 1) + 1).toFixed(2));
+          // Generate a random number between 0 (inclusive) and 10 (exclusive) and fix to 2 decimal places
+          return parseFloat((Math.random() * 10).toFixed(2));
         },
+
         toggleEventList() {
             this.showEventList = !this.showEventList;
         },

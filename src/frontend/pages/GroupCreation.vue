@@ -30,8 +30,8 @@
                 <input type="text" v-model="group.bonds" id="bonds" class="modern-input">
               </div>
               <div class="input-row">
-                <label for="realEstate">Real Estate:</label>
-                <input type="text" v-model="group.realEstate" id="realEstate" class="modern-input">
+                <label for="realestate">Real Estate:</label>
+                <input type="text" v-model="group.realestate" id="realestate" class="modern-input">
               </div>
               <div class="input-row">
                 <label for="banks">Bank Accounts:</label>
@@ -87,7 +87,7 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
     data() {
       return {
         groups: [
-          { name: 'Group 1', equity: '', bonds: '', realEstate: '', banks: '', other: '' }
+          { name: 'Group 1', equity: '', bonds: '', realestate: '', banks: '', other: '' }
         ],
         showCalculator: false,
         showSimulationControls: false,
@@ -105,7 +105,7 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
       confirmAddGroup() {
         if (this.newGroupName.trim()) {
           this.groups.push({
-            name: this.newGroupName.trim(), equity: '', bonds: '', realEstate: '', banks: '', other: ''
+            name: this.newGroupName.trim(), equity: '', bonds: '', realestate: '', banks: '', other: ''
           });
           this.newGroupName = ''; // Reset the input value
           this.toggleModal(); // Close the modal
@@ -159,7 +159,7 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
         const group = this.groups[index];
         group.equity = Math.floor(Math.random() * 1001).toString();
         group.bonds = Math.floor(Math.random() * 1001).toString();
-        group.realEstate = Math.floor(Math.random() * 1001).toString();
+        group.realestate = Math.floor(Math.random() * 1001).toString();
         group.banks = Math.floor(Math.random() * 1001).toString();
         group.other = Math.floor(Math.random() * 1001).toString();
       },
@@ -171,7 +171,7 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
         labels: ['Equity', 'Bonds', 'Real Estate', 'Bank Accounts', 'Other'],
         datasets: [{
           label: `${group.name} Asset Allocation`,
-          data: [group.equity, group.bonds, group.realEstate, group.banks, group.other],
+          data: [group.equity, group.bonds, group.realestate, group.banks, group.other],
           backgroundColor: [
             'rgba(255, 99, 132, 0.6)',
             'rgba(54, 162, 235, 0.6)',
@@ -223,7 +223,7 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
     groups: {
       handler(groups) {
         groups.forEach((group, index) => {
-          if (group.equity || group.bonds || group.realEstate || group.banks || group.other) {
+          if (group.equity || group.bonds || group.realestate || group.banks || group.other) {
             this.$nextTick(() => this.renderPieChart(index));
           }
         });

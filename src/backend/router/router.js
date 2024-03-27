@@ -1,19 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import StartPage from '../../frontend/pages/FirstPage.vue'; 
 import GroupCreation from '../../frontend/pages/GroupCreation.vue';
 import SimulationPage from '../../frontend/pages/Simulation.vue';
 import SimulationControls from '../../frontend/pages/SimulationControls.vue';
+import SimulationTest from '../../frontend/pages/SimulationTest.vue';
 
 // Define your routes as before
 const routes = [
   {
     path: '/',
     redirect: '/GroupCreation' // Redirect '/' to '/firstpage'
-  },
-  {
-    path: '/firstpage',
-    name: 'StartPage',
-    component: StartPage,
   },
   {
     path: '/groupcreation',
@@ -29,6 +24,11 @@ const routes = [
     path: '/simulation-controls',
     name: 'SimulationControls',
     component: SimulationControls,
+  },
+  {
+    path: '/simulation-test',
+    name: "SimulationTest",
+    component: SimulationTest,
   },
 ];
 
