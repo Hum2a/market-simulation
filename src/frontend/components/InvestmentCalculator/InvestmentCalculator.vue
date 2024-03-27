@@ -23,9 +23,9 @@
       <label for="investmentPeriod">Investment Period (years):</label>
       <input type="number" id="investmentPeriod" v-model="investmentPeriod" class="calculator-input">
     </div>
-    <div class="input-group">
-      <label for="annualReturnRate">Expected Annual Return Rate (%):</label>
-      <input type="number" id="annualReturnRate" v-model="annualReturnRate" class="calculator-input">
+    <div class="input-group" v-for="rate in annualReturnRates" :key="rate.id">
+      <label :for="'annualReturnRate' + rate.id">Expected Annual Return Rate (%) for {{ rate.id }}:</label>
+      <input type="number" :id="'annualReturnRate' + rate.id" v-model="rate.value" class="calculator-input">
     </div>
     <button @click="calculate" class="calculate-button">Calculate</button>
     <div class="result" v-if="futureValue !== null">
@@ -53,46 +53,41 @@ export default {
       investmentPeriod: null,
       annualReturnRate: null,
       futureValue: null,
-      chart: null // Store chart instance
+      chart: null, // Store chart instance
+      annualReturnRates: [
+        { id: 'Rate 1', value: null },
+        { id: 'Rate 2', value: null },
+        { id: 'Rate 3', value: null }
+      ],
     };
   },
   methods: {
-    startDragging(event) {
-      this.dragging = true;
-      this.initialX = event.clientX - this.left;
-      this.initialY = event.clientY - this.top;
-      this.zIndex = 9999; // Bring the calculator to the front
-    },
-    stopDragging() {
-      this.dragging = false;
-    },
-    handleDrag(event) {
-      if (this.dragging) {
-        this.left = event.clientX - this.initialX;
-        this.top = event.clientY - this.initialY;
-      }
-    },
     calculate() {
       const principal = parseFloat(this.initialInvestment);
       const monthlyContribution = parseFloat(this.monthlyContribution);
       const years = parseInt(this.investmentPeriod);
-      const rate = parseFloat(this.annualReturnRate) / 100;
 
       const n = 12; // Compounded monthly
       const t = years;
-      const r = rate / n;
 
-      // Calculate future value for each month
-      const labels = [];
-      const data = [];
-      let currentValue = principal;
-      for (let i = 0; i <= t * n; i++) {
-        labels.push(`${i} months`);
-        data.push(currentValue);
-        currentValue = currentValue * (1 + r) + monthlyContribution;
-      }
+      const labels = Array.from({ length: t * n + 1 }, (_, i) => `${i} months`);
+      const datasets = this.annualReturnRates.map(rate => {
+        const r = parseFloat(rate.value) / 100 / n;
+        let currentValue = principal;
+        const data = [currentValue];
+        for (let i = 1; i <= t * n; i++) {
+          currentValue = currentValue * (1 + r) + monthlyContribution;
+          data.push(currentValue);
+        }
+        return {
+          label: `Investment Growth at ${rate.value}%`,
+          data: data,
+          fill: false,
+          borderColor: this.getRandomColor(),
+          tension: 0.1
+        };
+      });
 
-      // Update chart
       const ctx = document.getElementById('investmentChart').getContext('2d');
       if (this.chart) {
         this.chart.destroy(); // Destroy existing chart instance
@@ -101,13 +96,7 @@ export default {
         type: 'line',
         data: {
           labels: labels,
-          datasets: [{
-            label: 'Investment Growth',
-            data: data,
-            fill: false,
-            borderColor: 'red',
-            tension: 0.1
-          }]
+          datasets: datasets
         },
         options: {
           scales: {
@@ -127,9 +116,90 @@ export default {
         }
       });
 
-      // Calculate future value at the end of the investment period
-      this.futureValue = currentValue.toFixed(2);
+      this.futureValues = datasets.map(dataset => dataset.data.at(-1).toFixed(2));
+    },
+    startDragging(event) {
+      this.dragging = true;
+      this.initialX = event.clientX - this.left;
+      this.initialY = event.clientY - this.top;
+      this.zIndex = 9999; // Bring the calculator to the front
+    },
+    stopDragging() {
+      this.dragging = false;
+    },
+    handleDrag(event) {
+      if (this.dragging) {
+        this.left = event.clientX - this.initialX;
+        this.top = event.clientY - this.initialY;
+      }
+    },
+    getRandomColor() {
+    // This is a simple method to generate random colors. You might want to customize this.
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
+      color += letters[Math.floor(Math.random() * 16)];
     }
+    return color;
+  },
+    // calculate() {
+    //   const principal = parseFloat(this.initialInvestment);
+    //   const monthlyContribution = parseFloat(this.monthlyContribution);
+    //   const years = parseInt(this.investmentPeriod);
+    //   const rate = parseFloat(this.annualReturnRate) / 100;
+
+    //   const n = 12; // Compounded monthly
+    //   const t = years;
+    //   const r = rate / n;
+
+    //   // Calculate future value for each month
+    //   const labels = [];
+    //   const data = [];
+    //   let currentValue = principal;
+    //   for (let i = 0; i <= t * n; i++) {
+    //     labels.push(`${i} months`);
+    //     data.push(currentValue);
+    //     currentValue = currentValue * (1 + r) + monthlyContribution;
+    //   }
+
+    //   // Update chart
+    //   const ctx = document.getElementById('investmentChart').getContext('2d');
+    //   if (this.chart) {
+    //     this.chart.destroy(); // Destroy existing chart instance
+    //   }
+    //   this.chart = new Chart(ctx, {
+    //     type: 'line',
+    //     data: {
+    //       labels: labels,
+    //       datasets: [{
+    //         label: 'Investment Growth',
+    //         data: data,
+    //         fill: false,
+    //         borderColor: 'red',
+    //         tension: 0.1
+    //       }]
+    //     },
+    //     options: {
+    //       scales: {
+    //         x: {
+    //           title: {
+    //             display: true,
+    //             text: 'Time'
+    //           }
+    //         },
+    //         y: {
+    //           title: {
+    //             display: true,
+    //             text: 'Value'
+    //           }
+    //         }
+    //       }
+    //     }
+    //   });
+
+    //   // Calculate future value at the end of the investment period
+    //   this.futureValue = currentValue.toFixed(2);
+    // }
   }
 };
 </script>
