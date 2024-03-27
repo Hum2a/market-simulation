@@ -50,7 +50,7 @@
         </div>
       </div>
       <button @click="addGroup" class="add-group-btn">Add Group</button>
-      <button @click="saveGroups" class="modern-button">Go to Simulation</button>
+      <button @click="startSimulation" class="modern-button">Go to Simulation</button>
     </div>
 
     <div class="modal" v-if="showModal">
@@ -67,7 +67,7 @@
 
 import Chart from 'chart.js';
 import { useRouter } from 'vue-router';
-import { getFirestore, doc, setDoc  } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, collection, query, getDocs, writeBatch} from 'firebase/firestore';
 import InvestmentCalculator from '../components/InvestmentCalculator/InvestmentCalculator.vue';
 import SimulationControls from './SimulationControls.vue'; // Adjust the path as necessary
 
@@ -122,6 +122,18 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
       removeGroup(index) {
         this.groups.splice(index, 1);
       },
+      async clearGroups() {
+        const db = getFirestore();
+        const querySnapshot = await getDocs(query(collection(db, 'groups')));
+        const batch = writeBatch(db);
+
+        querySnapshot.forEach((doc) => {
+          batch.delete(doc.ref);
+        });
+
+        await batch.commit();
+        console.log('All groups have been removed from Firestore.');
+    },
       async saveGroups() {
         const db = getFirestore();
         
@@ -131,7 +143,6 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
                 const groupDocRef = doc(db, 'groups', group.name);
                 return setDoc(groupDocRef, group);
             }));
-            alert('Groups saved successfully!');
         } catch (err) {
             console.error('Error saving groups to Firestore: ', err);
             alert('Failed to save groups.');
@@ -140,6 +151,10 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
         // Navigate to the simulation page
         this.router.push({ name: 'SimulationPage' });
     },
+      async startSimulation() {
+        await this.clearGroups(); // Make sure all groups are cleared before saving new ones
+        await this.saveGroups(); // Proceed to save the current groups in the component's data
+      },
       generateRandomValues(index) {
         const group = this.groups[index];
         group.equity = Math.floor(Math.random() * 1001).toString();
@@ -195,9 +210,9 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
       toggleCalculator() {
         this.showCalculator = !this.showCalculator;
     },
-        toggleSimulationControls() {
-            this.showSimulationControls = !this.showSimulationControls;
-        },  
+      toggleSimulationControls() {
+          this.showSimulationControls = !this.showSimulationControls;
+      },  
     },
     mounted() {
     this.groups.forEach((group, index) => {
