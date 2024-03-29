@@ -21,6 +21,9 @@ h1 {
 .groups {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center; /* Align items to the start */
+  align-items: center; /* Align items at their top edge */
+  gap: 20px;
 }
 
 .group {
@@ -30,7 +33,7 @@ h1 {
   padding: 20px;
   border-radius: 10px;
   color: #FFD700; /* Yellow text color */
-  width: 300px; /* Set a fixed width for each group container */
+  width: 300px;; 
 }
 
 .group-header {
@@ -74,11 +77,22 @@ h1 {
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: background-color 0.3s, transform 0.2s ease-out, box-shadow 0.2s ease;
+  height: 500px; /* Adjust height to fit its content */
+  align-self: center; /* Align self in the center if using align-items: flex-start; */
+  margin: auto 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2); /* Initial subtle shadow */
 }
 
-.add-group-btn:hover {
+.add-group-btn:hover, .add-group-btn:focus {
   background-color: #E6C300; /* Darker yellow on hover */
+  transform: scale(1.05); /* Slightly increase size */
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3); /* Larger shadow for lifted effect */
+}
+
+.add-group-btn:active {
+  transform: scale(0.95); /* Slightly decrease size to mimic a press */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Reset to smaller shadow */
 }
 
 .edit-group-btn {
@@ -230,6 +244,50 @@ transform: scale(1.1);
   color: #000;
   text-decoration: none;
   cursor: pointer;
+}
+
+.header {
+  background-color: #004d99; /* Deep blue background */
+  color: #ffffff; /* White text color */
+  padding: 20px 40px; /* Ample padding for visual space */
+  display: flex;
+  justify-content: space-between; /* Space out title and toolbar */
+  align-items: center; /* Vertically center content */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Soft shadow for depth */
+}
+
+.header h1 {
+  margin: 0; /* Remove default margin */
+  font-size: 2rem; /* Larger font size for the title */
+}
+
+.toolbar {
+  display: flex;
+  gap: 20px; /* Space between buttons */
+}
+
+button {
+  background-color: #0073e6; /* Lighter blue for buttons */
+  color: #ffffff; /* White text */
+  border: none;
+  padding: 10px 15px;
+  border-radius: 5px; /* Rounded corners for a modern look */
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s; /* Smooth transitions for hover and click */
+}
+
+button:hover {
+  background-color: #005cb8; /* Darker blue on hover */
+  transform: scale(1.05); /* Slightly larger on hover */
+}
+
+button:active {
+  transform: scale(0.95); /* Slightly smaller when clicked */
+}
+
+/* Font Awesome Icons */
+.fas {
+  margin-right: 8px; /* Space between icon and text */
 }
   
 

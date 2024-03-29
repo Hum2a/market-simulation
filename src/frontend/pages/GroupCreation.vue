@@ -1,15 +1,19 @@
 <template>
-    <div>
-    <button @click="toggleCalculator" class="calculator-toggle">
-        <i class="fas fa-calculator"></i>
-    </button>
-    <button @click="toggleSimulationControls" class="simulation-controls-toggle">
-        <i class="fas fa-cogs"></i> <!-- Using Font Awesome's cogs icon as an example -->
-    </button>
-    <InvestmentCalculator v-if="showCalculator" />
-    <SimulationControls v-if="showSimulationControls" />
-
+  <div class="container">
+    <header class="header">
       <h1>Group Management</h1>
+      <div class="toolbar">
+        <button @click="toggleCalculator" class="calculator-toggle">
+          <i class="fas fa-calculator"></i>
+        </button>
+        <button @click="toggleSimulationControls" class="simulation-controls-toggle">
+          <i class="fas fa-cogs"></i>
+        </button>
+        <InvestmentCalculator v-if="showCalculator" />
+        <SimulationControls v-if="showSimulationControls" />
+      </div>
+    </header>
+    <main>
       <div class="groups">
         <div v-for="(group, index) in groups" :key="index" class="group">
           <div class="group-header">
@@ -48,17 +52,22 @@
             </div>
           </div>
         </div>
+        <button @click="addGroup" class="add-group-btn">Add Group</button>
       </div>
-      <button @click="addGroup" class="add-group-btn">Add Group</button>
+
       <button @click="startSimulation" class="modern-button">Go to Simulation</button>
+    </main>
     </div>
+
 
     <div class="modal" v-if="showModal">
       <div class="modal-content">
         <span class="close" @click="toggleModal">&times;</span>
         <h3>Add a new group</h3>
-        <input type="text" v-model="newGroupName" placeholder="Enter group name">
-        <button @click="confirmAddGroup">Confirm</button>
+        <form @submit.prevent="confirmAddGroup">
+          <input type="text" v-model="newGroupName" placeholder="Enter group name" required autofocus>
+          <button @click="confirmAddGroup">Confirm</button>
+        </form>
       </div>
     </div>
   </template>
