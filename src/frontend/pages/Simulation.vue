@@ -78,23 +78,27 @@
         </table>
 
         <asset-growth-chart :chart-data="generateChartData()"></asset-growth-chart>
+        <button v-if="displaySimulation" @click="updateValuesForNextQuarter" class="modern-button">Next Quarter</button>
+
+        <!-- <asset-growth-chart :chart-data="generateAssetChangesChartData()"></asset-growth-chart> -->
+        <asset-changes-chart />
 
       </div>
       <button v-if="!displaySimulation" @click="startSimulation" class="modern-button">Start Simulation</button>
-      <button v-if="displaySimulation" @click="updateValuesForNextMonth" class="modern-button">Next Month</button>
-      <button v-if="displaySimulation" @click="updateValuesForNextQuarter" class="modern-button">Next Quarter</button>
-  </div>
+    </div>
 </template>
 
 <script>
 
 import { getFirestore, collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import AssetGrowthChart from '../components/charts/AssetGrowthChart.vue';
+import AssetChangesChart from '../components/charts/AssetChangesChart.vue';
 
 export default {
   name: 'SimulationPage',
   components: {
     AssetGrowthChart,
+    AssetChangesChart,
   },
   data() {
       return {
@@ -258,8 +262,32 @@ export default {
           datasets
         };
       },
+      generateAssetChangesChartData() {
+        const assetTypes = ['Equity', 'Bonds', 'RealEstate', 'Banks', 'Other']; // Define asset types directly
+        const labels = ['Initial Value'].concat(
+          Array.from({ length: this.simulationYears * 4 }, (_, i) => `Q${i + 1}`)
+        );
 
+        const datasets = assetTypes.map((type) => {
+          const data = [0]; // Initial value for the chart (no change at the start)
 
+          for (let year = 0; year < this.simulationYears; year++) {
+            for (const quarter of ['Jan-Mar', 'Apr-Jun', 'Jul-Sep', 'Oct-Dec']) {
+              const change = this.assetChanges[year]?.[quarter]?.[type] || 0;
+              data.push(change);
+            }
+          }
+
+          return {
+            label: type,
+            data,
+            fill: false,
+            borderColor: this.getRandomColor(),
+          };
+        });
+
+        return { labels, datasets };
+      },
 
       getRandomColor() {
         // This is a simple method to generate random colors. You might want to customize this.
@@ -269,7 +297,7 @@ export default {
           color += letters[Math.floor(Math.random() * 16)];
         }
         return color;
-      }
+      },
     },
 };
 </script>
