@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="displaySimulation" class="simulation-table">
+    <div class="simulation-table">
       <h2>Simulation Data</h2>
       <table>
         <thead>
@@ -25,6 +25,13 @@
         </tbody>
       </table>
 
+      <div class="pie-charts-row">
+        <div class="pie-chart-container" v-for="(group, index) in groups" :key="'pie-chart-container-' + index">
+          <h3>{{ group.name }}</h3> <!-- This is the label displaying the group name -->
+          <canvas :id="'pieChart-' + index"></canvas>
+        </div>
+      </div>
+      
       <h2>Asset Changes from Firebase</h2>
         <table>
           <thead>
@@ -59,7 +66,7 @@
             <tr>
               <th>Group Name</th>
               <th>Asset Type</th>
-              <th>Initial Value</th> <!-- Explicitly add "Initial Value" header -->
+              <th>Initial Value</th>
               <th v-for="n in simulationYears * 4" :key="'quarter-header-' + n">Q{{ n }}</th>
             </tr>
           </thead>
@@ -78,14 +85,10 @@
         </table>
 
         <asset-growth-chart :chart-data="generateChartData()"></asset-growth-chart>
-        <button v-if="displaySimulation" @click="updateValuesForNextQuarter" class="modern-button">Next Quarter</button>
-
-        <!-- <asset-growth-chart :chart-data="generateAssetChangesChartData()"></asset-growth-chart> -->
+        <button @click="updateValuesForNextQuarter" class="modern-button">Next Quarter</button>
         <asset-changes-chart />
-
-      </div>
-      <button v-if="!displaySimulation" @click="startSimulation" class="modern-button">Start Simulation</button>
     </div>
+  </div>
 </template>
 
 <script>
@@ -93,6 +96,8 @@
 import { getFirestore, collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import AssetGrowthChart from '../components/charts/AssetGrowthChart.vue';
 import AssetChangesChart from '../components/charts/AssetChangesChart.vue';
+import Chart from 'chart.js';
+// import AssetChangesChart from '../components/charts/newACC.vue';
 
 export default {
   name: 'SimulationPage',
@@ -103,7 +108,6 @@ export default {
   data() {
       return {
           groups: [],
-          displaySimulation: false,
           simulationMonths: 0,
           simulationYears: 1,
           assetChanges: [],
@@ -114,6 +118,11 @@ export default {
   async created() {
       await this.fetchGroups();
       await this.fetchAssetChanges();
+      this.$nextTick(() => {
+      if (this.groups.length > 0) {
+        this.renderAllPieCharts();
+      }
+    });
   },
   methods: {
       async fetchGroups() {
@@ -162,7 +171,6 @@ export default {
         });
       },
       startSimulation() {
-          this.displaySimulation = true;
           this.currentQuarterIndex = 0;
       },
 
@@ -298,7 +306,88 @@ export default {
         }
         return color;
       },
+      renderAllPieCharts() {
+        this.groups.forEach((group, index) => {
+          this.$nextTick(() => {
+            this.renderPieChart(group, index);
+          });
+        });
+      },
+
+      renderPieChart(group, index) {
+      const canvasId = `pieChart-${index}`;
+      this.$nextTick(() => {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) {
+          console.error(`Canvas element for group ${index} not found.`);
+          return;
+        }
+        const ctx = canvas.getContext('2d');
+        const chartData = this.prepareChartData(group);
+        this.initializeChart(ctx, chartData);
+      });
     },
+
+    prepareChartData(group) {
+      // Prepares and returns chart data based on the group
+      return {
+        labels: ['Equity', 'Bonds', 'Real Estate', 'Bank Accounts', 'Other'],
+        datasets: [{
+          data: [group.equity, group.bonds, group.realestate, group.banks, group.other],
+          backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'],
+          label: 'Asset Distribution',
+        }]
+      };
+    },
+
+    initializeChart(ctx, chartData) {
+      // Initializes a chart on the provided context with the given data
+      new Chart(ctx, {
+        type: 'pie',
+        data: chartData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          aspectRatio: 1,
+          legend: {
+            display: true,
+            position: 'right',
+            labels: {
+              fontColor: '#FFFFFF', // Color of text
+              fontSize: 14, // Size of the text
+              fontFamily: 'Helvetica', // Font family of the text
+              boxWidth: 20, // Width of colored box
+              usePointStyle: true, // Use point style instead of box
+            },
+          },
+          tooltips: {
+            enabled: true,
+            mode: 'nearest',
+            intersect: false,
+            backgroundColor: 'rgba(0,0,0,0.8)', // Tooltip background color
+            titleFontFamily: 'Helvetica', // Font family for tooltip title
+            titleFontSize: 20, // Font size for tooltip title
+            titleFontStyle: 'bold', // Font style for tooltip title
+            bodyFontFamily: 'Arial', // Font family for tooltip body
+            bodyFontSize: 15, // Font size for tooltip body
+            bodyFontStyle: 'normal', // Font style for tooltip body
+            cornerRadius: 30, // Corner radius of tooltip
+            xPadding: 10, // Padding inside tooltip (x-axis)
+            yPadding: 10, // Padding inside tooltip (y-axis)
+            caretSize: 5, // Size of the tooltip arrow
+            displayColors: true, // Display color boxes in the tooltip
+          },
+          animation: {
+            animateRotate: true,
+            animateScale: true,
+          },
+          cutoutPercentage: 10,
+          rotation: -0.5 * Math.PI,
+          circumference: 2 * Math.PI,
+        },
+      });
+    },
+  },
 };
 </script>
 
