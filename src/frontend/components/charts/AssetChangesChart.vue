@@ -3,19 +3,67 @@
       <div class="asset-changes-chart-container">
         <canvas ref="assetChangesChart" height="100"></canvas>
       </div>
-      
+
+      <div class="event-buttons-container">
+        <template v-for="(yearEvents, year) in events" :key="year">
+          <button
+            v-for="(event, quarter) in yearEvents"
+            :key="`${year}-${quarter}`"
+            @click="showEventModal(event)"
+          >
+            Show {{ event.name }} for {{ quarter }} {{ year }}
+          </button>
+        </template>
+      </div>
+
+
       <div class="buttons-container">
         <button v-for="asset in assetTypes" :key="asset" @click="updateAssetData(asset)">
             Update {{ asset }} Next Quarter
         </button>
         </div>
 
+        <!-- <div class="events-container">
+          <h3>Events</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Year</th>
+                <th>Quarter</th>
+                <th>Event Name</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template v-for="(yearEvents, year) in events">
+                <tr v-for="(event, quarter) in yearEvents" :key="`${year}-${quarter}`">
+                  <td>{{ year }}</td>
+                  <td>{{ quarter }}</td>
+                  <td>{{ event.name }}</td>
+                  <td>{{ event.description }}</td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div> -->
+
+        <div v-if="showModal" class="modal" @click="closeEventModal()">
+          <div class="modal-content" @click.stop>
+            <span class="close" @click="closeEventModal()">&times;</span>
+            <p>{{ currentEvent.name }}</p>
+            <p>{{ currentEvent.description }}</p>
+            <button @click="showModal = false">Close</button>
+          </div>
+        </div>
+        
       </div>
   </template>
   
   <script>
   import { getFirestore, doc, getDoc } from 'firebase/firestore';
   import Chart from 'chart.js';
+  import 'chartjs-plugin-annotation';
+
   
   export default {
     name: 'AssetChangesChart',
@@ -24,13 +72,17 @@
         assetChanges: [],
         assetChangesChart: null,
         assetTypes: ['Equity', 'Bonds', 'RealEstate', 'Banks', 'Other'],
+        quarters: ['Jan-Mar', 'Apr-Jun', 'Jul-Sep', 'Oct-Dec'],
         currentQuarters: {
-            Equity: 0,
-            Bonds: 0,
-            RealEstate: 0,
-            Banks: 0,
-            Other: 0,
-            },
+          Equity: 0,
+          Bonds: 0,
+          RealEstate: 0,
+          Banks: 0,
+          Other: 0,
+          },
+        events: {},
+        showModal: false,
+        currentEvent: null,
       };
     },
     methods: {
@@ -38,19 +90,22 @@
         const db = getFirestore();
         const docRef = doc(db, 'Simulation Controls', 'Controls');
         const docSnap = await getDoc(docRef);
-  
+
         if (docSnap.exists()) {
-          this.assetChanges = docSnap.data().assetChanges;
+          const data = docSnap.data();
+          this.assetChanges = data.assetChanges;
+          this.events = data.events || {}; // Add this line
           this.generateChart();
         } else {
           console.log("No such document!");
         }
       },
+
       generateChart() {
         const totalQuarters = this.assetChanges.length * 4;
         const labels = ['Initial Value'].concat(Array.from({ length: totalQuarters }, (_, i) => `Q${i + 1}`));
-  
-        const datasets = this.assetTypes.map((type) => {
+
+        const datasets = this.assetTypes.map(type => {
           const data = new Array(totalQuarters + 1).fill(null);
           data[0] = 0; // Initial value
           
@@ -61,9 +116,39 @@
             borderColor: this.getRandomColor(),
           };
         });
-  
+
+        console.log(this.quarters);
+
+        // Calculate event annotations
+        const annotations = Object.entries(this.events).flatMap(([year, yearEvents]) => {
+          return Object.entries(yearEvents).map(([quarter, event]) => {
+            const quarterIndex = this.quarters.indexOf(quarter) + 1; // Assuming quarters are ['Jan-Mar', 'Apr-Jun', 'Jul-Sep', 'Oct-Dec']
+            const yearIndex = parseInt(year, 10) - 1; // Assuming year starts from 1 in your data
+            const labelIndex = yearIndex * 4 + quarterIndex;
+
+            return {
+              type: 'line',
+              mode: 'vertical',
+              scaleID: 'x-axis-0',
+              value: labels[labelIndex],
+              borderColor: 'rgba(255,0,0,1)',
+              borderWidth: 12,
+              label: {
+                enabled: true,
+                content: event.name,
+                position: "top",
+                xAdjust: 80, // Move label 10px to the right
+                backgroundColor: 'rgba(255,255,255,0.3)',
+                fontSize: 16,
+                fontColor: '#000', // Ensuring the text is readable
+                padding: 6
+              }
+            };
+          });
+        });
+
         const chartData = { labels, datasets };
-  
+
         const ctx = this.$refs.assetChangesChart.getContext('2d');
         this.assetChangesChart = new Chart(ctx, {
           type: 'line',
@@ -74,9 +159,14 @@
                 beginAtZero: true,
               },
             },
+            annotation: {
+              annotations: annotations,
+            },
           },
         });
       },
+
+      
       updateAssetData(assetType) {
         const quarterIndex = this.currentQuarters[assetType];
         if (quarterIndex >= this.assetChanges.length * 4) return; // No more data to update for this asset type
@@ -103,10 +193,23 @@
         }
         return color;
       },
+      showEventModal(event) {
+        this.currentEvent = event;
+        this.showModal = true;
+      },
+      closeEventModal() {
+        this.showModal = false; // Assuming showModal is a boolean controlling the modal's visibility
+      },
     },
     mounted() {
       this.fetchAssetChanges();
+      this.$nextTick(() => {
+        const canvas = this.$refs.assetChangesChart;
+        canvas.addEventListener('click', this.onCanvasClick);
+      });
     },
+    
+
   };
   </script>
   
@@ -146,6 +249,74 @@
     transform: translateY(1px); /* Push down on click */
     box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.2); /* Decrease shadow for pressed effect */
   }
+
+  .events-container {
+  margin-top: 20px;
+}
+
+.events-container h3 {
+  margin-bottom: 10px;
+}
+
+.events-container table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.events-container th, .events-container td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.events-container th {
+  background-color: #f2f2f2;
+}
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.26);
+}
+
+.event-buttons-container {
+  display: flex;
+  flex-wrap: wrap; /* Allows buttons to wrap to the next line if they don't fit */
+  justify-content: center; /* Center the buttons container */
+  gap: 10px; /* Spacing between buttons */
+  padding: 20px 0; /* Padding above and below the container */
+  margin-top: 20px; /* Space between the chart and the buttons */
+  border-top: 1px solid #ccc; /* A line to separate the chart from the buttons */
+}
+
+.event-buttons-container button {
+  padding: 10px 15px; /* Padding inside the buttons */
+  background-color: #ffffff00; /* Button background color */
+  color: rgb(248, 248, 248); /* Text color */
+  border: none; /* Removes the default border */
+  border-radius: 5px; /* Rounded corners */
+  cursor: pointer; /* Changes the cursor to a pointer on hover */
+  transition: background-color 0.3s; /* Smooth transition for background color */
+}
+
+.event-buttons-container button:hover {
+  background-color: #ff0000; /* Darker shade on hover */
+}
+
+.event-buttons-container button:focus {
+  outline: none; /* Removes the outline to keep the design clean */
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.5); /* Adds a focus state for accessibility */
+}
   </style>
-  
-  
