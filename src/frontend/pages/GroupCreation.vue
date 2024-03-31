@@ -2,17 +2,20 @@
   <div class="container">
     <header class="header">
       <h1>Group Management</h1>
-      <div class="toolbar">
+      <img src="../assets/LifeSmartLogo.png" alt="Logo" class="logo">
+      <div>
         <button @click="toggleCalculator" class="calculator-toggle">
           <i class="fas fa-calculator"></i>
         </button>
         <button @click="toggleSimulationControls" class="simulation-controls-toggle">
           <i class="fas fa-cogs"></i>
         </button>
-        <InvestmentCalculator v-if="showCalculator" />
-        <SimulationControls v-if="showSimulationControls" />
       </div>
     </header>
+
+    <InvestmentCalculator v-if="showCalculator" />
+    <SimulationControls v-if="showSimulationControls" />
+
     <main>
       <div class="groups">
         <div v-for="(group, index) in groups" :key="index" class="group">

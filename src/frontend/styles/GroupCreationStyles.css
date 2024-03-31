@@ -13,7 +13,7 @@ body {
 
 
 h1 {
-  text-align: center;
+  text-align: top;
   margin-bottom: 20px;
   color: #FFD700; /* Yellow color */
 }
@@ -163,7 +163,7 @@ h1 {
 
 .calculator-toggle, .simulation-controls-toggle {
   position: absolute;
-  top: 20px;
+  top: 75px;
   right: 20px;
   background: transparent;
   border: none;
@@ -247,13 +247,16 @@ transform: scale(1.1);
 }
 
 .header {
-  background-color: #004d99; /* Deep blue background */
-  color: #ffffff; /* White text color */
-  padding: 20px 40px; /* Ample padding for visual space */
+  width: 100%;
+  background-color: #004d99; /* Adjust the color as needed */
+  color: #ffffff;
+  padding: 20px 40px;
+  margin: 0;
+  box-sizing: border-box; /* Ensures padding doesn't add to the total width */
   display: flex;
-  justify-content: space-between; /* Space out title and toolbar */
-  align-items: center; /* Vertically center content */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Soft shadow for depth */
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .header h1 {
@@ -277,12 +280,20 @@ button {
 }
 
 button:hover {
-  background-color: #005cb8; /* Darker blue on hover */
+  background-color: #005cb800; /* Darker blue on hover */
   transform: scale(1.05); /* Slightly larger on hover */
 }
 
 button:active {
   transform: scale(0.95); /* Slightly smaller when clicked */
+}
+
+
+.logo {
+  height: auto; /* Maintain aspect ratio */
+  width: 400px; /* Example width; adjust as needed */
+  display: block; /* To prevent inline default behavior */
+  margin: 0 auto; /* Center the logo if the container allows */
 }
 
 /* Font Awesome Icons */
