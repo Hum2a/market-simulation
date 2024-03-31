@@ -116,6 +116,7 @@
       },
     },
     methods: {
+
       initializeAssetChanges(years) {
         this.assetChanges = Array.from({ length: years }, () => {
           return this.quarters.reduce((acc, quarter) => {
@@ -127,19 +128,32 @@
           }, {});
         });
       },
+
       async onSubmit() {
         const db = getFirestore();
         const docRef = doc(db, 'Simulation Controls', 'Controls');
-        await setDoc(docRef, {
+
+        // Prepare the data to update, directly including the events from the component's state
+        let updatedData = {
           years: this.years,
           assetChanges: this.assetChanges,
-        }).then(() => console.log('Controls saved')).catch(console.error);
+          events: this.events // Directly use the updated events object
+        };
+
+        try {
+          await setDoc(docRef, updatedData);
+          console.log('All changes, including events, have been saved to Firestore');
+        } catch (error) {
+          console.error('Error saving data to Firestore:', error);
+        }
       },
+
       getColorForYear(index) {
         // Generate a color based on the year index
         const hue = (index * 137) % 360; // Use a simple algorithm to generate a hue
         return `hsl(${hue}, 70%, 80%)`; // Return a light color with moderate saturation
     },
+
       handleFileUpload(event) {
           const file = event.target.files[0];
           if (!file) return;
@@ -217,28 +231,22 @@
             this.showEventModal = false;
             },
 
-        async saveEvent() {
-            // Update the events object
-            if (!this.events[this.selectedYear]) {
-                this.events[this.selectedYear] = {};
-            }
-            this.events[this.selectedYear][this.selectedQuarter] = {
-                name: this.eventName,
-                description: this.eventDescription
-            };
+        saveEvent() {
+          // Update the events object in the local state
+          if (!this.events[this.selectedYear]) {
+            this.events[this.selectedYear] = {};
+          }
+          this.events[this.selectedYear][this.selectedQuarter] = {
+            name: this.eventName,
+            description: this.eventDescription
+          };
 
-            // Update Firebase
-            const db = getFirestore();
-            const docRef = doc(db, 'Simulation Controls', 'Controls');
-            await setDoc(docRef, {
-                years: this.years,
-                assetChanges: this.assetChanges,
-                events: this.events
-            }, { merge: true }).then(() => {
-                console.log('Event saved');
-                this.closeEventModal();
-            }).catch(console.error);
+          // Log for confirmation and close the modal
+          console.log('Event added to local state');
+          this.closeEventModal();
         },
+
+
         generateRandomValues() {
             this.assetChanges.forEach(yearData => {
             Object.keys(yearData).forEach(quarter => {
@@ -250,9 +258,9 @@
         },
 
         getRandomNumber() {
-          // Generate a random number between 0 (inclusive) and 10 (exclusive) and fix to 2 decimal places
-          return parseFloat((Math.random() * 10).toFixed(2));
+          return parseFloat((Math.random() * 20 - 10).toFixed(2));
         },
+
 
         toggleEventList() {
             this.showEventList = !this.showEventList;
