@@ -179,7 +179,7 @@ export default {
           const datasets = [];
 
           // Assuming 'groups' within 'quarterResults' has detailed values for each asset type per group
-          const assetTypes = ['Equity', 'Bonds', 'Real Estate', 'Bank Accounts', 'Other'];
+          const assetTypes = ['Equity', 'Bonds', 'RealEstate', 'Banks', 'Other'];
 
           assetTypes.forEach(assetType => {
             const assetData = this.quarterResults.map(quarter => {
