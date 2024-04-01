@@ -398,32 +398,63 @@ export default {
     },
 
     finalValues() {
-      // Prepare the data to be uploaded
-      const finalValues = this.groups.map(group => ({
-        name: group.name,
-        equity: group.futureEquity,
-        bonds: group.futureBonds,
-        realestate: group.futureRealEstate,
-        banks: group.futureBanks,
-        other: group.futureOther,
-      }));
+      // Assuming detailedGrowth has been fully populated during the simulation
+      const finalValues = Object.keys(this.detailedGrowth).map(groupName => {
+        // Initialize an object to hold the final values for the group
+        const groupFinalValues = {
+          name: groupName,
+          equity: 0,
+          bonds: 0,
+          realestate: 0,
+          banks: 0,
+          other: 0,
+        };
 
+        // Extract the final values from the detailedGrowth for each asset type
+        const assetTypes = Object.keys(this.detailedGrowth[groupName]);
+        assetTypes.forEach(assetType => {
+          const values = this.detailedGrowth[groupName][assetType];
+          const finalValue = values[values.length - 1]; // The last value should be the final value after all simulations
+          // Map the detailedGrowth asset types to the groupFinalValues fields
+          switch (assetType) {
+            case 'Equity':
+              groupFinalValues.equity = finalValue;
+              break;
+            case 'Bonds':
+              groupFinalValues.bonds = finalValue;
+              break;
+            case 'RealEstate':
+              groupFinalValues.realestate = finalValue;
+              break;
+            case 'Banks':
+              groupFinalValues.banks = finalValue;
+              break;
+            case 'Other':
+              groupFinalValues.other = finalValue;
+              break;
+          }
+        });
+
+        return groupFinalValues;
+      });
+
+      // Now, finalValues is ready with the actual final values from the simulation
       // Reference to the Firestore service
       const db = getFirestore();
 
-      // Reference to the "Results" collection and "results" document
+      // Reference to the "Results" collection and "Final" document
       const docRef = doc(db, "Results", "Final");
 
-      // Set the finalValues in the "results" document
+      // Set the finalValues in the "Final" document
       setDoc(docRef, { finalValues })
         .then(() => {
-          console.log("Document successfully written!");
-          // You might want to navigate to another page or show a success message
+          console.log("Document successfully written with final simulation results!");
         })
         .catch((error) => {
           console.error("Error writing document: ", error);
         });
     },
+
     quarterValues() {
       const quarterResults = [];
 
