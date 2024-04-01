@@ -29,14 +29,33 @@
       </div>
     </div>
   </div>
+  <div class="awards-container">
+    <BiggestAssetGain />
+    <BiggestAssetLoss />
+    <HighestPortfolioAtAnyTime />
+    <ComebackKing />
+    <!-- <SteadyHandAward /> -->
+  </div>
 </template>
 
 <script>
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import Chart from 'chart.js';
+import BiggestAssetGain from '../components/awards/biggestAssetGain.vue';
+import BiggestAssetLoss from '../components/awards/biggestAssetLoss.vue';
+import HighestPortfolioAtAnyTime from '../components/awards/highestPortfolioAnyTime.vue'
+import ComebackKing from '../components/awards/comeBackKing.vue';
+// import SteadyHandAward from '../components/awards/steadyHand.vue';
 
 export default {
   name: 'ResultsScreen',
+  components: {
+    BiggestAssetGain,
+    BiggestAssetLoss,
+    HighestPortfolioAtAnyTime,
+    ComebackKing,
+    // SteadyHandAward
+  },
   data() {
     return {
       finalResults: [],
@@ -374,6 +393,13 @@ export default {
 .pie-chart-container, .line-chart-container {
   flex: 1;
   padding: 10px; /* Provides some spacing around each chart */
+}
+
+.awards-container {
+  display: flex;
+  justify-content: flex-start; /* Align items to the start of the container */
+  align-items: center; /* Align items vertically in the center */
+  gap: 20px; /* Creates space between the child elements */
 }
 
 /* Additional styling for chart elements if possible */
