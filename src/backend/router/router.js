@@ -3,6 +3,7 @@ import GroupCreation from '../../frontend/pages/GroupCreation.vue';
 import SimulationPage from '../../frontend/pages/Simulation.vue';
 import SimulationControls from '../../frontend/pages/SimulationControls.vue';
 import SimulationTest from '../../frontend/pages/SimulationTest.vue';
+import ResultsScreen from '../../frontend/pages/ResultsScreen.vue';
 
 // Define your routes as before
 const routes = [
@@ -30,6 +31,11 @@ const routes = [
     name: "SimulationTest",
     component: SimulationTest,
   },
+  {
+    path: '/results-screen',
+    name: "ResultsScreen",
+    component: ResultsScreen,
+  }
 ];
 
 // Create a router instance using createRouter and createWebHistory

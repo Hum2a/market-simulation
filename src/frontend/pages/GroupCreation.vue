@@ -136,7 +136,7 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
       },
       async clearGroups() {
         const db = getFirestore();
-        const querySnapshot = await getDocs(query(collection(db, 'groups')));
+        const querySnapshot = await getDocs(query(collection(db, 'Groups')));
         const batch = writeBatch(db);
 
         querySnapshot.forEach((doc) => {
@@ -152,7 +152,7 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
         try {
             await Promise.all(this.groups.map(group => {
                 // Use the group name as the document ID
-                const groupDocRef = doc(db, 'groups', group.name);
+                const groupDocRef = doc(db, 'Groups', group.name);
                 return setDoc(groupDocRef, group);
             }));
         } catch (err) {

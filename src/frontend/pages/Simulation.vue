@@ -31,7 +31,7 @@
           <canvas :id="'pieChart-' + index"></canvas>
         </div>
       </div>
-      
+
       <h2>Asset Changes from Firebase</h2>
         <table>
           <thead>
@@ -88,15 +88,17 @@
         <button @click="updateValuesForNextQuarter" class="modern-button">Next Quarter</button>
         <asset-changes-chart />
     </div>
+    <button @click="finishSimulation" class="modern-button">Finish Simulation</button>
   </div>
 </template>
 
 <script>
 
-import { getFirestore, collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, doc, getDoc, setDoc } from 'firebase/firestore';
 import AssetGrowthChart from '../components/charts/AssetGrowthChart.vue';
 import AssetChangesChart from '../components/charts/AssetChangesChart.vue';
 import Chart from 'chart.js';
+import { useRouter } from 'vue-router';
 // import AssetChangesChart from '../components/charts/newACC.vue';
 
 export default {
@@ -105,6 +107,13 @@ export default {
     AssetGrowthChart,
     AssetChangesChart,
   },
+  setup() {
+        const router = useRouter();
+
+        return {
+            router,
+        };
+    },
   data() {
       return {
           groups: [],
@@ -127,7 +136,7 @@ export default {
   methods: {
       async fetchGroups() {
         const db = getFirestore();
-        const querySnapshot = await getDocs(collection(db, "groups"));
+        const querySnapshot = await getDocs(collection(db, "Groups"));
         this.groups = querySnapshot.docs.map(doc => {
           // Map document data to include future values initialized to current values
           const data = doc.data();
@@ -387,6 +396,80 @@ export default {
         },
       });
     },
+
+    finalValues() {
+      // Prepare the data to be uploaded
+      const finalValues = this.groups.map(group => ({
+        name: group.name,
+        equity: group.futureEquity,
+        bonds: group.futureBonds,
+        realestate: group.futureRealEstate,
+        banks: group.futureBanks,
+        other: group.futureOther,
+      }));
+
+      // Reference to the Firestore service
+      const db = getFirestore();
+
+      // Reference to the "Results" collection and "results" document
+      const docRef = doc(db, "Results", "Final");
+
+      // Set the finalValues in the "results" document
+      setDoc(docRef, { finalValues })
+        .then(() => {
+          console.log("Document successfully written!");
+          // You might want to navigate to another page or show a success message
+        })
+        .catch((error) => {
+          console.error("Error writing document: ", error);
+        });
+    },
+    quarterValues() {
+      const quarterResults = [];
+
+      // Iterate through each group's growth details
+      Object.keys(this.detailedGrowth).forEach(groupName => {
+        const groupData = this.detailedGrowth[groupName];
+        Object.keys(groupData).forEach(assetType => {
+          const quarterlyValues = groupData[assetType];
+          // Push each quarter's data into the quarterResults array
+          quarterlyValues.forEach((value, quarterIndex) => {
+            // Adjust index for labeling to account for the "Initial Value"
+            let label = quarterIndex === 0 ? "Initial Value" : `Q${quarterIndex}`;
+            
+            if (!quarterResults[quarterIndex]) {
+              quarterResults[quarterIndex] = { quarter: label, groups: {} };
+            }
+            if (!quarterResults[quarterIndex].groups[groupName]) {
+              quarterResults[quarterIndex].groups[groupName] = {};
+            }
+            // Store each asset type's value under the respective group and quarter
+            quarterResults[quarterIndex].groups[groupName][assetType] = value;
+          });
+        });
+      });
+
+      // Reference to the Firestore service
+      const db = getFirestore();
+
+      // Reference to the "Results" collection and "Quarters" document
+      const docRef = doc(db, "Results", "Quarters");
+
+      // Set the quarterResults in the "Quarters" document
+      setDoc(docRef, { quarterResults })
+        .then(() => {
+          console.log("Quarterly results successfully written to Firestore!");
+          // Optional: Navigate to results screen or show a success message
+        })
+        .catch((error) => {
+          console.error("Error writing quarterly results to Firestore: ", error);
+        });
+    },
+    finishSimulation() {
+      this.finalValues();
+      this.quarterValues();
+      this.router.push({ name: 'ResultsScreen' });
+    }
   },
 };
 </script>
