@@ -22,8 +22,6 @@
     data() {
       return {
         chartInstance: null,
-        isPaused: true,
-        animationFrameId: null,
       };
     },
     watch: {
@@ -57,28 +55,6 @@
             maintainAspectRatio: false,
           },
         });
-      },
-      pauseAnimation() {
-        this.isPaused = true;
-        if (this.animationFrameId) {
-          cancelAnimationFrame(this.animationFrameId);
-          this.animationFrameId = null;
-        }
-      },
-      resumeAnimation() {
-        if (!this.isPaused) return;
-        this.isPaused = false;
-        this.animateChart();
-      },
-      animateChart() {
-        if (this.isPaused) return;
-        // Example of updating chart data (you'll need to customize this)
-        // Assuming your data structure allows, you might add or update a data point here.
-        // this.chartData.datasets[0].data.push(newValue);
-
-        this.chartInstance.update();
-        // Call animateChart again using requestAnimationFrame to continue the loop
-        this.animationFrameId = requestAnimationFrame(this.animateChart);
       },
     },
     beforeUnmount() {

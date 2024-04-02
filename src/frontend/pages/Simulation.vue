@@ -84,7 +84,28 @@
           </tbody>
         </table>
 
+        <h2>Total Portfolio Values by Quarter</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Group Name</th>
+                <th>Initial Value</th> <!-- Ensure this is included -->
+                <th v-for="n in simulationYears * 4" :key="'total-quarter-header-' + n">Q{{ n }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(totals, groupName) in totalPortfolioValues" :key="groupName">
+                <td>{{ groupName }}</td>
+                <td v-for="total in totals" :key="groupName + '-' + total">
+                  {{ total.toFixed(2) }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+
         <asset-growth-chart :chart-data="generateChartData()"></asset-growth-chart>
+        <asset-growth-chart :chart-data="generateTotalPortfolioChartData()"></asset-growth-chart>
         <button @click="updateValuesForNextQuarter" class="modern-button">Next Quarter</button>
         <asset-changes-chart />
     </div>
@@ -122,6 +143,7 @@ export default {
           assetChanges: [],
           detailedGrowth: {},
           currentQuarterIndex: 0,
+          totalPortfolioValues: {},
       };
   },
   async created() {
@@ -149,6 +171,14 @@ export default {
             futureBanks: data.banks,
             futureOther: data.other,
           };
+        });
+
+        this.groups.forEach(group => {
+          const groupName = group.name;
+          const initialTotal = ['equity', 'bonds', 'realestate', 'banks', 'other']
+            .reduce((total, key) => total + parseFloat(group[key] || 0), 0);
+
+          this.totalPortfolioValues[groupName] = [initialTotal]; // Store initial total as the first entry
         });
       },
       async fetchAssetChanges() {
@@ -200,10 +230,6 @@ export default {
           });
         }
       },
-      updateValuesForNextMonth() {
-          // Implement logic as needed for updating values for the next month
-          this.simulationMonths += 1;
-      },
 
       updateValuesForNextQuarter() {
         // Check if the next quarter's data is available
@@ -242,6 +268,17 @@ export default {
             }
             this.detailedGrowth[group.name][assetType].push(newValue);
           });
+        });
+
+        this.groups.forEach(group => {
+          const groupName = group.name;
+          const totalValue = ['equity', 'bonds', 'realestate', 'banks', 'other']
+            .reduce((total, key) => total + parseFloat(group[key] || 0), 0);
+
+          if (!this.totalPortfolioValues[groupName]) {
+            this.totalPortfolioValues[groupName] = [];
+          }
+          this.totalPortfolioValues[groupName].push(totalValue);
         });
 
         // Advance to the next quarter for the next button press
@@ -300,6 +337,32 @@ export default {
             data,
             fill: false,
             borderColor: this.getRandomColor(),
+            tension: 0.5
+          };
+        });
+
+        return { labels, datasets };
+      },
+
+      generateTotalPortfolioChartData() {
+        const labels = ['Initial'].concat(Array.from({ length: this.simulationYears * 4 }, (_, i) => `Q${i + 1}`));
+        const datasets = Object.keys(this.totalPortfolioValues).map(groupName => {
+          // Extract the values array for the current groupName
+          const values = this.totalPortfolioValues[groupName];
+          // Ensure the values array only extends up to the current quarter index + 1 for the initial value
+          const adjustedValues = [values[0]].concat(values.slice(1, this.currentQuarterIndex + 1));
+
+          // Fill the rest of the array with nulls up to the total number of quarters + initial value
+          while (adjustedValues.length < this.simulationYears * 4 + 1) {
+            adjustedValues.push(null);
+          }
+
+          return {
+            label: groupName,
+            data: adjustedValues,
+            fill: false,
+            borderColor: this.getRandomColor(),
+            tension: 0.1 // Adds a slight curve to lines
           };
         });
 

@@ -90,7 +90,7 @@ input[type=number]:focus {
 
 /* Style for hover state */
 input[type=number]:hover {
-  background-color: #f7f7f7; /* A slight grey background on hover */
+  background-color: #7a7800; /* A slight grey background on hover */
 }
 
 .save-button {
