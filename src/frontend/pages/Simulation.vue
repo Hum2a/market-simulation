@@ -102,12 +102,10 @@
               </tr>
             </tbody>
           </table>
-
-
-        <asset-growth-chart :chart-data="generateChartData()"></asset-growth-chart>
+        <asset-changes-chart />
         <asset-growth-chart :chart-data="generateTotalPortfolioChartData()"></asset-growth-chart>
         <button @click="updateValuesForNextQuarter" class="modern-button">Next Quarter</button>
-        <asset-changes-chart />
+
     </div>
     <button @click="finishSimulation" class="modern-button">Finish Simulation</button>
   </div>
@@ -120,7 +118,6 @@ import AssetGrowthChart from '../components/charts/AssetGrowthChart.vue';
 import AssetChangesChart from '../components/charts/AssetChangesChart.vue';
 import Chart from 'chart.js';
 import { useRouter } from 'vue-router';
-// import AssetChangesChart from '../components/charts/newACC.vue';
 
 export default {
   name: 'SimulationPage',
@@ -144,6 +141,7 @@ export default {
           detailedGrowth: {},
           currentQuarterIndex: 0,
           totalPortfolioValues: {},
+          colorPalette: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FAA74B', '#9D56F7', '#5A6FFA', '#56D9FA', '#FAB256'],
       };
   },
   async created() {
@@ -281,41 +279,39 @@ export default {
           this.totalPortfolioValues[groupName].push(totalValue);
         });
 
-        // Advance to the next quarter for the next button press
         this.currentQuarterIndex++;
 
-        // Optionally, invoke any method to refresh or update dependent UI elements here, if necessary
       },
-      generateChartData() {
-        const datasets = [];
-        // Start with 'Initial Value', followed by the quarters
-        const labels = ['Initial Value'].concat(Array.from({ length: this.simulationYears * 4 }, (_, i) => `Q${i + 1}`));
+      // generateChartData() {
+      //   const datasets = [];
+      //   // Start with 'Initial Value', followed by the quarters
+      //   const labels = ['Initial Value'].concat(Array.from({ length: this.simulationYears * 4 }, (_, i) => `Q${i + 1}`));
 
-        Object.entries(this.detailedGrowth).forEach(([groupName, assets]) => {
-          Object.entries(assets).forEach(([assetType, values]) => {
-            // Create a copy of the values array starting from the second element
-            const adjustedValues = [values[0]].concat(values.slice(1, this.currentQuarterIndex + 1));
+      //   Object.entries(this.detailedGrowth).forEach(([groupName, assets]) => {
+      //     Object.entries(assets).forEach(([assetType, values]) => {
+      //       // Create a copy of the values array starting from the second element
+      //       const adjustedValues = [values[0]].concat(values.slice(1, this.currentQuarterIndex + 1));
 
-            // Fill the rest of the array with nulls up to the total number of quarters
-            while (adjustedValues.length < this.simulationYears * 4 + 1) {
-              adjustedValues.push(null);
-            }
+      //       // Fill the rest of the array with nulls up to the total number of quarters
+      //       while (adjustedValues.length < this.simulationYears * 4 + 1) {
+      //         adjustedValues.push(null);
+      //       }
 
-            const dataset = {
-              label: `${groupName} - ${assetType}`,
-              data: adjustedValues,
-              fill: false,
-              borderColor: this.getRandomColor(),
-            };
-            datasets.push(dataset);
-          });
-        });
+      //       const dataset = {
+      //         label: `${groupName} - ${assetType}`,
+      //         data: adjustedValues,
+      //         fill: false,
+      //         borderColor: this.getRandomColor(),
+      //       };
+      //       datasets.push(dataset);
+      //     });
+      //   });
 
-        return {
-          labels,
-          datasets
-        };
-      },
+      //   return {
+      //     labels,
+      //     datasets
+      //   };
+      // },
       generateAssetChangesChartData() {
         const assetTypes = ['Equity', 'Bonds', 'RealEstate', 'Banks', 'Other']; // Define asset types directly
         const labels = ['Initial Value'].concat(
@@ -346,10 +342,11 @@ export default {
 
       generateTotalPortfolioChartData() {
         const labels = ['Initial'].concat(Array.from({ length: this.simulationYears * 4 }, (_, i) => `Q${i + 1}`));
+        let colorIndex = 0; // Start with the first color in the palette
+
         const datasets = Object.keys(this.totalPortfolioValues).map(groupName => {
-          // Extract the values array for the current groupName
-          const values = this.totalPortfolioValues[groupName];
           // Ensure the values array only extends up to the current quarter index + 1 for the initial value
+          const values = this.totalPortfolioValues[groupName];
           const adjustedValues = [values[0]].concat(values.slice(1, this.currentQuarterIndex + 1));
 
           // Fill the rest of the array with nulls up to the total number of quarters + initial value
@@ -357,13 +354,16 @@ export default {
             adjustedValues.push(null);
           }
 
-          return {
+          const dataset = {
             label: groupName,
             data: adjustedValues,
             fill: false,
-            borderColor: this.getRandomColor(),
+            borderColor: this.colorPalette[colorIndex % this.colorPalette.length], // Use the color from the palette
             tension: 0.1 // Adds a slight curve to lines
           };
+
+          colorIndex++; // Move to the next color in the palette for the next group
+          return dataset;
         });
 
         return { labels, datasets };
