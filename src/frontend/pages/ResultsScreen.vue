@@ -29,6 +29,10 @@
       </div>
     </div>
   </div>
+
+  <!-- Restart Button -->
+  <button @click="restartSimulation" class="restart-button">Restart Simulation</button>
+
   <div class="awards-container">
     <BiggestAssetGain />
     <BiggestAssetLoss />
@@ -277,6 +281,11 @@ export default {
         }
         return color;
       },
+      restartSimulation() {
+        // Navigate to the GroupCreation component
+        this.$router.push({ name: 'GroupCreation' }); // Use the route name or path you have defined
+      },
+
   }
 };
 
@@ -401,6 +410,43 @@ export default {
   align-items: center; /* Align items vertically in the center */
   gap: 20px; /* Creates space between the child elements */
 }
+
+/* Restart Button Styling with Shimmer Effect */
+.restart-button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+  color: #fff; /* White text */
+  background: #002a56; /* Initial background color */
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden; /* Ensures the shimmer effect stays within the button boundaries */
+}
+
+.restart-button::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -150%; /* Start from the left */
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: shimmer 2s infinite; /* Adjust duration as needed */
+}
+
+@keyframes shimmer {
+  to {
+    left: 150%; /* Move the gradient to the right */
+  }
+}
+
+.restart-button:hover {
+  background-color: #0056b3; /* Darker blue on hover */
+}
+
+
 
 /* Additional styling for chart elements if possible */
 .chartjs-render-monitor {
