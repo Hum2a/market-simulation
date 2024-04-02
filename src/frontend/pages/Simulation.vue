@@ -1,5 +1,8 @@
 <template>
   <div>
+    <asset-changes-chart />
+    <asset-growth-chart :chart-data="generateTotalPortfolioChartData()"></asset-growth-chart>
+    <button @click="updateValuesForNextQuarter" class="modern-button">Next Quarter</button>
     <div class="simulation-table">
       <h2>Simulation Data</h2>
       <table>
@@ -102,9 +105,6 @@
               </tr>
             </tbody>
           </table>
-        <asset-changes-chart />
-        <asset-growth-chart :chart-data="generateTotalPortfolioChartData()"></asset-growth-chart>
-        <button @click="updateValuesForNextQuarter" class="modern-button">Next Quarter</button>
 
     </div>
     <button @click="finishSimulation" class="modern-button">Finish Simulation</button>
