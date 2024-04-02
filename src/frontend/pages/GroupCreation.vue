@@ -13,7 +13,6 @@
       </div>
     </header>
 
-    <InvestmentCalculator v-if="showCalculator" />
     <SimulationControls v-if="showSimulationControls" />
 
     <main>
@@ -80,13 +79,11 @@
 import Chart from 'chart.js';
 import { useRouter } from 'vue-router';
 import { getFirestore, doc, setDoc, collection, query, getDocs, writeBatch} from 'firebase/firestore';
-import InvestmentCalculator from '../components/InvestmentCalculator/InvestmentCalculator.vue';
 import SimulationControls from './SimulationControls.vue'; // Adjust the path as necessary
 
   export default {
     name: 'GroupCreation',
     components: {
-    InvestmentCalculator,
     SimulationControls,
     },
     setup() {
@@ -233,7 +230,7 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
         }, 0);
       },
       toggleCalculator() {
-        this.showCalculator = !this.showCalculator;
+        this.router.push({ name: 'InvestmentCalculator' });
     },
       toggleSimulationControls() {
           this.showSimulationControls = !this.showSimulationControls;

@@ -3,6 +3,7 @@ import GroupCreation from '../../frontend/pages/GroupCreation.vue';
 import SimulationPage from '../../frontend/pages/Simulation.vue';
 import SimulationControls from '../../frontend/pages/SimulationControls.vue';
 import ResultsScreen from '../../frontend/pages/ResultsScreen.vue';
+import InvestmentCalculator from '../../frontend/pages/InvestmentCalculator.vue';
 
 // Define your routes as before
 const routes = [
@@ -29,6 +30,11 @@ const routes = [
     path: '/results-screen',
     name: "ResultsScreen",
     component: ResultsScreen,
+  },
+  {
+    path: '/investment-calculator',
+    name: "InvestmentCalculator",
+    component: InvestmentCalculator,
   }
 ];
 

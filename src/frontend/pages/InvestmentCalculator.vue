@@ -1,15 +1,5 @@
 <template>
-  <div
-    class="investment-calculator"
-    :style="{ top: top + 'px', left: left + 'px', zIndex: zIndex }"
-    @mousedown="startDragging"
-    @mouseup="stopDragging"
-    @mousemove="dragging ? handleDrag : null"
-  >
-    <!-- Draggable handle -->
-    <div class="drag-handle" @mousedown.stop="startDragging">
-      <i class="fas fa-arrows-alt"></i>
-    </div>
+  <div class="investment-calculator">
     <h2>Investment Calculator</h2>
     <div class="input-group">
       <label for="initialInvestment">Initial Investment:</label>
@@ -42,12 +32,6 @@ export default {
   name: 'InvestmentCalculator',
   data() {
     return {
-      dragging: false,
-      initialX: 0,
-      initialY: 0,
-      top: 100, // Initial top position
-      left: 100, // Initial left position
-      zIndex: 1, // Initial z-index
       initialInvestment: null,
       monthlyContribution: null,
       investmentPeriod: null,
@@ -118,21 +102,6 @@ export default {
 
       this.futureValues = datasets.map(dataset => dataset.data.at(-1).toFixed(2));
     },
-    startDragging(event) {
-      this.dragging = true;
-      this.initialX = event.clientX - this.left;
-      this.initialY = event.clientY - this.top;
-      this.zIndex = 9999; // Bring the calculator to the front
-    },
-    stopDragging() {
-      this.dragging = false;
-    },
-    handleDrag(event) {
-      if (this.dragging) {
-        this.left = event.clientX - this.initialX;
-        this.top = event.clientY - this.initialY;
-      }
-    },
     getRandomColor() {
     // This is a simple method to generate random colors. You might want to customize this.
     const letters = '0123456789ABCDEF';
@@ -142,64 +111,6 @@ export default {
     }
     return color;
   },
-    // calculate() {
-    //   const principal = parseFloat(this.initialInvestment);
-    //   const monthlyContribution = parseFloat(this.monthlyContribution);
-    //   const years = parseInt(this.investmentPeriod);
-    //   const rate = parseFloat(this.annualReturnRate) / 100;
-
-    //   const n = 12; // Compounded monthly
-    //   const t = years;
-    //   const r = rate / n;
-
-    //   // Calculate future value for each month
-    //   const labels = [];
-    //   const data = [];
-    //   let currentValue = principal;
-    //   for (let i = 0; i <= t * n; i++) {
-    //     labels.push(`${i} months`);
-    //     data.push(currentValue);
-    //     currentValue = currentValue * (1 + r) + monthlyContribution;
-    //   }
-
-    //   // Update chart
-    //   const ctx = document.getElementById('investmentChart').getContext('2d');
-    //   if (this.chart) {
-    //     this.chart.destroy(); // Destroy existing chart instance
-    //   }
-    //   this.chart = new Chart(ctx, {
-    //     type: 'line',
-    //     data: {
-    //       labels: labels,
-    //       datasets: [{
-    //         label: 'Investment Growth',
-    //         data: data,
-    //         fill: false,
-    //         borderColor: 'red',
-    //         tension: 0.1
-    //       }]
-    //     },
-    //     options: {
-    //       scales: {
-    //         x: {
-    //           title: {
-    //             display: true,
-    //             text: 'Time'
-    //           }
-    //         },
-    //         y: {
-    //           title: {
-    //             display: true,
-    //             text: 'Value'
-    //           }
-    //         }
-    //       }
-    //     }
-    //   });
-
-    //   // Calculate future value at the end of the investment period
-    //   this.futureValue = currentValue.toFixed(2);
-    // }
   }
 };
 </script>
@@ -207,28 +118,17 @@ export default {
 <style scoped>
 .investment-calculator {
   position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   background-color: black;
   color: red;
   border: 2px solid red;
   border-radius: 10px;
   padding: 20px;
-  cursor: move;
   font-family: Arial, sans-serif;
 }
 
-.drag-handle {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 20px;
-  cursor: move;
-  text-align: center;
-}
-
-.drag-handle i {
-  color: red;
-}
 
 .input-group {
   margin-bottom: 15px;
