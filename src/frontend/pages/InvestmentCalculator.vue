@@ -1,27 +1,33 @@
 <template>
   <div class="investment-calculator">
     <h2>Investment Calculator</h2>
-    <div class="input-group">
-      <label for="initialInvestment">Initial Investment:</label>
-      <input type="number" id="initialInvestment" v-model="initialInvestment" class="calculator-input">
+    <div class="calculator-content">
+      <div class="calculator-inputs">
+        <div class="input-group">
+          <label for="initialInvestment">Initial Investment:</label>
+          <input type="number" id="initialInvestment" v-model="initialInvestment" class="calculator-input">
+        </div>
+        <div class="input-group">
+          <label for="monthlyContribution">Monthly Contribution:</label>
+          <input type="number" id="monthlyContribution" v-model="monthlyContribution" class="calculator-input">
+        </div>
+        <div class="input-group">
+          <label for="investmentPeriod">Investment Period (years):</label>
+          <input type="number" id="investmentPeriod" v-model="investmentPeriod" class="calculator-input">
+        </div>
+        <div class="input-group" v-for="rate in annualReturnRates" :key="rate.id">
+          <label :for="'annualReturnRate' + rate.id">Expected Annual Return Rate (%) for {{ rate.id }}:</label>
+          <input type="number" :id="'annualReturnRate' + rate.id" v-model="rate.value" class="calculator-input">
+        </div>
+        <button @click="calculate" class="calculate-button">Calculate</button>
+        <div class="result" v-if="futureValue !== null">
+          <p>Future Value of Investments: {{ futureValue }}</p>
+        </div>
+      </div>
+      <div class="calculator-chart">
+        <canvas id="investmentChart" width="800" height="400"></canvas>
+      </div>
     </div>
-    <div class="input-group">
-      <label for="monthlyContribution">Monthly Contribution:</label>
-      <input type="number" id="monthlyContribution" v-model="monthlyContribution" class="calculator-input">
-    </div>
-    <div class="input-group">
-      <label for="investmentPeriod">Investment Period (years):</label>
-      <input type="number" id="investmentPeriod" v-model="investmentPeriod" class="calculator-input">
-    </div>
-    <div class="input-group" v-for="rate in annualReturnRates" :key="rate.id">
-      <label :for="'annualReturnRate' + rate.id">Expected Annual Return Rate (%) for {{ rate.id }}:</label>
-      <input type="number" :id="'annualReturnRate' + rate.id" v-model="rate.value" class="calculator-input">
-    </div>
-    <button @click="calculate" class="calculate-button">Calculate</button>
-    <div class="result" v-if="futureValue !== null">
-      <p>Future Value of Investments: {{ futureValue }}</p>
-    </div>
-    <canvas id="investmentChart" width="400" height="200"></canvas>
   </div>
 </template>
 
@@ -117,18 +123,34 @@ export default {
 
 <style scoped>
 .investment-calculator {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
   background-color: black;
   color: red;
   border: 2px solid red;
   border-radius: 10px;
   padding: 20px;
   font-family: Arial, sans-serif;
+  justify-content: center; /* Center the content */
+  align-items: center; /* Center items vertically */
+  justify-content: space-between; /* Add space between inputs and chart */
+  font-family: Arial, sans-serif;
 }
 
+.calculator-content {
+  display: flex;
+  flex-direction: row; /* Align items in a row */
+  align-items: flex-start; /* Align items at the start of the cross axis */
+  gap: 20px; /* Add some space between the input group and the chart */
+}
+.calculator-inputs {
+  flex: 1;
+}
+
+.calculator-chart {
+  flex: 12; /* Give more flex-grow ratio to the chart container */
+  display: absolute;
+  justify-content: center;
+  align-items: center;
+}
 
 .input-group {
   margin-bottom: 15px;
