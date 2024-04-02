@@ -23,30 +23,6 @@
         </button>
         </div>
 
-        <!-- <div class="events-container">
-          <h3>Events</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Year</th>
-                <th>Quarter</th>
-                <th>Event Name</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template v-for="(yearEvents, year) in events">
-                <tr v-for="(event, quarter) in yearEvents" :key="`${year}-${quarter}`">
-                  <td>{{ year }}</td>
-                  <td>{{ quarter }}</td>
-                  <td>{{ event.name }}</td>
-                  <td>{{ event.description }}</td>
-                </tr>
-              </template>
-            </tbody>
-          </table>
-        </div> -->
-
         <div v-if="showModal" class="modal" @click="closeEventModal()">
           <div class="modal-content" @click.stop>
             <span class="close" @click="closeEventModal()">&times;</span>
@@ -105,16 +81,30 @@
         const totalQuarters = this.assetChanges.length * 4;
         const labels = ['Initial Value'].concat(Array.from({ length: totalQuarters }, (_, i) => `Q${i + 1}`));
 
-        const datasets = this.assetTypes.map(type => {
-          const data = new Array(totalQuarters + 1).fill(null);
-          data[0] = 0; // Initial value
+        // const datasets = this.assetTypes.map(type => {
+        //   const data = new Array(totalQuarters + 1).fill(null);
+        //   data[0] = 0; // Initial value
           
-          return {
-            label: type,
-            data,
-            fill: false,
-            borderColor: this.getRandomColor(),
-          };
+        //   return {
+        //     label: type,
+        //     data,
+        //     fill: false,
+        //     borderColor: this.getRandomColor(),
+        //   };
+        // });
+
+        // Initialize each asset type with a starting value of 1000
+        const datasets = this.assetTypes.map(type => {
+            const data = [1000]; // Start with £1000 for each asset type
+            for (let i = 1; i <= totalQuarters; i++) {
+                data.push(null); // Future values are null until updated
+            }
+            return {
+                label: type,
+                data,
+                fill: false,
+                borderColor: this.getRandomColor(),
+            };
         });
 
         console.log(this.quarters);
@@ -167,23 +157,53 @@
       },
 
       
+      // updateAssetData(assetType) {
+      //   const quarterIndex = this.currentQuarters[assetType];
+      //   if (quarterIndex >= this.assetChanges.length * 4) return; // No more data to update for this asset type
+
+      //   const yearIndex = Math.floor(quarterIndex / 4);
+      //   const quarterPhase = ['Jan-Mar', 'Apr-Jun', 'Jul-Sep', 'Oct-Dec'][quarterIndex % 4];
+      //   const yearData = this.assetChanges[yearIndex];
+      //   const quarterData = yearData ? yearData[quarterPhase][assetType] : null;
+
+      //   // Update the specific dataset for the asset type
+      //   const dataset = this.assetChangesChart.data.datasets.find(d => d.label === assetType);
+      //   if (dataset) {
+      //       dataset.data[quarterIndex + 1] = quarterData; // +1 to account for the 'Initial Value'
+      //       this.currentQuarters[assetType]++; // Increment the quarter counter for this asset type
+      //       this.assetChangesChart.update();
+      //   }
+      //   },
+
       updateAssetData(assetType) {
+        // Get the current quarter index for the asset type
         const quarterIndex = this.currentQuarters[assetType];
-        if (quarterIndex >= this.assetChanges.length * 4) return; // No more data to update for this asset type
+        if (quarterIndex >= this.assetChanges.length * 4) {
+            console.warn("No more quarters available for updates.");
+            return; // Prevents updating beyond available data
+        }
 
-        const yearIndex = Math.floor(quarterIndex / 4);
-        const quarterPhase = ['Jan-Mar', 'Apr-Jun', 'Jul-Sep', 'Oct-Dec'][quarterIndex % 4];
-        const yearData = this.assetChanges[yearIndex];
-        const quarterData = yearData ? yearData[quarterPhase][assetType] : null;
+        // Calculate the new value based on the percentage change from Firebase
+        let newValue = 1000; // Start with the initial value of £1000
+        for (let i = 0; i <= quarterIndex; i++) {
+            const yearIndex = Math.floor(i / 4);
+            const quarterPhase = this.quarters[i % 4];
+            const change = this.assetChanges[yearIndex][quarterPhase][assetType];
+            if (change !== undefined) {
+                newValue *= (1 + change / 100);
+            }
+        }
 
-        // Update the specific dataset for the asset type
+        // Update the chart data with the new value for the asset
         const dataset = this.assetChangesChart.data.datasets.find(d => d.label === assetType);
         if (dataset) {
-            dataset.data[quarterIndex + 1] = quarterData; // +1 to account for the 'Initial Value'
-            this.currentQuarters[assetType]++; // Increment the quarter counter for this asset type
+            dataset.data[quarterIndex + 1] = newValue;
             this.assetChangesChart.update();
         }
-        },
+
+        // Prepare for the next update
+        this.currentQuarters[assetType]++;
+    },
 
       getRandomColor() {
         const letters = '0123456789ABCDEF';
