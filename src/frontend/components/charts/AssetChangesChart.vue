@@ -18,10 +18,15 @@
 
 
       <div class="buttons-container">
-        <button v-for="asset in assetTypes" :key="asset" @click="updateAssetData(asset)">
+        <template v-for="asset in assetTypes" :key="asset">
+          <button class="update-next" @click="updateAssetData(asset)">
             Update {{ asset }} Next Quarter
-        </button>
-        </div>
+          </button>
+          <button class="update-all" @click="updateAllQuarters(asset)">
+            Update All Quarters for {{ asset }}
+          </button>
+        </template>
+      </div>
 
         <div v-if="showModal" class="modal" @click="closeEventModal()">
           <div class="modal-content" @click.stop>
@@ -156,25 +161,6 @@
         });
       },
 
-      
-      // updateAssetData(assetType) {
-      //   const quarterIndex = this.currentQuarters[assetType];
-      //   if (quarterIndex >= this.assetChanges.length * 4) return; // No more data to update for this asset type
-
-      //   const yearIndex = Math.floor(quarterIndex / 4);
-      //   const quarterPhase = ['Jan-Mar', 'Apr-Jun', 'Jul-Sep', 'Oct-Dec'][quarterIndex % 4];
-      //   const yearData = this.assetChanges[yearIndex];
-      //   const quarterData = yearData ? yearData[quarterPhase][assetType] : null;
-
-      //   // Update the specific dataset for the asset type
-      //   const dataset = this.assetChangesChart.data.datasets.find(d => d.label === assetType);
-      //   if (dataset) {
-      //       dataset.data[quarterIndex + 1] = quarterData; // +1 to account for the 'Initial Value'
-      //       this.currentQuarters[assetType]++; // Increment the quarter counter for this asset type
-      //       this.assetChangesChart.update();
-      //   }
-      //   },
-
       updateAssetData(assetType) {
         // Get the current quarter index for the asset type
         const quarterIndex = this.currentQuarters[assetType];
@@ -204,6 +190,33 @@
         // Prepare for the next update
         this.currentQuarters[assetType]++;
     },
+
+    updateAllQuarters(assetType) {
+      const totalQuarters = this.assetChanges.length * 4;
+      let currentValue = 1000; // Starting value
+
+      for (let quarterIndex = 0; quarterIndex < totalQuarters; quarterIndex++) {
+        const yearIndex = Math.floor(quarterIndex / 4);
+        const quarterPhase = this.quarters[quarterIndex % 4];
+        const change = this.assetChanges[yearIndex] && this.assetChanges[yearIndex][quarterPhase] ? this.assetChanges[yearIndex][quarterPhase][assetType] : null;
+
+        if (change !== null) {
+          currentValue *= (1 + change / 100); // Apply the change
+        }
+
+        // Find the dataset for the assetType and update the data for the quarter
+        const dataset = this.assetChangesChart.data.datasets.find(d => d.label === assetType);
+        if (dataset) {
+          dataset.data[quarterIndex + 1] = currentValue; // +1 to account for the 'Initial Value'
+        }
+      }
+
+      // Update the currentQuarterIndex to the last quarter since we've updated all
+      this.currentQuarters[assetType] = totalQuarters - 1;
+
+      this.assetChangesChart.update();
+    },
+
 
       getRandomColor() {
         const letters = '0123456789ABCDEF';
@@ -244,6 +257,7 @@
   justify-content: space-around; /* This will evenly space the buttons */
   flex-wrap: wrap; /* Allows buttons to wrap to the next line on small screens */
   margin-top: 20px;
+  margin-bottom: 50px;
 }
   button {
     display: block;
@@ -339,4 +353,24 @@
   outline: none; /* Removes the outline to keep the design clean */
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.5); /* Adds a focus state for accessibility */
 }
+
+.update-next {
+  background-color: #4CAF50; /* Green background */
+  color: white;
+}
+
+.update-next:hover {
+  background-color: #45a049; /* Darker green on hover */
+}
+
+.update-all {
+  background-color: #008CBA; /* Blue background */
+  color: white;
+  margin-top: 10px; /* Add space between button types */
+}
+
+.update-all:hover {
+  background-color: #007B9E; /* Darker blue on hover */
+}
+
   </style>
