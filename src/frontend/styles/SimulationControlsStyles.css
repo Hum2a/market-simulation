@@ -118,6 +118,32 @@ input[type=number]:hover {
   background-color: #cc0000; /* Even darker red on active/click */
   transform: scale(0.95); /* Slightly smaller on click */
 }
+
+.edit-button {
+  background-color: transparent;
+}
+
+.edit-button:hover {
+  transform: scale(1.05);
+  background-color: #000;
+}
+
+.edit-button:active {
+  transform: scale(0.95);
+}
+
+.delete-button {
+  background-color: transparent;
+}
+
+.delete-button:hover {
+  transform: scale(1.05);
+  background-color: #000;
+}
+
+.delete-button:active {
+  transform: scale(0.95);
+}
 .quarter-button {
     background: none;
     border: none;

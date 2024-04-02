@@ -78,6 +78,8 @@
           <li v-for="(event, quarter) in yearEvents" :key="quarter">
             {{ quarter }}: {{ event.name }}
             <span class="event-description"> - {{ event.description }}</span>
+            <button class='edit-button' @click="editEvent(year, quarter)">Edit</button>
+            <button class='delete-button' @click="deleteEvent(year, quarter)">Delete</button>
           </li>
         </ul>
       </li>
@@ -116,7 +118,6 @@
       },
     },
     methods: {
-
       initializeAssetChanges(years) {
         this.assetChanges = Array.from({ length: years }, () => {
           return this.quarters.reduce((acc, quarter) => {
@@ -265,6 +266,32 @@
         toggleEventList() {
             this.showEventList = !this.showEventList;
         },
+        editEvent(year, quarter) {
+          const event = this.events[year][quarter];
+          if (event) {
+            this.selectedYear = year;
+            this.selectedQuarter = quarter;
+            this.eventName = event.name;
+            this.eventDescription = event.description;
+            this.showEventModal = true;
+          }
+        },
+
+        deleteEvent(year, quarter) {
+          if (confirm(`Are you sure you want to delete the event for ${quarter} of year ${year}?`)) {
+            // Use standard JavaScript delete for Vue 3
+            delete this.events[year][quarter];
+            if (Object.keys(this.events[year]).length === 0) {
+              delete this.events[year]; // If no events left for the year, delete the year object
+            }
+            // If you need to update the state to ensure reactivity, make sure to trigger a state update
+            // This can be as simple as triggering a reassignment for objects, or using Vue.set for Vue 2 compatibility
+            this.events = { ...this.events };
+            console.log(`Event for ${quarter} of year ${year} deleted`);
+
+            // Optionally, here you would also update your backend/database with the new state of `this.events`
+          }
+        }
 
   },
     computed: {
