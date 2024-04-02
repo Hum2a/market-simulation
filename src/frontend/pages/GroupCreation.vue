@@ -30,23 +30,23 @@
             <div class="inputs">
               <div class="input-row">
                 <label for="equity">Equity:</label>
-                <input type="text" v-model="group.equity" id="equity" class="modern-input">
+                <input type="number" v-model="group.equity" id="equity" class="modern-input">
               </div>
               <div class="input-row">
                 <label for="bonds">Bonds:</label>
-                <input type="text" v-model="group.bonds" id="bonds" class="modern-input">
+                <input type="number" v-model="group.bonds" id="bonds" class="modern-input">
               </div>
               <div class="input-row">
                 <label for="realestate">Real Estate:</label>
-                <input type="text" v-model="group.realestate" id="realestate" class="modern-input">
+                <input type="number" v-model="group.realestate" id="realestate" class="modern-input">
               </div>
               <div class="input-row">
                 <label for="banks">Bank Accounts:</label>
-                <input type="text" v-model="group.banks" id="banks" class="modern-input">
+                <input type="number" v-model="group.banks" id="banks" class="modern-input">
               </div>
               <div class="input-row">
                 <label for="other">Other:</label>
-                <input type="text" v-model="group.other" id="other" class="modern-input">
+                <input type="number" v-model="group.other" id="other" class="modern-input">
               </div>
             </div>
             <button @click="generateRandomValues(index)" class="modern-button">Generate Random Values</button>
@@ -94,6 +94,7 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
 
         return {
             router,
+            maxPortfolioValue: 3000,
         };
     },
     data() {
@@ -169,12 +170,24 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
       },
       generateRandomValues(index) {
         const group = this.groups[index];
-        group.equity = Math.floor(Math.random() * 1001).toString();
-        group.bonds = Math.floor(Math.random() * 1001).toString();
-        group.realestate = Math.floor(Math.random() * 1001).toString();
-        group.banks = Math.floor(Math.random() * 1001).toString();
-        group.other = Math.floor(Math.random() * 1001).toString();
+        let remainingValue = this.maxPortfolioValue;
+
+        const keys = ['equity', 'bonds', 'realestate', 'banks', 'other'];
+        keys.forEach((key, i) => {
+          if (i === keys.length - 1) {
+            // Assign remaining value to the last asset
+            group[key] = remainingValue.toString();
+          } else {
+            // Assign a random portion of the remaining value to the current asset
+            const value = Math.floor(Math.random() * (remainingValue + 1));
+            group[key] = value.toString();
+            remainingValue -= value;
+          }
+        });
+
+        this.$nextTick(() => this.renderPieChart(index));
       },
+
       renderPieChart(index) {
       const group = this.groups[index];
       const ctx = document.getElementById('pieChart_' + index).getContext('2d');

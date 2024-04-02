@@ -300,6 +300,25 @@ button:active {
 .fas {
   margin-right: 8px; /* Space between icon and text */
 }
+
+input[type="number"] {
+  width: 100px; /* Adjust the width */
+  padding: 8px; /* Add some padding */
+  margin: 5px; /* Add some margin */
+  color: #fff; /* White text */
+  background-color: #000;
+  border-color: #ff4500; /* Brighter red border on focus */
+  border-radius: 4px; /* Add rounded corners */
+  font-size: 16px; /* Adjust the font size */
+}
+
+/* For WebKit browsers */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
   
 
 
