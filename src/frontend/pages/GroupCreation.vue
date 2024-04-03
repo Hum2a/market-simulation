@@ -1,7 +1,6 @@
 <template>
-  <div class="container">
+  <div class="dashboard">
     <header class="header">
-      <h1>Group Management</h1>
       <img src="../assets/LifeSmartLogo.png" alt="Logo" class="logo">
       <div>
         <button @click="toggleCalculator" class="calculator-toggle">
@@ -16,6 +15,7 @@
     <SimulationControls v-if="showSimulationControls" />
 
     <main>
+      <h1>Group Management</h1>
       <div class="groups">
         <div v-for="(group, index) in groups" :key="index" class="group">
           <div class="group-header">
@@ -48,7 +48,7 @@
                 <input type="number" v-model="group.other" id="other" class="modern-input">
               </div>
             </div>
-            <button @click="generateRandomValues(index)" class="modern-button">Generate Random Values</button>
+            <!-- <button @click="generateRandomValues(index)" class="modern-button">Generate Random Values</button> -->
             <div class="pie-chart-container">
                 <canvas :id="'pieChart_' + index"></canvas>
             </div>
@@ -217,8 +217,44 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
         data: data,
         options: {
           responsive: true,
-          maintainAspectRatio: false
-        }
+          maintainAspectRatio: true,
+          aspectRatio: 1,
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: {
+              fontColor: '#000', // Color of text
+              fontSize: 10, // Size of the text
+              fontFamily: 'Helvetica', // Font family of the text
+              boxWidth: 2, // Width of colored box
+              usePointStyle: true, // Use point style instead of box
+            }
+          },
+          // tooltips: {
+          //   enabled: true,
+          //   mode: 'nearest',
+          //   intersect: false,
+          //   backgroundColor: 'rgba(0,0,0,0.8)', // Tooltip background color
+          //   titleFontFamily: 'Helvetica', // Font family for tooltip title
+          //   titleFontSize: 20, // Font size for tooltip title
+          //   titleFontStyle: 'bold', // Font style for tooltip title
+          //   bodyFontFamily: 'Arial', // Font family for tooltip body
+          //   bodyFontSize: 15, // Font size for tooltip body
+          //   bodyFontStyle: 'normal', // Font style for tooltip body
+          //   cornerRadius: 30, // Corner radius of tooltip
+          //   xPadding: 10, // Padding inside tooltip (x-axis)
+          //   yPadding: 10, // Padding inside tooltip (y-axis)
+          //   caretSize: 5, // Size of the tooltip arrow
+          //   displayColors: true, // Display color boxes in the tooltip
+          // },
+          animation: {
+            animateRotate: true,
+            animateScale: true,
+          },
+          cutoutPercentage: 65,
+          rotation: -0.5 * Math.PI,
+          circumference: 2 * Math.PI,
+        },
       });
     },
       getTotalValue(group) {

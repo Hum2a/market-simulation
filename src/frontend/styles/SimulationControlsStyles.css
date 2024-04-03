@@ -42,13 +42,13 @@ th, td {
 }
 
 input[type=number] {
-  width: 100%;
+  width: 100px;
   padding: 12px 20px;
-  box-sizing: border-box;
-  border: 2px solid #000; /* Black border */
-  background-color: #fff; /* White background */
-  color: #000; /* Black text */
+  background-color: #d4d4d4; /* White background */
+  color: #000000; /* Black text */
   font-size: 16px;
+  border-radius: 10%;
+  border-color: transparent;
   position: relative; /* Needed for pseudo-elements */
 }
 
@@ -59,33 +59,26 @@ input[type=number]::after {
   top: 50%;
   width: 0;
   height: 0;
-  border-style: solid;
   transform: translateY(-50%);
 }
 
 input[type=number]::before {
   left: -10px; /* Adjust as needed */
-  border-width: 10px 10px 10px 0; /* Adjust as needed */
-  border-color: transparent #fff transparent transparent; /* Left arrow - color matches background */
 }
 
 input[type=number]::after {
   right: -10px; /* Adjust as needed */
-  border-width: 10px 0 10px 10px; /* Adjust as needed */
-  border-color: transparent transparent transparent #fff; /* Right arrow - color matches background */
 }
 
 /* Adjust the placeholder style */
 input[type=number]::placeholder {
-  color: #888; /* Light grey text */
+  color: #0ac9d6; /* Light grey text */
   opacity: 1; /* Full opacity */
 }
 
 /* Style focus state */
 input[type=number]:focus {
   outline: none; /* Removes the default focus outline */
-  border-color: #ffdd40; /* A bright color when the element is focused */
-  box-shadow: 0 0 0 2px rgba(255,221,64,0.5); /* Adds a glow effect */
 }
 
 /* Style for hover state */
