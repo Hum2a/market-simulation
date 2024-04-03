@@ -8,9 +8,6 @@
         <h2>{{ index + 1 }}. {{ result.name }} (Total Worth: ${{ result.totalWorth.toFixed(2) }})</h2>
         <div v-if="expandedGroups[index]" class="details">
           <div class="chart-area">
-            <div class="pie-chart-container">
-              <canvas :id="'pieChart-' + index" :ref="'pieChart' + index"></canvas>
-            </div>
             <div class="line-chart-container">
               <canvas :id="'lineChart-' + index" :ref="'lineChart' + index"></canvas>
             </div>
@@ -19,11 +16,13 @@
             <li v-for="(value, key) in result.assets" :key="key">
               {{ key }}: ${{ value.final.toFixed(2) }} ({{ value.change }})
             </li>
-            <li>Equity: ${{ result.equity }}</li>
-            <li>Bonds: ${{ result.bonds }}</li>
-            <li>Real Estate: ${{ result.realestate }}</li>
-            <li>Bank Accounts: ${{ result.banks }}</li>
-            <li>Other: ${{ result.other }}</li>
+            <li>Final Portfolio Value: ${{  result.totalWorth.toFixed(2) }}</li>
+            <li>Total Portfolio Gains: ${{ result.totalGains.toFixed(2) }}</li>
+            <li v-if="result.mostGainsAsset">
+              Most Gains in Asset Class: {{ result.mostGainsAsset.assetType }} (${{ result.mostGainsAsset.gain }})
+            </li>
+            <li>ROI: {{ result.roi.toFixed(2) }}%</li>
+            <li>Annualized Return: {{ result.annualizedReturn.toFixed(2) }}%</li>
           </ul>
         </div>
       </div>
@@ -49,7 +48,6 @@ import BiggestAssetGain from '../components/awards/biggestAssetGain.vue';
 import BiggestAssetLoss from '../components/awards/biggestAssetLoss.vue';
 import HighestPortfolioAtAnyTime from '../components/awards/highestPortfolioAnyTime.vue'
 import ComebackKing from '../components/awards/comeBackKing.vue';
-// import SteadyHandAward from '../components/awards/steadyHand.vue';
 
 export default {
   name: 'ResultsScreen',
@@ -58,7 +56,6 @@ export default {
     BiggestAssetLoss,
     HighestPortfolioAtAnyTime,
     ComebackKing,
-    // SteadyHandAward
   },
   data() {
     return {
@@ -74,20 +71,35 @@ export default {
     await this.fetchQuarterlyResults(); // Fetch quarterly results
   },
   computed: {
-      rankedResults() {
-          const resultsWithTotal = this.finalResults.map(result => ({
-              ...result,
-              totalWorth: [
-              result.equity,
-              result.bonds,
-              result.realestate,
-              result.banks,
-              result.other
-              ].reduce((acc, value) => acc + Number(value), 0),
-          }));
-          return resultsWithTotal.sort((a, b) => b.totalWorth - a.totalWorth);
-      }
-  },  
+    rankedResults() {
+      return this.finalResults.map(result => {
+        const numberOfYears = this.calculateNumberOfYears(result.name);
+        const initialTotalWorth = this.getInitialTotalWorth(result.name);
+        const finalTotalWorth = [
+          result.equity,
+          result.bonds,
+          result.realestate,
+          result.banks,
+          result.other
+        ].reduce((acc, value) => acc + Number(value), 0);
+        const totalGains = finalTotalWorth - initialTotalWorth;
+        const roi = ((finalTotalWorth - initialTotalWorth) / initialTotalWorth) * 100;
+        const annualizedReturn = (Math.pow((finalTotalWorth / initialTotalWorth), 1 / numberOfYears) - 1) * 100;
+
+        const mostGainsAsset = this.calculateMostGainsAsset(result.name, result.assets);
+
+        return {
+          ...result,
+          totalWorth: finalTotalWorth,
+          totalGains: isNaN(totalGains) ? 0 : totalGains,
+          mostGainsAsset,
+          roi: isNaN(roi) ? 0 : roi,
+          annualizedReturn: isNaN(annualizedReturn) ? 0 : annualizedReturn
+        };
+      }).sort((a, b) => b.totalWorth - a.totalWorth);
+    }
+  },
+
   methods: {
       async fetchFinalResults() {
           const db = getFirestore();
@@ -119,26 +131,51 @@ export default {
           console.error("Error fetching quarterly results:", error);
         }
       },
-      generateAllCharts() {
-          this.rankedResults.forEach((result, index) => {
-              // Use Vue refs to access the canvas elements
-              const canvas = this.$refs.pieChart[index];
-              if (canvas) {
-                  const ctx = canvas.getContext('2d');
-                  new Chart(ctx, {
-                      type: 'pie',
-                      data: {
-                          labels: ['Equity', 'Bonds', 'Real Estate', 'Bank Accounts', 'Other'],
-                          datasets: [{
-                          data: [result.equity, result.bonds, result.realestate, result.banks, result.other],
-                          backgroundColor: ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f'],
-                          hoverBackgroundColor: ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f']
-                          }]
-                      }
-                  });
-              }
-          });
+      getInitialTotalWorth(groupName) {
+        // Find the first quarter result for the group
+        const initialQuarterResult = this.quarterResults.find(quarter => quarter.groups && quarter.groups[groupName]);
+        if (!initialQuarterResult) {
+          return 0;
+        }
+
+        // Sum the initial values of all assets for the group
+        const initialAssets = initialQuarterResult.groups[groupName];
+        return Object.values(initialAssets).reduce((sum, asset) => sum + Number(asset), 0);
       },
+
+      calculateMostGainsAsset(groupName) {
+        if (!this.quarterResults.length) {
+          return { assetType: 'N/A', gain: 0 };
+        }
+        
+        // Assuming the first and last entries represent the initial and final states
+        const initialAssets = this.quarterResults[0].groups[groupName] || {};
+        const finalAssets = this.quarterResults[this.quarterResults.length - 1].groups[groupName] || {};
+
+        let mostGainsAsset = { assetType: 'N/A', gain: 0 };
+        
+        Object.keys(finalAssets).forEach(assetType => {
+          if (initialAssets[assetType] !== undefined) { // Ensure the asset exists in the initial state
+            const gain = finalAssets[assetType] - initialAssets[assetType];
+            if (gain > mostGainsAsset.gain) {
+              mostGainsAsset = { assetType, gain };
+            }
+          }
+        });
+
+        return {
+          assetType: mostGainsAsset.assetType,
+          gain: parseFloat(mostGainsAsset.gain).toFixed(2) // Ensure gain is formatted to two decimal places
+        };
+      },
+      calculateNumberOfYears() {
+        // Assuming each entry in quarterResults represents one quarter
+        const totalQuarters = this.quarterResults.length;
+        const numberOfYears = totalQuarters / 4;
+
+        return numberOfYears;
+  },
+
       toggleDetailVisibility(index) {
         const detailIndex = this.visibleDetails.indexOf(index);
         if (detailIndex === -1) {
@@ -152,7 +189,7 @@ export default {
         this.expandedGroups[index] = !this.expandedGroups[index];
         this.$nextTick(() => {
           if (this.expandedGroups[index]) {
-            this.generatePieChartForGroup(index);
+            // this.generatePieChartForGroup(index);
             this.generateLineChartForGroup(index);
           }
         });
@@ -249,28 +286,6 @@ export default {
           labels: labels,
           datasets: [dataset],
         };
-      },
-
-      generatePieChartForGroup(index) {
-        const result = this.rankedResults[index];
-        const canvasRef = `pieChart${index}`;
-        const canvas = this.$refs[canvasRef] ? this.$refs[canvasRef][0] : null;
-        if (canvas) {
-          const ctx = canvas.getContext('2d');
-          new Chart(ctx, {
-            type: 'pie',
-            data: {
-              labels: ['Equity', 'Bonds', 'Real Estate', 'Bank Accounts', 'Other'],
-              datasets: [{
-                data: [result.equity, result.bonds, result.realestate, result.banks, result.other],
-                backgroundColor: ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f'],
-                hoverBackgroundColor: ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f']
-              }]
-            }
-          });
-        } else {
-          console.error('Pie chart canvas not found for index:', index);
-        }
       },
       getRandomColor() {
         // Generate and return a random hex color
