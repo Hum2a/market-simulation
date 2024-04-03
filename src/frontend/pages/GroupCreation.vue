@@ -97,7 +97,10 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
     data() {
       return {
         groups: [
-          { name: 'Group 1', equity: '', bonds: '', realestate: '', banks: '', other: '' }
+          { name: 'Group 1', equity: '', bonds: '', realestate: '', banks: '', other: '' },
+          { name: 'Group 2', equity: '', bonds: '', realestate: '', banks: '', other: '' },
+          { name: 'Group 3', equity: '', bonds: '', realestate: '', banks: '', other: '' },
+          { name: 'Group 4', equity: '', bonds: '', realestate: '', banks: '', other: '' }
         ],
         showCalculator: false,
         showSimulationControls: false,
