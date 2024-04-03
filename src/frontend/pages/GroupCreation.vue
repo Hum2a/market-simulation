@@ -48,7 +48,7 @@
                 <input type="number" v-model="group.other" id="other" class="modern-input">
               </div>
             </div>
-            <!-- <button @click="generateRandomValues(index)" class="modern-button">Generate Random Values</button> -->
+            <button @click="generateRandomValues(index)" class="modern-button">Generate Random Values</button>
             <div class="pie-chart-container">
                 <canvas :id="'pieChart_' + index"></canvas>
             </div>
