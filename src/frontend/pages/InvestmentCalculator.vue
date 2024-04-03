@@ -60,14 +60,21 @@ export default {
       const n = 12; // Compounded monthly
       const t = years;
 
-      const labels = Array.from({ length: t * n + 1 }, (_, i) => `${i} months`);
+      // Adjust the labels to display years instead of months
+      const labels = Array.from({ length: t + 1 }, (_, i) => i === 0 ? 'Start' : `${i} year${i > 1 ? 's' : ''}`);
+      
       const datasets = this.annualReturnRates.map(rate => {
         const r = parseFloat(rate.value) / 100 / n;
         let currentValue = principal;
         const data = [currentValue];
         for (let i = 1; i <= t * n; i++) {
-          currentValue = currentValue * (1 + r) + monthlyContribution;
-          data.push(currentValue);
+          if (i % n === 0) { // Only push the value at the end of each year
+            currentValue = currentValue * (1 + r) + monthlyContribution;
+            data.push(currentValue);
+          } else {
+            // Calculate the value but don't push it, to keep the data points aligned with the yearly labels
+            currentValue = currentValue * (1 + r) + monthlyContribution;
+          }
         }
         return {
           label: `Investment Growth at ${rate.value}%`,
@@ -80,7 +87,7 @@ export default {
 
       const ctx = document.getElementById('investmentChart').getContext('2d');
       if (this.chart) {
-        this.chart.destroy(); // Destroy existing chart instance
+        this.chart.destroy(); // Destroy existing chart instance if any
       }
       this.chart = new Chart(ctx, {
         type: 'line',
@@ -93,7 +100,7 @@ export default {
             x: {
               title: {
                 display: true,
-                text: 'Time'
+                text: 'Time (Years)'
               }
             },
             y: {
@@ -106,8 +113,9 @@ export default {
         }
       });
 
-      this.futureValues = datasets.map(dataset => dataset.data.at(-1).toFixed(2));
+      this.futureValue = datasets.map(dataset => dataset.data.at(-1).toFixed(2)).join(', ');
     },
+
     getRandomColor() {
     // This is a simple method to generate random colors. You might want to customize this.
     const letters = '0123456789ABCDEF';
