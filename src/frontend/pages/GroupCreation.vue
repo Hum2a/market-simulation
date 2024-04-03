@@ -47,6 +47,9 @@
                 <label for="other">Other:</label>
                 <input type="number" v-model="group.other" id="other" class="modern-input">
               </div>
+              <div class="total-value">
+                Total Portfolio Value: ${{ getTotalValue(group).toFixed(2) }}
+              </div>
             </div>
             <button @click="generateRandomValues(index)" class="modern-button">Generate Random Values</button>
             <div class="pie-chart-container">

@@ -139,6 +139,7 @@ h1 {
   border: none;
   font-size: 16px;
   cursor: pointer;
+  margin-bottom: 10px;
   transition: background-color 0.3s, transform 0.2s;
 }
 
@@ -288,7 +289,24 @@ button:active {
   margin-right: 8px; /* Space between icon and text */
 }
 
+.total-value {
+  margin-top: 20px; /* Adds space above the total value display */
+  margin-bottom: 20px;
+  padding: 10px; /* Adds padding around the text for better readability */
+  background-color: #f0f0f0; /* Light grey background for the total value area */
+  border-radius: 5px; /* Rounded corners for the total value display */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Adds a subtle shadow for depth */
+  text-align: center; /* Centers the total value text */
+  font-size: 1.2rem; /* Increases the font size for better visibility */
+  color: #333; /* Dark grey color for the text for contrast */
+}
 
+.pie-chart-container {
+  width: 300px; /* Adjust based on desired size and number of charts per row */
+  height: 200px; /* Keep the same height as width for a 1:1 aspect ratio */
+  margin: auto; /* Center the canvas in the pie chart container if needed */
+  margin-top: 10px;
+}
   
 
 
