@@ -52,13 +52,14 @@
       return {
         assetChanges: [],
         assetChangesChart: null,
-        assetTypes: ['Equity', 'Bonds', 'RealEstate', 'Banks', 'Other'],
+        assetTypes: ['Equity', 'Bonds', 'RealEstate', 'Banks', 'Commodities', 'Other'],
         quarters: ['Jan-Mar', 'Apr-Jun', 'Jul-Sep', 'Oct-Dec'],
         currentQuarters: {
           Equity: 0,
           Bonds: 0,
           RealEstate: 0,
           Banks: 0,
+          Commodities: 0,
           Other: 0,
           },
         events: {},

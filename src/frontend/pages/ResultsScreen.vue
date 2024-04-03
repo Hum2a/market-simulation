@@ -80,6 +80,7 @@ export default {
           result.bonds,
           result.realestate,
           result.banks,
+          result.commodities,
           result.other
         ].reduce((acc, value) => acc + Number(value), 0);
         const totalGains = finalTotalWorth - initialTotalWorth;
@@ -220,7 +221,7 @@ export default {
           const datasets = [];
 
           // Assuming 'groups' within 'quarterResults' has detailed values for each asset type per group
-          const assetTypes = ['Equity', 'Bonds', 'RealEstate', 'Banks', 'Other'];
+          const assetTypes = ['Equity', 'Bonds', 'RealEstate', 'Banks', 'Commodities', 'Other'];
 
           assetTypes.forEach(assetType => {
             const assetData = this.quarterResults.map(quarter => {

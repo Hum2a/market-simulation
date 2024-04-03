@@ -44,6 +44,10 @@
                 <input type="number" v-model="group.banks" id="banks" class="modern-input">
               </div>
               <div class="input-row">
+                <label for="commodities">Commodities:</label>
+                <input type="number" v-model="group.commodities" id="commodities" class="modern-input">
+              </div>
+              <div class="input-row">
                 <label for="other">Other:</label>
                 <input type="number" v-model="group.other" id="other" class="modern-input">
               </div>
@@ -100,10 +104,10 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
     data() {
       return {
         groups: [
-          { name: 'Group 1', equity: '', bonds: '', realestate: '', banks: '', other: '' },
-          { name: 'Group 2', equity: '', bonds: '', realestate: '', banks: '', other: '' },
-          { name: 'Group 3', equity: '', bonds: '', realestate: '', banks: '', other: '' },
-          { name: 'Group 4', equity: '', bonds: '', realestate: '', banks: '', other: '' }
+          { name: 'Group 1', equity: '', bonds: '', realestate: '', banks: '', commodities: '', other: '' },
+          { name: 'Group 2', equity: '', bonds: '', realestate: '', banks: '', commodities: '', other: '' },
+          { name: 'Group 3', equity: '', bonds: '', realestate: '', banks: '', commodities: '', other: '' },
+          { name: 'Group 4', equity: '', bonds: '', realestate: '', banks: '', commodities: '', other: '' }
         ],
         showCalculator: false,
         showSimulationControls: false,
@@ -175,7 +179,7 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
         const group = this.groups[index];
         let remainingValue = this.maxPortfolioValue;
 
-        const keys = ['equity', 'bonds', 'realestate', 'banks', 'other'];
+        const keys = ['equity', 'bonds', 'realestate', 'banks', 'commodities', 'other'];
         keys.forEach((key, i) => {
           if (i === keys.length - 1) {
             // Assign remaining value to the last asset
@@ -196,15 +200,16 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
       const ctx = document.getElementById('pieChart_' + index).getContext('2d');
       
       const data = {
-        labels: ['Equity', 'Bonds', 'Real Estate', 'Bank Accounts', 'Other'],
+        labels: ['Equity', 'Bonds', 'Real Estate', 'Bank Accounts', 'Commodities', 'Other'],
         datasets: [{
           label: `${group.name} Asset Allocation`,
-          data: [group.equity, group.bonds, group.realestate, group.banks, group.other],
+          data: [group.equity, group.bonds, group.realestate, group.banks, group.commodities, group.other],
           backgroundColor: [
             'rgba(255, 99, 132, 0.6)',
             'rgba(54, 162, 235, 0.6)',
             'rgba(255, 206, 86, 0.6)',
             'rgba(75, 192, 192, 0.6)',
+            'rgba(175, 92, 132, 0.6)',
             'rgba(153, 102, 255, 0.6)'
           ],
           borderColor: [
@@ -212,6 +217,7 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
             'rgba(54, 162, 235, 1)',
             'rgba(255, 206, 86, 1)',
             'rgba(75, 192, 192, 1)',
+            'rgba(175, 92, 132, 1)',
             'rgba(153, 102, 255, 1)'
           ],
           borderWidth: 1
@@ -287,7 +293,7 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
     groups: {
       handler(groups) {
         groups.forEach((group, index) => {
-          if (group.equity || group.bonds || group.realestate || group.banks || group.other) {
+          if (group.equity || group.bonds || group.realestate || group.banks || group.commodities || group.other) {
             this.$nextTick(() => this.renderPieChart(index));
           }
         });

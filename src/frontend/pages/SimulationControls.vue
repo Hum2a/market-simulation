@@ -98,7 +98,7 @@
     data() {
       return {
         years: 1,
-        assets: ['Equity', 'Bonds', 'RealEstate', 'Banks', 'Other'],
+        assets: ['Equity', 'Bonds', 'RealEstate', 'Banks', 'Commodities', 'Other'],
         quarters: ['Jan-Mar', 'Apr-Jun', 'Jul-Sep', 'Oct-Dec'],
         assetChanges: [],
         showEventModal: false,

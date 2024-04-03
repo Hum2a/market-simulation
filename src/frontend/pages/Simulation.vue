@@ -13,6 +13,7 @@
             <th>Bonds</th>
             <th>Real Estate</th>
             <th>Bank Accounts</th>
+            <th>Commodities</th>
             <th>Other</th>
           </tr>
         </thead>
@@ -23,6 +24,7 @@
             <td>{{ group.bonds }}</td>
             <td>{{ group.realestate }}</td>
             <td>{{ group.banks }}</td>
+            <td>{{ group.commodities }}</td>
             <td>{{ group.other }}</td>
           </tr>
         </tbody>
@@ -167,13 +169,14 @@ export default {
             futureBonds: data.bonds,
             futureRealEstate: data.realestate,
             futureBanks: data.banks,
+            futureCommodities: data.commodities,
             futureOther: data.other,
           };
         });
 
         this.groups.forEach(group => {
           const groupName = group.name;
-          const initialTotal = ['equity', 'bonds', 'realestate', 'banks', 'other']
+          const initialTotal = ['equity', 'bonds', 'realestate', 'banks', 'commodities', 'other']
             .reduce((total, key) => total + parseFloat(group[key] || 0), 0);
 
           this.totalPortfolioValues[groupName] = [initialTotal]; // Store initial total as the first entry
@@ -200,7 +203,7 @@ export default {
           if (!this.detailedGrowth[group.name]) {
             this.detailedGrowth[group.name] = {};
           }
-          ['Equity', 'Bonds', 'RealEstate', 'Banks', 'Other'].forEach(asset => {
+          ['Equity', 'Bonds', 'RealEstate', 'Banks', 'Commodities', 'Other'].forEach(asset => {
             if (!this.detailedGrowth[group.name][asset]) {
               this.detailedGrowth[group.name][asset] = [parseFloat(group[asset.toLowerCase()]) || 0]; // Initial value
             }
@@ -217,7 +220,7 @@ export default {
         for (let year = 0; year < this.simulationYears; year++) {
           quarters.forEach(quarter => {
             this.groups.forEach(group => {
-              ['Equity', 'Bonds', 'RealEstate', 'Banks', 'Other'].forEach(asset => {
+              ['Equity', 'Bonds', 'RealEstate', 'Banks', 'Commodities', 'Other'].forEach(asset => {
                 const lastValueIndex = this.detailedGrowth[group.name][asset].length - 1;
                 let lastValue = this.detailedGrowth[group.name][asset][lastValueIndex];
                 const growthRate = this.assetChanges[year][quarter][asset] / 100;
@@ -270,7 +273,7 @@ export default {
 
         this.groups.forEach(group => {
           const groupName = group.name;
-          const totalValue = ['equity', 'bonds', 'realestate', 'banks', 'other']
+          const totalValue = ['equity', 'bonds', 'realestate', 'banks', 'commodities', 'other']
             .reduce((total, key) => total + parseFloat(group[key] || 0), 0);
 
           if (!this.totalPortfolioValues[groupName]) {
@@ -313,7 +316,7 @@ export default {
       //   };
       // },
       generateAssetChangesChartData() {
-        const assetTypes = ['Equity', 'Bonds', 'RealEstate', 'Banks', 'Other']; // Define asset types directly
+        const assetTypes = ['Equity', 'Bonds', 'RealEstate', 'Banks', 'Commodities', 'Other']; // Define asset types directly
         const labels = ['Initial Value'].concat(
           Array.from({ length: this.simulationYears * 4 }, (_, i) => `Q${i + 1}`)
         );
@@ -403,10 +406,10 @@ export default {
     prepareChartData(group) {
       // Prepares and returns chart data based on the group
       return {
-        labels: ['Equity', 'Bonds', 'Real Estate', 'Bank Accounts', 'Other'],
+        labels: ['Equity', 'Bonds', 'Real Estate', 'Bank Accounts', 'Commodities', 'Other'],
         datasets: [{
           data: [group.equity, group.bonds, group.realestate, group.banks, group.other],
-          backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'],
+          backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#FAA74B', '#9966FF'],
           label: 'Asset Distribution',
         }]
       };
@@ -470,6 +473,7 @@ export default {
           bonds: 0,
           realestate: 0,
           banks: 0,
+          commodities: 0,
           other: 0,
         };
 
