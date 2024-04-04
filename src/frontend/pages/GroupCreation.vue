@@ -7,7 +7,10 @@
           <i class="fas fa-calculator"></i>
         </button>
         <button @click="toggleSimulationControls" class="simulation-controls-toggle">
-          <i class="fas fa-cogs"></i>
+          <img src="../assets/settings (1) 1.png" alt="Controls">
+        </button>
+        <button @click="toggleSimulationHistory" class="simulation-history-toggle">
+          <img src="../assets/calendar 1.png" alt="Calendar">
         </button>
       </div>
     </header>
@@ -15,14 +18,21 @@
     <SimulationControls v-if="showSimulationControls" />
 
     <main>
-      <h1>Group Management</h1>
+      <h1 class="header-content">
+        <img src="../assets/Blue line.png" alt="BlueLine" class="blueline">
+        <span>Group Management</span>
+      </h1>
       <div class="groups">
         <div v-for="(group, index) in groups" :key="index" class="group">
           <div class="group-header">
             <h2>
               {{ group.name }}
-              <button @click="editGroupName(index)" class="edit-group-btn">✎</button>
-              <button @click="removeGroup(index)" class="remove-group-btn">X</button>
+              <button @click="editGroupName(index)" class="edit-group-btn">
+                <img src="../assets/pencil 1.png" alt="Pencil">
+              </button>
+              <button @click="removeGroup(index)" class="remove-group-btn">
+                <img src="../assets/remove.png" alt="Remove">
+              </button>
             </h2>
           </div>
           <div class="group-content">
@@ -51,9 +61,9 @@
                 <label for="other">Other:</label>
                 <input type="number" v-model="group.other" id="other" class="modern-input">
               </div>
-              <div class="total-value">
+              <!-- <div class="total-value">
                 Total Portfolio Value: ${{ getTotalValue(group).toFixed(2) }}
-              </div>
+              </div> -->
             </div>
             <button @click="generateRandomValues(index)" class="modern-button">Generate Random Values</button>
             <div class="pie-chart-container">
@@ -64,7 +74,11 @@
         <button @click="addGroup" class="add-group-btn">Add Group</button>
       </div>
 
-      <button @click="startSimulation" class="modern-button">Go to Simulation</button>
+      <button @click="startSimulation" class="modern-button">
+        Start Simulation
+        <img src="../assets/Arrow 17.png" alt="Icon" style="margin-left: 5px;">
+      </button>
+
     </main>
     </div>
 

@@ -4,16 +4,28 @@ body {
 
 .dashboard {
   display: grid;
-  background-color: #dfdfdf;
+  background-color: #F6F2EF;
 }
 
-h1 {
-  text-align: left; /* Aligns text to the left */
-  margin-top: 20px; /* Removes margin from the top if you want it to start right at the top */
-  margin-bottom: 20px; /* Keeps the bottom margin */
-  margin-left: 80px;
+.header-content {
+  display: flex;
+  align-items: center; /* Centers the image and text vertically */
+  text-align: left;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  margin-left: 80px; /* Adjust as needed */
   color: #000000; /* Sets the text color to black */
 }
+
+.blueline {
+  height: 50px; /* Adjust the height as needed */
+}
+
+.header-content span {
+  font-size: 24px; /* Adjust the font size as needed */
+  font-weight: bold; /* Optional: if you want the text to be bold */
+}
+
 
 .groups {
   display: flex;
@@ -26,19 +38,22 @@ h1 {
 .group {
   margin-right: 20px;
   margin-bottom: 20px;
-  background-color: #ffffff; /* Navy blue background */
+  background-color: #FBFBFB; /* Navy blue background */
   padding: 20px;
   border-radius: 10px;
   width: 300px;; 
 }
 
 .group-header {
+  display: flex;
   margin-bottom: 15px;
 }
 
 .group-header h2 {
   color: #000000; /* Yellow text color */
+  margin-right: 10px;
 }
+
 
 .group-content {
   display: flex;
@@ -68,7 +83,7 @@ h1 {
 }
 
 .add-group-btn {
-  background-color: #474994; /* Purple background */
+  background-color: #082148; /* Purple background */
   color: #ffffff; /* White text color */
   padding: 10px 20px;
   border: none;
@@ -97,32 +112,27 @@ h1 {
   box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Reset to smaller shadow */
 }
 
+
+.edit-group-btn img, .remove-group-btn img {
+  width: 20px; /* Adjust the width as needed */
+  height: auto; /* Maintain aspect ratio */
+  display: block; /* To enable margin auto */
+  margin: 0 auto; /* Center the image horizontally */
+}
+
+.edit-group-btn, .remove-group-btn {
+  padding: 5px; /* Adjust padding to ensure buttons are not too large or too small */
+  border: none; /* Remove any default border */
+  background: transparent; /* Remove any default background */
+  cursor: pointer; /* Change cursor to pointer to indicate clickable */
+}
+
 .edit-group-btn {
-  background-color: transparent;
-  border: none;
-  color: #FFFFFF; /* White text color */
-  font-size: 1em;
-  cursor: pointer;
-}
-
-.edit-group-btn:hover {
-  color: #FFD700;
-}
-
-.remove-group-btn {
-  background-color: transparent;
-  border: none;
-  color: #FFFFFF; /* White text color */
-  font-size: 1em;
-  cursor: pointer;
-}
-
-.remove-group-btn:hover {
-  color: #FFD700; /* Red color on hover */
+  margin-left: 130px;
 }
 
 .modern-input {
-  background-color: #9e9e9e; /* Black background */
+  background-color: #F0F0F0; /* Black background */
   color: #000000; /* White text */
   font-size: 16px;
   transition: border-color 0.3s;
@@ -134,7 +144,7 @@ h1 {
 
 
 .modern-button {
-  background-color: #474994; /* Yellow background */
+  background-color: #082148; /* Yellow background */
   color: #ffffff;
   border: none;
   font-size: 16px;
@@ -157,7 +167,7 @@ h1 {
   transform: scale(0.95); /* Slightly smaller on click */
 }
 
-.calculator-toggle, .simulation-controls-toggle {
+.calculator-toggle, .simulation-controls-toggle, .simulation-history-toggle {
   position: absolute;
   top: 75px;
   right: 20px;
@@ -169,14 +179,18 @@ h1 {
 }
 
 .simulation-controls-toggle {
-  right: 60px; /* Adjust based on your layout */
+  right: 80px; /* Adjust based on your layout */
 }
-.calculator-toggle i, .simulation-controls-toggle i {
+
+.simulation-history-toggle {
+  right: 140px; /* Adjust based on your layout */
+}
+.calculator-toggle i, .simulation-controls-toggle i, .simulation-history-toggle i {
   transition: transform 0.3s ease;
   }
 
-.calculator-toggle:hover i, .simulation-controls-toggle:hover i {
-transform: scale(1.1);
+.calculator-toggle:hover i, .simulation-controls-toggle:hover i, .simulation-history-toggle:hover i {
+transform: scale(1.2);
 }
 
 .modal {
@@ -247,7 +261,7 @@ transform: scale(1.1);
   display: flex;
   justify-content: space-between;
   padding: 1em;
-  background-color: #0D1A26;
+  background-color: #221A3C;
 }
 
 
