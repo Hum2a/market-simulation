@@ -23,7 +23,7 @@
             Update {{ asset }} Next Quarter
           </button> -->
           <button class="update-all" @click="updateAllQuarters(asset)">
-            Update All Quarters for {{ asset }}
+            Show {{ asset }}
           </button>
         </template>
       </div>

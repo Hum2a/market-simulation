@@ -201,7 +201,7 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
         const totalValue = this.getTotalValue(group).toFixed(2);
         
         const data = {
-          labels: ['Equity', 'Bonds', 'Real Estate', 'Bank Accounts', 'Commodities', 'Other'],
+          labels: ['Equity', 'Bonds', 'Real Estate', 'Commodities', 'Other'],
           datasets: [{
             label: `${group.name} Asset Allocation`,
             data: [group.equity, group.bonds, group.realestate, group.commodities, group.other],

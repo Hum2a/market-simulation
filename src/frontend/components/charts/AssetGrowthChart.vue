@@ -43,7 +43,13 @@
         const ctx = this.$refs.chart.getContext('2d');
         this.chartInstance = new Chart(ctx, {
           type: 'line',
-          data: this.chartData,
+          data: {
+            ...this.chartData,
+            datasets: this.chartData.datasets.map(dataset => ({
+              ...dataset,
+              tension: 0.4 // Adjust this value between 0 and 1 to control curve smoothness
+            }))
+          },
           options: {
             ...this.options,
             scales: {
