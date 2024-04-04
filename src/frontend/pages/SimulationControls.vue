@@ -40,9 +40,9 @@
         </button>
         <button type="submit" class="save-button">Save</button>
         <button type="button" class="generate-random-button" @click="generateRandomValues">Generate Random Values</button>
-        <button @click="downloadTemplate" class="download-template-button">
+        <!-- <button @click="downloadTemplate" class="download-template-button">
           Download Excel Template
-        </button>
+        </button> -->
         <label class="custom-file-upload">
           <input 
             type="file"
@@ -51,7 +51,14 @@
             style="display: none;" />
           <span>Upload File</span>
         </label>
-
+        <label class="custom-file-upload">
+          <input
+            type="file"
+            @change="handleEventFileUpload"
+            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+            style="display: none;" />
+          <span>Upload Event File</span>
+        </label>
       </form>
     </div>
 
@@ -118,6 +125,55 @@
       },
     },
     methods: {
+      handleEventFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const data = e.target.result;
+          const workbook = XLSX.read(data, { type: 'binary' });
+
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+          this.processEventUploadedData(jsonData);
+        };
+        reader.readAsBinaryString(file);
+      },
+      processEventUploadedData(data) {
+        data.shift(); // Remove header row
+        
+        // Initialize events object
+        const events = {};
+        
+        // Populate events with the data
+        data.forEach(row => {
+          const yearMatch = row[0].match(/\d+/);
+          const year = yearMatch ? parseInt(yearMatch[0], 10) : null;
+          const quarter = this.quarters.find(q => row[1].includes(q));
+          
+          // Extract event name and description
+          const eventName = row[2] ? row[2].toString().trim() : "";
+          const eventDescription = row[3] ? row[3].toString().trim() : "";
+
+          // Skip the row if no event name or description is provided
+          if (!eventName && !eventDescription) return;
+          
+          // Initialize year and quarter in events object if not exist
+          if (!events[year]) events[year] = {};
+          if (!events[year][quarter]) events[year][quarter] = {};
+          
+          // Add the event to the events object
+          events[year][quarter] = { name: eventName, description: eventDescription };
+        });
+
+        // Update the component's state with the new events
+        this.events = events;
+      },
+
+
       initializeAssetChanges(years) {
         this.assetChanges = Array.from({ length: years }, () => {
           return this.quarters.reduce((acc, quarter) => {

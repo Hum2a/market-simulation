@@ -4,7 +4,7 @@ body {
 
 .dashboard {
   display: grid;
-  background-color: #F6F2EF;
+  background-color: #f6f2ee;
 }
 
 .header-content {
@@ -169,7 +169,7 @@ body {
 
 .calculator-toggle, .simulation-controls-toggle, .simulation-history-toggle {
   position: absolute;
-  top: 75px;
+  top: 35px;
   right: 20px;
   background: transparent;
   border: none;
@@ -260,8 +260,13 @@ transform: scale(1.2);
   grid-column: 1 / -1; /* Full width */
   display: flex;
   justify-content: space-between;
-  padding: 1em;
-  background-color: #221A3C;
+  align-items: center; /* Vertically center the content */
+  padding: 0.2em;
+  background-color: #102454;
+  border-top-left-radius: 0;      /* Top left corner */
+  border-top-right-radius: 0;     /* Top right corner */
+  border-bottom-right-radius: 25px;  /* Bottom right corner */
+  border-bottom-left-radius: 25px;   /* Bottom left corner */
 }
 
 
@@ -295,8 +300,9 @@ button:active {
   width: 400px; /* Example width; adjust as needed */
   display: block; /* To prevent inline default behavior */
   margin-left: 0; /* Align the logo to the left */
-}
+  clip-path: polygon(0 0, 60% 0, 60% 100%, 0% 100%);
 
+}
 
 /* Font Awesome Icons */
 .fas {
@@ -307,12 +313,14 @@ button:active {
   margin-top: 20px; /* Adds space above the total value display */
   margin-bottom: 20px;
   padding: 10px; /* Adds padding around the text for better readability */
-  background-color: #f0f0f0; /* Light grey background for the total value area */
   border-radius: 5px; /* Rounded corners for the total value display */
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Adds a subtle shadow for depth */
   text-align: center; /* Centers the total value text */
-  font-size: 1.2rem; /* Increases the font size for better visibility */
-  color: #333; /* Dark grey color for the text for contrast */
+  background-color: #082148; /* Yellow background */
+  color: #ffffff;
+  border: none;
+  font-size: 16px;
+  margin-bottom: 10px;
 }
 
 .pie-chart-container {

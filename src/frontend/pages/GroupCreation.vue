@@ -61,9 +61,9 @@
                 <label for="other">Other:</label>
                 <input type="number" v-model="group.other" id="other" class="modern-input">
               </div>
-              <!-- <div class="total-value">
+              <div class="total-value">
                 Total Portfolio Value: ${{ getTotalValue(group).toFixed(2) }}
-              </div> -->
+              </div>
             </div>
             <button @click="generateRandomValues(index)" class="modern-button">Generate Random Values</button>
             <div class="pie-chart-container">
@@ -212,7 +212,7 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
       renderPieChart(index) {
         const group = this.groups[index];
         const ctx = document.getElementById('pieChart_' + index).getContext('2d');
-        const totalValue = this.getTotalValue(group).toFixed(2);
+        // const totalValue = this.getTotalValue(group).toFixed(2);
         
         const data = {
           labels: ['Equity', 'Bonds', 'Real Estate', 'Commodities', 'Other'],
@@ -220,46 +220,44 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
             label: `${group.name} Asset Allocation`,
             data: [group.equity, group.bonds, group.realestate, group.commodities, group.other],
             backgroundColor: [
-              'rgba(255, 99, 132, 0.6)',
-              'rgba(54, 162, 235, 0.6)',
-              'rgba(255, 206, 86, 0.6)',
-              'rgba(75, 192, 192, 0.6)',
-              'rgba(175, 92, 132, 0.6)',
-              'rgba(153, 102, 255, 0.6)'
+              'rgba(114, 93, 255, 1)',
+              'rgba(230, 96, 131, 1)',
+              'rgba(255, 133, 76, 1)',
+              'rgba(30, 174, 174, 1)',
+              'rgba(54, 48, 82, 1)'
             ],
             borderColor: [
-              'rgba(255,99,132,1)',
-              'rgba(54, 162, 235, 1)',
-              'rgba(255, 206, 86, 1)',
-              'rgba(75, 192, 192, 1)',
-              'rgba(175, 92, 132, 1)',
-              'rgba(153, 102, 255, 1)'
+              'rgba(114, 93, 255, 1)',
+              'rgba(230, 96, 131, 1)',
+              'rgba(255, 133, 76, 1)',
+              'rgba(30, 174, 174, 1)',
+              'rgba(54, 48, 82, 1)'
             ],
             borderWidth: 1
           }]
         };
 
-        const centerTextPlugin = {
-          id: 'centerTextPlugin',
-          afterDraw: function (chart) {
-            var width = chart.chart.width,
-                height = chart.chart.height,
-                ctx = chart.ctx;
+        // const centerTextPlugin = {
+        //   id: 'centerTextPlugin',
+        //   afterDraw: function (chart) {
+        //     var width = chart.chart.width,
+        //         height = chart.chart.height,
+        //         ctx = chart.ctx;
 
-            ctx.restore();
-            var fontSize = (height / 142).toFixed(2);
-            ctx.font = fontSize + "em sans-serif";
-            ctx.textBaseline = "middle";
+        //     ctx.restore();
+        //     var fontSize = (height / 142).toFixed(2);
+        //     ctx.font = fontSize + "em sans-serif";
+        //     ctx.textBaseline = "middle";
 
-            // Use the options property to get the text
-            var text = chart.options.plugins.centerText.text,
-                textX = Math.round((width - ctx.measureText(text).width) / 2),
-                textY = height / 3;
+        //     // Use the options property to get the text
+        //     var text = chart.options.plugins.centerText.text,
+        //         textX = Math.round((width - ctx.measureText(text).width) / 2),
+        //         textY = height / 3;
 
-            ctx.fillText(text, textX, textY);
-            ctx.save();
-          }
-        };
+        //     ctx.fillText(text, textX, textY);
+        //     ctx.save();
+        //   }
+        // };
 
         new Chart(ctx, {
           type: 'pie',
@@ -303,13 +301,13 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
             cutoutPercentage: 65,
             rotation: -0.5 * Math.PI,
             circumference: 2 * Math.PI,
-            plugins: {
-              centerText: {
-                text: `${totalValue}`
-              }
-            }
+            // plugins: {
+            //   centerText: {
+            //     text: `${totalValue}`
+            //   }
+            // }
           },
-          plugins: [centerTextPlugin]
+          // plugins: [centerTextPlugin]
         });
       },
       getTotalValue(group) {
