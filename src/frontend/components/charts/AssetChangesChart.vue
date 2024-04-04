@@ -19,9 +19,9 @@
 
       <div class="buttons-container">
         <template v-for="asset in assetTypes" :key="asset">
-          <button class="update-next" @click="updateAssetData(asset)">
+          <!-- <button class="update-next" @click="updateAssetData(asset)">
             Update {{ asset }} Next Quarter
-          </button>
+          </button> -->
           <button class="update-all" @click="updateAllQuarters(asset)">
             Update All Quarters for {{ asset }}
           </button>
@@ -52,13 +52,13 @@
       return {
         assetChanges: [],
         assetChangesChart: null,
-        assetTypes: ['Equity', 'Bonds', 'RealEstate', 'Banks', 'Commodities', 'Other'],
+        assetTypes: ['Equity', 'Bonds', 'RealEstate', 'Commodities', 'Other'],
         quarters: ['Jan-Mar', 'Apr-Jun', 'Jul-Sep', 'Oct-Dec'],
         currentQuarters: {
           Equity: 0,
           Bonds: 0,
           RealEstate: 0,
-          Banks: 0,
+          // Banks: 0,
           Commodities: 0,
           Other: 0,
           },
@@ -338,8 +338,8 @@
 
 .event-buttons-container button {
   padding: 10px 15px; /* Padding inside the buttons */
-  background-color: #ffffff00; /* Button background color */
-  color: rgb(248, 248, 248); /* Text color */
+  background-color: #cf6f6f; /* Button background color */
+  color: rgb(0, 0, 0); /* Text color */
   border: none; /* Removes the default border */
   border-radius: 5px; /* Rounded corners */
   cursor: pointer; /* Changes the cursor to a pointer on hover */

@@ -39,10 +39,10 @@
                 <label for="realestate">Real Estate:</label>
                 <input type="number" v-model="group.realestate" id="realestate" class="modern-input">
               </div>
-              <div class="input-row">
+              <!-- <div class="input-row">
                 <label for="banks">Bank Accounts:</label>
                 <input type="number" v-model="group.banks" id="banks" class="modern-input">
-              </div>
+              </div> -->
               <div class="input-row">
                 <label for="commodities">Commodities:</label>
                 <input type="number" v-model="group.commodities" id="commodities" class="modern-input">
@@ -104,10 +104,10 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
     data() {
       return {
         groups: [
-          { name: 'Group 1', equity: '', bonds: '', realestate: '', banks: '', commodities: '', other: '' },
-          { name: 'Group 2', equity: '', bonds: '', realestate: '', banks: '', commodities: '', other: '' },
-          { name: 'Group 3', equity: '', bonds: '', realestate: '', banks: '', commodities: '', other: '' },
-          { name: 'Group 4', equity: '', bonds: '', realestate: '', banks: '', commodities: '', other: '' }
+          { name: 'Group 1', equity: '', bonds: '', realestate: '', commodities: '', other: '' },
+          { name: 'Group 2', equity: '', bonds: '', realestate: '', commodities: '', other: '' },
+          { name: 'Group 3', equity: '', bonds: '', realestate: '', commodities: '', other: '' },
+          { name: 'Group 4', equity: '', bonds: '', realestate: '', commodities: '', other: '' }
         ],
         showCalculator: false,
         showSimulationControls: false,
@@ -125,7 +125,7 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
       confirmAddGroup() {
         if (this.newGroupName.trim()) {
           this.groups.push({
-            name: this.newGroupName.trim(), equity: '', bonds: '', realestate: '', banks: '', other: ''
+            name: this.newGroupName.trim(), equity: '', bonds: '', realestate: '', commodities: '', other: ''
           });
           this.newGroupName = ''; // Reset the input value
           this.toggleModal(); // Close the modal
@@ -179,7 +179,7 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
         const group = this.groups[index];
         let remainingValue = this.maxPortfolioValue;
 
-        const keys = ['equity', 'bonds', 'realestate', 'banks', 'commodities', 'other'];
+        const keys = ['equity', 'bonds', 'realestate', 'commodities', 'other'];
         keys.forEach((key, i) => {
           if (i === keys.length - 1) {
             // Assign remaining value to the last asset
@@ -196,79 +196,108 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
       },
 
       renderPieChart(index) {
-      const group = this.groups[index];
-      const ctx = document.getElementById('pieChart_' + index).getContext('2d');
-      
-      const data = {
-        labels: ['Equity', 'Bonds', 'Real Estate', 'Bank Accounts', 'Commodities', 'Other'],
-        datasets: [{
-          label: `${group.name} Asset Allocation`,
-          data: [group.equity, group.bonds, group.realestate, group.banks, group.commodities, group.other],
-          backgroundColor: [
-            'rgba(255, 99, 132, 0.6)',
-            'rgba(54, 162, 235, 0.6)',
-            'rgba(255, 206, 86, 0.6)',
-            'rgba(75, 192, 192, 0.6)',
-            'rgba(175, 92, 132, 0.6)',
-            'rgba(153, 102, 255, 0.6)'
-          ],
-          borderColor: [
-            'rgba(255,99,132,1)',
-            'rgba(54, 162, 235, 1)',
-            'rgba(255, 206, 86, 1)',
-            'rgba(75, 192, 192, 1)',
-            'rgba(175, 92, 132, 1)',
-            'rgba(153, 102, 255, 1)'
-          ],
-          borderWidth: 1
-        }]
-      };
+        const group = this.groups[index];
+        const ctx = document.getElementById('pieChart_' + index).getContext('2d');
+        const totalValue = this.getTotalValue(group).toFixed(2);
+        
+        const data = {
+          labels: ['Equity', 'Bonds', 'Real Estate', 'Bank Accounts', 'Commodities', 'Other'],
+          datasets: [{
+            label: `${group.name} Asset Allocation`,
+            data: [group.equity, group.bonds, group.realestate, group.commodities, group.other],
+            backgroundColor: [
+              'rgba(255, 99, 132, 0.6)',
+              'rgba(54, 162, 235, 0.6)',
+              'rgba(255, 206, 86, 0.6)',
+              'rgba(75, 192, 192, 0.6)',
+              'rgba(175, 92, 132, 0.6)',
+              'rgba(153, 102, 255, 0.6)'
+            ],
+            borderColor: [
+              'rgba(255,99,132,1)',
+              'rgba(54, 162, 235, 1)',
+              'rgba(255, 206, 86, 1)',
+              'rgba(75, 192, 192, 1)',
+              'rgba(175, 92, 132, 1)',
+              'rgba(153, 102, 255, 1)'
+            ],
+            borderWidth: 1
+          }]
+        };
 
-      new Chart(ctx, {
-        type: 'pie',
-        data: data,
-        options: {
-          responsive: true,
-          maintainAspectRatio: true,
-          aspectRatio: 1,
-          legend: {
-            display: true,
-            position: 'bottom',
-            labels: {
-              fontColor: '#000', // Color of text
-              fontSize: 10, // Size of the text
-              fontFamily: 'Helvetica', // Font family of the text
-              boxWidth: 2, // Width of colored box
-              usePointStyle: true, // Use point style instead of box
+        const centerTextPlugin = {
+          id: 'centerTextPlugin',
+          afterDraw: function (chart) {
+            var width = chart.chart.width,
+                height = chart.chart.height,
+                ctx = chart.ctx;
+
+            ctx.restore();
+            var fontSize = (height / 142).toFixed(2);
+            ctx.font = fontSize + "em sans-serif";
+            ctx.textBaseline = "middle";
+
+            // Use the options property to get the text
+            var text = chart.options.plugins.centerText.text,
+                textX = Math.round((width - ctx.measureText(text).width) / 2),
+                textY = height / 3;
+
+            ctx.fillText(text, textX, textY);
+            ctx.save();
+          }
+        };
+
+        new Chart(ctx, {
+          type: 'pie',
+          data: data,
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 1,
+            legend: {
+              display: true,
+              position: 'bottom',
+              labels: {
+                fontColor: '#000', // Color of text
+                fontSize: 10, // Size of the text
+                fontFamily: 'Helvetica', // Font family of the text
+                boxWidth: 2, // Width of colored box
+                usePointStyle: true, // Use point style instead of box
+              }
+            },
+            // tooltips: {
+            //   enabled: true,
+            //   mode: 'nearest',
+            //   intersect: false,
+            //   backgroundColor: 'rgba(0,0,0,0.8)', // Tooltip background color
+            //   titleFontFamily: 'Helvetica', // Font family for tooltip title
+            //   titleFontSize: 20, // Font size for tooltip title
+            //   titleFontStyle: 'bold', // Font style for tooltip title
+            //   bodyFontFamily: 'Arial', // Font family for tooltip body
+            //   bodyFontSize: 15, // Font size for tooltip body
+            //   bodyFontStyle: 'normal', // Font style for tooltip body
+            //   cornerRadius: 30, // Corner radius of tooltip
+            //   xPadding: 10, // Padding inside tooltip (x-axis)
+            //   yPadding: 10, // Padding inside tooltip (y-axis)
+            //   caretSize: 5, // Size of the tooltip arrow
+            //   displayColors: true, // Display color boxes in the tooltip
+            // },
+            animation: {
+              animateRotate: true,
+              animateScale: true,
+            },
+            cutoutPercentage: 65,
+            rotation: -0.5 * Math.PI,
+            circumference: 2 * Math.PI,
+            plugins: {
+              centerText: {
+                text: `${totalValue}`
+              }
             }
           },
-          // tooltips: {
-          //   enabled: true,
-          //   mode: 'nearest',
-          //   intersect: false,
-          //   backgroundColor: 'rgba(0,0,0,0.8)', // Tooltip background color
-          //   titleFontFamily: 'Helvetica', // Font family for tooltip title
-          //   titleFontSize: 20, // Font size for tooltip title
-          //   titleFontStyle: 'bold', // Font style for tooltip title
-          //   bodyFontFamily: 'Arial', // Font family for tooltip body
-          //   bodyFontSize: 15, // Font size for tooltip body
-          //   bodyFontStyle: 'normal', // Font style for tooltip body
-          //   cornerRadius: 30, // Corner radius of tooltip
-          //   xPadding: 10, // Padding inside tooltip (x-axis)
-          //   yPadding: 10, // Padding inside tooltip (y-axis)
-          //   caretSize: 5, // Size of the tooltip arrow
-          //   displayColors: true, // Display color boxes in the tooltip
-          // },
-          animation: {
-            animateRotate: true,
-            animateScale: true,
-          },
-          cutoutPercentage: 65,
-          rotation: -0.5 * Math.PI,
-          circumference: 2 * Math.PI,
-        },
-      });
-    },
+          plugins: [centerTextPlugin]
+        });
+      },
       getTotalValue(group) {
         return Object.keys(group).reduce((total, key) => {
           if (key !== 'name') {
@@ -293,7 +322,7 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
     groups: {
       handler(groups) {
         groups.forEach((group, index) => {
-          if (group.equity || group.bonds || group.realestate || group.banks || group.commodities || group.other) {
+          if (group.equity || group.bonds || group.realestate || group.commodities || group.other) {
             this.$nextTick(() => this.renderPieChart(index));
           }
         });

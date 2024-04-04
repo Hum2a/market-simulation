@@ -12,7 +12,6 @@
             <th>Equity</th>
             <th>Bonds</th>
             <th>Real Estate</th>
-            <th>Bank Accounts</th>
             <th>Commodities</th>
             <th>Other</th>
           </tr>
@@ -23,7 +22,6 @@
             <td>{{ group.equity }}</td>
             <td>{{ group.bonds }}</td>
             <td>{{ group.realestate }}</td>
-            <td>{{ group.banks }}</td>
             <td>{{ group.commodities }}</td>
             <td>{{ group.other }}</td>
           </tr>
@@ -45,7 +43,7 @@
               <th>Equity Growth (%)</th>
               <th>Bonds Growth (%)</th>
               <th>Real Estate Growth (%)</th>
-              <th>Bank Accounts Growth (%)</th>
+              <th>Commodities (%)</th>
               <th>Other Growth (%)</th>
             </tr>
           </thead>
@@ -57,7 +55,7 @@
                   <td>{{ change.Equity }}</td>
                   <td>{{ change.Bonds }}</td>
                   <td>{{ change.RealEstate }}</td>
-                  <td>{{ change.Banks }}</td>
+                  <td>{{ change.Commodities }}</td>
                   <td>{{ change.Other }}</td>
                 </tr>
               </template>
@@ -168,7 +166,6 @@ export default {
             futureEquity: data.equity,
             futureBonds: data.bonds,
             futureRealEstate: data.realestate,
-            futureBanks: data.banks,
             futureCommodities: data.commodities,
             futureOther: data.other,
           };
@@ -176,7 +173,7 @@ export default {
 
         this.groups.forEach(group => {
           const groupName = group.name;
-          const initialTotal = ['equity', 'bonds', 'realestate', 'banks', 'commodities', 'other']
+          const initialTotal = ['equity', 'bonds', 'realestate', 'commodities', 'other']
             .reduce((total, key) => total + parseFloat(group[key] || 0), 0);
 
           this.totalPortfolioValues[groupName] = [initialTotal]; // Store initial total as the first entry
@@ -203,7 +200,7 @@ export default {
           if (!this.detailedGrowth[group.name]) {
             this.detailedGrowth[group.name] = {};
           }
-          ['Equity', 'Bonds', 'RealEstate', 'Banks', 'Commodities', 'Other'].forEach(asset => {
+          ['Equity', 'Bonds', 'RealEstate', 'Commodities', 'Other'].forEach(asset => {
             if (!this.detailedGrowth[group.name][asset]) {
               this.detailedGrowth[group.name][asset] = [parseFloat(group[asset.toLowerCase()]) || 0]; // Initial value
             }
@@ -220,7 +217,7 @@ export default {
         for (let year = 0; year < this.simulationYears; year++) {
           quarters.forEach(quarter => {
             this.groups.forEach(group => {
-              ['Equity', 'Bonds', 'RealEstate', 'Banks', 'Commodities', 'Other'].forEach(asset => {
+              ['Equity', 'Bonds', 'RealEstate', 'Commodities', 'Other'].forEach(asset => {
                 const lastValueIndex = this.detailedGrowth[group.name][asset].length - 1;
                 let lastValue = this.detailedGrowth[group.name][asset][lastValueIndex];
                 const growthRate = this.assetChanges[year][quarter][asset] / 100;
@@ -273,7 +270,7 @@ export default {
 
         this.groups.forEach(group => {
           const groupName = group.name;
-          const totalValue = ['equity', 'bonds', 'realestate', 'banks', 'commodities', 'other']
+          const totalValue = ['equity', 'bonds', 'realestate', 'commodities', 'other']
             .reduce((total, key) => total + parseFloat(group[key] || 0), 0);
 
           if (!this.totalPortfolioValues[groupName]) {
@@ -316,7 +313,7 @@ export default {
       //   };
       // },
       generateAssetChangesChartData() {
-        const assetTypes = ['Equity', 'Bonds', 'RealEstate', 'Banks', 'Commodities', 'Other']; // Define asset types directly
+        const assetTypes = ['Equity', 'Bonds', 'RealEstate', 'Commodities', 'Other']; // Define asset types directly
         const labels = ['Initial Value'].concat(
           Array.from({ length: this.simulationYears * 4 }, (_, i) => `Q${i + 1}`)
         );
@@ -406,9 +403,9 @@ export default {
     prepareChartData(group) {
       // Prepares and returns chart data based on the group
       return {
-        labels: ['Equity', 'Bonds', 'Real Estate', 'Bank Accounts', 'Commodities', 'Other'],
+        labels: ['Equity', 'Bonds', 'Real Estate', 'Commodities', 'Other'],
         datasets: [{
-          data: [group.equity, group.bonds, group.realestate, group.banks, group.other],
+          data: [group.equity, group.bonds, group.realestate, group.other],
           backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#FAA74B', '#9966FF'],
           label: 'Asset Distribution',
         }]
@@ -472,7 +469,6 @@ export default {
           equity: 0,
           bonds: 0,
           realestate: 0,
-          banks: 0,
           commodities: 0,
           other: 0,
         };
@@ -493,8 +489,8 @@ export default {
             case 'RealEstate':
               groupFinalValues.realestate = finalValue;
               break;
-            case 'Banks':
-              groupFinalValues.banks = finalValue;
+            case 'Commodities':
+              groupFinalValues.commodities = finalValue;
               break;
             case 'Other':
               groupFinalValues.other = finalValue;

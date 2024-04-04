@@ -98,7 +98,7 @@
     data() {
       return {
         years: 1,
-        assets: ['Equity', 'Bonds', 'RealEstate', 'Banks', 'Commodities', 'Other'],
+        assets: ['Equity', 'Bonds', 'RealEstate', 'Commodities', 'Other'],
         quarters: ['Jan-Mar', 'Apr-Jun', 'Jul-Sep', 'Oct-Dec'],
         assetChanges: [],
         showEventModal: false,
@@ -173,125 +173,125 @@
           reader.readAsBinaryString(file);
         },
 
-        processUploadedData(data) {
-          data.shift(); // Remove header row
-          
-          // Determine the unique years from the data to establish the total number of years
-          const uniqueYears = new Set();
-          data.forEach(row => {
-            const yearMatch = row[0].match(/\d+/);
-            if (yearMatch) {
-              uniqueYears.add(yearMatch[0]);
-            }
-          });
-          const yearsCount = uniqueYears.size;
+      processUploadedData(data) {
+        data.shift(); // Remove header row
+        
+        // Determine the unique years from the data to establish the total number of years
+        const uniqueYears = new Set();
+        data.forEach(row => {
+          const yearMatch = row[0].match(/\d+/);
+          if (yearMatch) {
+            uniqueYears.add(yearMatch[0]);
+          }
+        });
+        const yearsCount = uniqueYears.size;
 
-          // Initialize asset changes structure with the new years count if it changed
-          if (this.years !== yearsCount) {
-            this.years = yearsCount; // This will trigger the watcher to reinitialize assetChanges
-            this.$nextTick(() => {
-              this.populateAssetChangesWithData(data);
-            });
-          } else {
+        // Initialize asset changes structure with the new years count if it changed
+        if (this.years !== yearsCount) {
+          this.years = yearsCount; // This will trigger the watcher to reinitialize assetChanges
+          this.$nextTick(() => {
             this.populateAssetChangesWithData(data);
-          }
-        },
-
-        populateAssetChangesWithData(data) {
-          // Clear existing data in assetChanges
-          this.initializeAssetChanges(this.years);
-
-          // Populate assetChanges with the data
-          data.forEach(row => {
-            const yearMatch = row[0].match(/\d+/);
-            const year = yearMatch ? parseInt(yearMatch[0], 10) : null;
-            const quarter = this.quarters.includes(row[1]) ? row[1] : null;
-            if (year === null || quarter === null) return;
-
-            this.assets.forEach((asset, index) => {
-              let value = row[index + 2]; // Adjust if assets start at a different column
-              if (!isNaN(parseFloat(value)) && isFinite(value)) {
-                this.assetChanges[year - 1][quarter][asset] = parseFloat(value);
-              }
-            });
           });
-        },
-        downloadTemplate() {
-          const url = '../assets/templates/SimulationControlTemplate.xlsx';
-          window.open(url, '_blank');
-        },
-        quarterClicked(yearIndex, quarter) {
-            this.selectedYear = yearIndex;
-            this.selectedQuarter = quarter;
-            this.eventName = '';
-            this.eventDescription = '';
-            this.showEventModal = true;
-            },
-
-        closeEventModal() {
-            this.showEventModal = false;
-            },
-
-        saveEvent() {
-          // Update the events object in the local state
-          if (!this.events[this.selectedYear]) {
-            this.events[this.selectedYear] = {};
-          }
-          this.events[this.selectedYear][this.selectedQuarter] = {
-            name: this.eventName,
-            description: this.eventDescription
-          };
-
-          // Log for confirmation and close the modal
-          console.log('Event added to local state');
-          this.closeEventModal();
-        },
-
-
-        generateRandomValues() {
-            this.assetChanges.forEach(yearData => {
-            Object.keys(yearData).forEach(quarter => {
-                this.assets.forEach(asset => {
-                yearData[quarter][asset] = this.getRandomNumber();
-                });
-            });
-            });
-        },
-
-        getRandomNumber() {
-          return parseFloat((Math.random() * 20 - 10).toFixed(2));
-        },
-
-
-        toggleEventList() {
-            this.showEventList = !this.showEventList;
-        },
-        editEvent(year, quarter) {
-          const event = this.events[year][quarter];
-          if (event) {
-            this.selectedYear = year;
-            this.selectedQuarter = quarter;
-            this.eventName = event.name;
-            this.eventDescription = event.description;
-            this.showEventModal = true;
-          }
-        },
-
-        deleteEvent(year, quarter) {
-          if (confirm(`Are you sure you want to delete the event for ${quarter} of year ${year}?`)) {
-            // Use standard JavaScript delete for Vue 3
-            delete this.events[year][quarter];
-            if (Object.keys(this.events[year]).length === 0) {
-              delete this.events[year]; // If no events left for the year, delete the year object
-            }
-            // If you need to update the state to ensure reactivity, make sure to trigger a state update
-            // This can be as simple as triggering a reassignment for objects, or using Vue.set for Vue 2 compatibility
-            this.events = { ...this.events };
-            console.log(`Event for ${quarter} of year ${year} deleted`);
-
-            // Optionally, here you would also update your backend/database with the new state of `this.events`
-          }
+        } else {
+          this.populateAssetChangesWithData(data);
         }
+      },
+
+      populateAssetChangesWithData(data) {
+        // Clear existing data in assetChanges
+        this.initializeAssetChanges(this.years);
+
+        // Populate assetChanges with the data
+        data.forEach(row => {
+          const yearMatch = row[0].match(/\d+/);
+          const year = yearMatch ? parseInt(yearMatch[0], 10) : null;
+          const quarter = this.quarters.includes(row[1]) ? row[1] : null;
+          if (year === null || quarter === null) return;
+
+          this.assets.forEach((asset, index) => {
+            let value = row[index + 2]; // Adjust if assets start at a different column
+            if (!isNaN(parseFloat(value)) && isFinite(value)) {
+              this.assetChanges[year - 1][quarter][asset] = parseFloat(value);
+            }
+          });
+        });
+      },
+      downloadTemplate() {
+        const url = '../assets/templates/SimulationControlTemplate.xlsx';
+        window.open(url, '_blank');
+      },
+      quarterClicked(yearIndex, quarter) {
+          this.selectedYear = yearIndex;
+          this.selectedQuarter = quarter;
+          this.eventName = '';
+          this.eventDescription = '';
+          this.showEventModal = true;
+          },
+
+      closeEventModal() {
+          this.showEventModal = false;
+          },
+
+      saveEvent() {
+        // Update the events object in the local state
+        if (!this.events[this.selectedYear]) {
+          this.events[this.selectedYear] = {};
+        }
+        this.events[this.selectedYear][this.selectedQuarter] = {
+          name: this.eventName,
+          description: this.eventDescription
+        };
+
+        // Log for confirmation and close the modal
+        console.log('Event added to local state');
+        this.closeEventModal();
+      },
+
+
+      generateRandomValues() {
+          this.assetChanges.forEach(yearData => {
+          Object.keys(yearData).forEach(quarter => {
+              this.assets.forEach(asset => {
+              yearData[quarter][asset] = this.getRandomNumber();
+              });
+          });
+          });
+      },
+
+      getRandomNumber() {
+        return parseFloat((Math.random() * 20 - 10).toFixed(2));
+      },
+
+
+      toggleEventList() {
+          this.showEventList = !this.showEventList;
+      },
+      editEvent(year, quarter) {
+        const event = this.events[year][quarter];
+        if (event) {
+          this.selectedYear = year;
+          this.selectedQuarter = quarter;
+          this.eventName = event.name;
+          this.eventDescription = event.description;
+          this.showEventModal = true;
+        }
+      },
+
+      deleteEvent(year, quarter) {
+        if (confirm(`Are you sure you want to delete the event for ${quarter} of year ${year}?`)) {
+          // Use standard JavaScript delete for Vue 3
+          delete this.events[year][quarter];
+          if (Object.keys(this.events[year]).length === 0) {
+            delete this.events[year]; // If no events left for the year, delete the year object
+          }
+          // If you need to update the state to ensure reactivity, make sure to trigger a state update
+          // This can be as simple as triggering a reassignment for objects, or using Vue.set for Vue 2 compatibility
+          this.events = { ...this.events };
+          console.log(`Event for ${quarter} of year ${year} deleted`);
+
+          // Optionally, here you would also update your backend/database with the new state of `this.events`
+        }
+      }
 
   },
     computed: {
