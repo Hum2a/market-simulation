@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="width">
       <div class="asset-changes-chart-container">
         <canvas ref="assetChangesChart" height="100"></canvas>
       </div>
@@ -86,6 +86,7 @@
       generateChart() {
         const totalQuarters = this.assetChanges.length * 4;
         const labels = ['Initial Value'].concat(Array.from({ length: totalQuarters }, (_, i) => `Q${i + 1}`));
+        const lineColors = ['#3C5CCD', '#FF8368', '#444444', '#D6B235', '#FD6969',];
 
         // const datasets = this.assetTypes.map(type => {
         //   const data = new Array(totalQuarters + 1).fill(null);
@@ -100,7 +101,7 @@
         // });
 
         // Initialize each asset type with a starting value of 1000
-        const datasets = this.assetTypes.map(type => {
+        const datasets = this.assetTypes.map((type, index) => {
             const data = [1000]; // Start with £1000 for each asset type
             for (let i = 1; i <= totalQuarters; i++) {
                 data.push(null); // Future values are null until updated
@@ -109,7 +110,7 @@
                 label: type,
                 data,
                 fill: false,
-                borderColor: this.getRandomColor(),
+                borderColor: lineColors[index],
             };
         });
 
@@ -127,17 +128,17 @@
               mode: 'vertical',
               scaleID: 'x-axis-0',
               value: labels[labelIndex],
-              borderColor: 'rgba(255,0,0,1)',
-              borderWidth: 12,
+              borderColor: 'rgba(255,53,98,0.5)',
+              borderWidth: 24,
               label: {
                 enabled: true,
                 content: event.name,
                 position: "top",
-                xAdjust: 80, // Move label 10px to the right
-                backgroundColor: 'rgba(255,255,255,0.3)',
+                xAdjust: 40, // Move label 10px to the right
+                backgroundColor: 'rgba(114,93,255,1)',
                 fontSize: 16,
-                fontColor: '#000', // Ensuring the text is readable
-                padding: 6
+                fontColor: '#FFF', // Ensuring the text is readable
+                padding: 16
               }
             };
           });
@@ -248,6 +249,10 @@
   </script>
   
   <style scoped>
+
+  .width {
+    width: 100%;
+  }
   .asset-changes-chart-container {
     width: 100%;
     height: auto;
@@ -339,8 +344,8 @@
 
 .event-buttons-container button {
   padding: 10px 15px; /* Padding inside the buttons */
-  background-color: #cf6f6f; /* Button background color */
-  color: rgb(0, 0, 0); /* Text color */
+  background-color: #CB0E38;
+  color: rgb(253, 253, 253); /* Text color */
   border: none; /* Removes the default border */
   border-radius: 5px; /* Rounded corners */
   cursor: pointer; /* Changes the cursor to a pointer on hover */
@@ -366,7 +371,7 @@
 }
 
 .update-all {
-  background-color: #008CBA; /* Blue background */
+  background-color: #082148;
   color: white;
   margin-top: 10px; /* Add space between button types */
 }

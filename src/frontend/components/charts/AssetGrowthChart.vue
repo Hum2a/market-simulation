@@ -1,6 +1,6 @@
 <template>
-    <div>
-      <canvas ref="chart" height="500"></canvas>
+    <div class="width">
+      <canvas ref="chart" height="100"></canvas>
   </div>
   </template>
   
@@ -58,7 +58,7 @@
               },
             },
             responsive: true,
-            maintainAspectRatio: false,
+            maintainAspectRatio: true,
           },
         });
       },
@@ -72,6 +72,8 @@
   </script>
   
   <style scoped>
-  /* Add styles if needed */
+  .width {
+    width: 100%;
+  }
   </style>
   

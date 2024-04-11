@@ -1,9 +1,17 @@
 <template>
   <div>
-    <asset-changes-chart />
-    <asset-growth-chart :chart-data="generateTotalPortfolioChartData()"></asset-growth-chart>
-    <button @click="updateValuesForNextQuarter" class="modern-button">Next Quarter</button>
-    <div class="simulation-table">
+    <header class="header">
+      <img src="../assets/LifeSmartLogo.png" alt="Logo" class="logo">
+    </header>
+
+    <div class="sim-chart-container">
+      <asset-changes-chart />
+    </div>
+    <div class="sim-chart-container">
+      <asset-growth-chart :chart-data="generateTotalPortfolioChartData()"></asset-growth-chart>
+      <button @click="updateValuesForNextQuarter" class="modern-button">Next Quarter</button>
+    </div>
+      <div class="simulation-table">
       <h2>Simulation Data</h2>
       <table>
         <thead>
@@ -317,8 +325,9 @@ export default {
         const labels = ['Initial Value'].concat(
           Array.from({ length: this.simulationYears * 4 }, (_, i) => `Q${i + 1}`)
         );
+        const lineColors = ['#268F8F', '#5D81FF', '#5DD0FD', '#69FDB6', '#82DF96'];
 
-        const datasets = assetTypes.map((type) => {
+        const datasets = assetTypes.map((type, index) => {
           const data = [0]; // Initial value for the chart (no change at the start)
 
           for (let year = 0; year < this.simulationYears; year++) {
@@ -332,7 +341,7 @@ export default {
             label: type,
             data,
             fill: false,
-            borderColor: this.getRandomColor(),
+            borderColor: lineColors[index],
             tension: 0.5
           };
         });

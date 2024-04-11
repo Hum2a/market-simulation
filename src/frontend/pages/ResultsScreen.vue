@@ -1,4 +1,13 @@
 <template>
+
+  <header class="header">
+    <img src="../assets/LifeSmartLogo.png" alt="Logo" class="logo">
+    <div>
+      <button @click="toggleCalculator" class="calculator-toggle">
+        <i class="fas fa-calculator"></i>
+      </button>
+    </div>
+  </header>
   <div class="results-screen">
     <h1 class="title">Simulation Results</h1>
     <div class="results-container">
@@ -7,23 +16,25 @@
            @click="toggleGroup(index)">
         <h2>{{ index + 1 }}. {{ result.name }} (Total Worth: ${{ result.totalWorth.toFixed(2) }})</h2>
         <div v-if="expandedGroups[index]" class="details">
-          <div class="chart-area">
-            <div class="line-chart-container">
-              <canvas :id="'lineChart-' + index" :ref="'lineChart' + index"></canvas>
+          <div class="result-details">
+            <ul class="asset-list">
+              <li v-for="(value, key) in result.assets" :key="key">
+                {{ key }}: ${{ value.final.toFixed(2) }} ({{ value.change }})
+              </li>
+              <li>Final Portfolio Value: ${{ result.totalWorth.toFixed(2) }}</li>
+              <li>Total Portfolio Gains: ${{ result.totalGains.toFixed(2) }}</li>
+              <li v-if="result.mostGainsAsset">
+                Most Gains in Asset Class: {{ result.mostGainsAsset.assetType }} (${{ result.mostGainsAsset.gain }})
+              </li>
+              <li>ROI: {{ result.roi.toFixed(2) }}%</li>
+              <li>Annualized Return: {{ result.annualizedReturn.toFixed(2) }}%</li>
+            </ul>
+            <div class="chart-area">
+              <div class="line-chart-container">
+                <canvas :id="'lineChart-' + index" :ref="'lineChart' + index" height="300"></canvas>
+              </div>
             </div>
           </div>
-          <ul class="asset-list">
-            <li v-for="(value, key) in result.assets" :key="key">
-              {{ key }}: ${{ value.final.toFixed(2) }} ({{ value.change }})
-            </li>
-            <li>Final Portfolio Value: ${{  result.totalWorth.toFixed(2) }}</li>
-            <li>Total Portfolio Gains: ${{ result.totalGains.toFixed(2) }}</li>
-            <li v-if="result.mostGainsAsset">
-              Most Gains in Asset Class: {{ result.mostGainsAsset.assetType }} (${{ result.mostGainsAsset.gain }})
-            </li>
-            <li>ROI: {{ result.roi.toFixed(2) }}%</li>
-            <li>Annualized Return: {{ result.annualizedReturn.toFixed(2) }}%</li>
-          </ul>
         </div>
       </div>
     </div>
@@ -308,11 +319,10 @@ export default {
 
 <style scoped>
 .results-screen {
-  max-width: 960px;
   margin: 0 auto;
   padding: 40px;
   font-family: 'Helvetica Neue', Arial, sans-serif;
-  background-color: #83baf1; /* A light gray background */
+  background-color: #F6F2EF; /* A light gray background */
 }
 
 .title {
@@ -330,7 +340,7 @@ export default {
 }
 
 .result-group {
-  background-color: #ffffff;
+  background-color: #FAEDE4;
   border: none;
   border-radius: 8px;
   padding: 20px;
@@ -338,7 +348,6 @@ export default {
   transition: transform 0.3s ease-in-out;
   cursor: pointer;
   width: 100%; /* Adjust the width as necessary */
-  max-width: 600px; /* You can adjust this value to suit your design */
 }
 
 .result-group:hover {
@@ -354,6 +363,13 @@ export default {
   justify-content: space-between;
   align-items: baseline;
 }
+
+.result-details {
+    display: flex;
+    flex-direction: row; /* Arrange children in a row */
+    justify-content: space-between; /* Space between the children */
+    align-items: start; /* Align items to the start of the cross axis */
+  }
 
 .gold {
   background-color: #ffd700; /* Gold */
@@ -379,6 +395,8 @@ export default {
   margin-top: 20px;
   border-radius: 8px; /* Rounded corners for the list */
   overflow: hidden; /* Ensures the child elements' rounded corners are respected */
+  flex: 1; /* Takes up 1 fraction of the available space */
+  margin-right: 20px;
 }
 
 .asset-list li {
@@ -412,11 +430,13 @@ export default {
   display: flex;
   justify-content: space-around;
   margin-bottom: 20px;
+  flex: 2;
 }
 
 .pie-chart-container, .line-chart-container {
   flex: 1;
   padding: 10px; /* Provides some spacing around each chart */
+  width: 100%;
 }
 
 .awards-container {
@@ -432,7 +452,7 @@ export default {
   padding: 10px 20px;
   font-size: 16px;
   color: #fff; /* White text */
-  background: #002a56; /* Initial background color */
+  background: #CB0E38;
   border: none;
   border-radius: 5px;
   cursor: pointer;
@@ -480,4 +500,14 @@ export default {
   border-radius: 8px;
   padding: 10px;
 }
+
+@media (max-width: 768px) {
+    .result-details {
+      flex-direction: column; /* Stack them on top of each other on smaller screens */
+    }
+
+    .asset-list, .chart-area {
+      flex-basis: 100%; /* Each child takes the full width of the flex container */
+    }
+  }
 </style>

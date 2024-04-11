@@ -12,6 +12,10 @@
     margin-bottom: 20px;
   }
 
+  body {
+    background-color: #FAEDE4;
+  }
+
   
 table {
     width: 100%;
@@ -116,5 +120,17 @@ table {
     font-size: 16px; /* Adjust font size as needed */
   }
   
-  
-  
+  .sim-chart-container {
+    background-color: #FFFFFF; /* White background color */
+    border-radius: 25px; /* Curved corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Soft shadow for depth */
+    padding: 20px; /* Spacing inside the container */
+    margin: 20px auto; /* Vertical spacing and horizontal auto for centering */
+    display: flex; /* Enable flexbox layout */
+    flex-direction: column; /* Stack children vertically */
+    align-items: center; /* Center-align the children horizontally */
+    justify-content: space-between; /* Distribute space evenly between children */
+    max-width: 1200px; /* Maximum width of the container */
+    width: 100%; /* Make it take full width of its parent by default */
+    box-sizing: border-box; /* Include padding in the width */
+  }

@@ -4,7 +4,6 @@ import SimulationPage from '../../frontend/pages/Simulation.vue';
 import SimulationControls from '../../frontend/pages/SimulationControls.vue';
 import ResultsScreen from '../../frontend/pages/ResultsScreen.vue';
 import InvestmentCalculator from '../../frontend/pages/InvestmentCalculator.vue';
-import examplePage from '../../frontend/pages/examplepage.vue';
 
 // Define your routes as before
 const routes = [
@@ -37,11 +36,6 @@ const routes = [
     name: "InvestmentCalculator",
     component: InvestmentCalculator,
   },
-  {
-    path: '/example',
-    name: "ExamplePage",
-    component: examplePage
-  }
 ];
 
 // Create a router instance using createRouter and createWebHistory
