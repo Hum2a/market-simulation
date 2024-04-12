@@ -41,7 +41,7 @@
   </template>
   
   <script>
-  import { getFirestore, doc, getDoc } from 'firebase/firestore';
+  import { getFirestore, doc, getDoc, collection, getDocs } from 'firebase/firestore';
   import { getAuth, onAuthStateChanged } from 'firebase/auth';
   import Chart from 'chart.js';
   import 'chartjs-plugin-annotation';
@@ -52,6 +52,7 @@
     data() {
       return {
         userUID: null,
+        latestSimulationIndex: 0,
         assetChanges: [],
         assetChangesChart: null,
         assetTypes: ['Equity', 'Bonds', 'RealEstate', 'Commodities', 'Other'],
@@ -70,24 +71,44 @@
       };
     },
     methods: {
+      async fetchLatestSimulationIndex() {
+        const db = getFirestore();
+        const simulationsRef = collection(db, this.userUID);
+        const querySnapshot = await getDocs(simulationsRef);
+        this.latestSimulationIndex = querySnapshot.size;  // This sets the index correctly
+        console.log(`Latest Simulation Index Chart Version ${this.latestSimulationIndex}`); 
+        return this.latestSimulationIndex; // It's good practice to return the value for clarity
+    },
+
       async fetchAssetChanges() {
         if (!this.userUID) {
-          console.log("User UID is not available.");
-          return;
+            console.log("User UID is not available.");
+            return;
         }
+
+        // Ensure the simulation index is fetched and wait for it before proceeding
+        this.latestSimulationIndex = await this.fetchLatestSimulationIndex();
+        if (this.latestSimulationIndex === undefined) {
+          console.log("Failed to fetch the latest simulation index");
+          return;
+      }
         const db = getFirestore();
-        const docRef = doc(db, this.userUID, 'Simulation', 'Simulation Controls', 'Controls');
+        
+        // Construct the document reference using the latest simulation index
+        const docRef = doc(db, this.userUID, `Simulation ${this.latestSimulationIndex}`, 'Simulation Controls', 'Controls');
+        console.log(`DocRef: ${docRef.path}, latest index: ${this.latestSimulationIndex}`); // Using .path to show the full path for debugging
+
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-          const data = docSnap.data();
-          this.assetChanges = data.assetChanges;
-          this.events = data.events || {}; // Add this line
-          this.generateChart();
+            const data = docSnap.data();
+            this.assetChanges = data.assetChanges;
+            this.events = data.events || {}; // Initialize events if undefined
+            this.generateChart(); // Assuming generateChart uses this.assetChanges and this.events
         } else {
-          console.log("No such document!");
+            console.log("ACC - fAC: No such document!");
         }
-      },
+    },
 
       generateChart() {
         const totalQuarters = this.assetChanges.length * 4;

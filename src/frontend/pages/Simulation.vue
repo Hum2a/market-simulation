@@ -144,6 +144,7 @@ export default {
   data() {
       return {
         userUID: null,
+        latestSimulationIndex: null,
         groups: [],
         simulationMonths: 0,
         simulationYears: 1,
@@ -156,18 +157,32 @@ export default {
   },
   async created() {
     const auth = getAuth();
-      onAuthStateChanged(auth, (user) => {
-        if (user) {
-          this.userUID = user.uid;
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        this.userUID = user.uid;
+        this.latestSimulationIndex = await this.fetchLatestSimulationIndex();
+        if (this.latestSimulationIndex) {
           this.initializeData();
-        } else {
-          // User is signed out
-          // Redirect to login or handle accordingly
-          console.log("No user is signed in.");
         }
+      } else {
+        console.log("No user is signed in.");
+      }
     });
   },
   methods: {
+    async fetchLatestSimulationIndex() {
+      const db = getFirestore();
+      console.log(`UserUID: ${this.userUID}`);
+      const simulationsRef = collection(db, this.userUID);
+      const querySnapshot = await getDocs(simulationsRef);
+      if (querySnapshot.empty) {
+        console.log("No simulations found. Initializing first simulation.");
+        return 1; // Start from 1 if no documents are present
+      } else {
+        return querySnapshot.size; // Return the size or last index directly
+      }
+    },
+
     async initializeData() {
       await this.fetchGroups();
       await this.fetchAssetChanges();
@@ -178,12 +193,13 @@ export default {
       });
     },
       async fetchGroups() {
-        if (!this.userUID) {
-          console.error("User UID not set.");
+        if (!this.userUID || !this.latestSimulationIndex) {
+          console.error("User UID not set or simulation index not found.");
           return;
         }
         const db = getFirestore();
-        const querySnapshot = await getDocs(collection(db, this.userUID, 'Simulation', "Groups"));
+        console.log(`Simulation ${this.latestSimulationIndex}`);
+        const querySnapshot = await getDocs(collection(db, this.userUID, `Simulation ${this.latestSimulationIndex}`, "Groups"));
         this.groups = querySnapshot.docs.map(doc => {
           // Map document data to include future values initialized to current values
           const data = doc.data();
@@ -207,8 +223,12 @@ export default {
         });
       },
       async fetchAssetChanges() {
+        if (!this.userUID || !this.latestSimulationIndex) {
+        console.error("User UID not set or simulation index not found.");
+        return;
+      }
         const db = getFirestore();
-        const docRef = doc(db, this.userUID, 'Simulation', 'Simulation Controls', 'Controls');
+        const docRef = doc(db, this.userUID, `Simulation ${this.latestSimulationIndex}`, 'Simulation Controls', 'Controls');
         const docSnap = await getDoc(docRef);
         
         if (docSnap.exists()) {
@@ -218,7 +238,7 @@ export default {
           // Initialize detailedGrowth based on the fetched years
           this.initializeDetailedGrowth();
         } else {
-          console.log("No such document!");
+          console.log("Fetch Asset Change: No such document!");
         }
       },
       initializeDetailedGrowth() {
@@ -534,7 +554,7 @@ export default {
       const db = getFirestore();
 
       // Reference to the "Results" collection and "Final" document
-      const docRef = doc(db, this.userUID, 'Simulation', "Results", "Final");
+      const docRef = doc(db, this.userUID, `Simulation ${this.latestSimulationIndex}`, "Results", "Final");
 
       // Set the finalValues in the "Final" document
       setDoc(docRef, { finalValues })
@@ -575,7 +595,7 @@ export default {
       const db = getFirestore();
 
       // Reference to the "Results" collection and "Quarters" document
-      const docRef = doc(db, this.userUID, 'Simulation', "Results", "Quarters");
+      const docRef = doc(db, this.userUID, `Simulation ${this.latestSimulationIndex}`, "Results", "Quarters");
 
       // Set the quarterResults in the "Quarters" document
       setDoc(docRef, { quarterResults })

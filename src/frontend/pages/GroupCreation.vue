@@ -107,7 +107,6 @@ import { useRouter } from 'vue-router';
 import { getFirestore, doc, setDoc, collection, query, getDocs, writeBatch } from 'firebase/firestore';
 import SimulationControls from './SimulationControls.vue'; // Adjust the path as necessary
 import LoginPage from './LoginPage.vue';
-// import RegisterPage from './RegisterPage.vue';
 
   export default {
     name: 'GroupCreation',
@@ -137,7 +136,8 @@ import LoginPage from './LoginPage.vue';
         showLoginPage: false,
         newGroupName: '',
         userEmail: null,
-        userUID: null
+        userUID: null,
+        currentSimulationIndex: null
       };
     },
     methods: {
@@ -167,13 +167,24 @@ import LoginPage from './LoginPage.vue';
       removeGroup(index) {
         this.groups.splice(index, 1);
       },
+      async fetchLatestSimulationIndex() {
+        const db = getFirestore();
+        const simulationsRef = collection(db, this.userUID);
+        const querySnapshot = await getDocs(simulationsRef);
+        return querySnapshot.size; // Returns the count of documents directly
+      },
+
       async clearGroups() {
         if (!this.userUID) {
             console.error('User UID is undefined or empty.');
             return;
         }
+        if (!this.currentSimulationIndex) {
+          console.error("No simulation index set.");
+          return; // Prevent saving if no index is set
+        }
         const db = getFirestore();
-        const querySnapshot = await getDocs(query(collection(db, this.userUID, 'Simulation', 'Groups')));
+        const querySnapshot = await getDocs(query(collection(db, this.userUID, `Simulation ${this.currentSimulationIndex}`, 'Groups')));
         const batch = writeBatch(db);
 
         querySnapshot.forEach((doc) => {
@@ -185,12 +196,16 @@ import LoginPage from './LoginPage.vue';
     },
 
       async saveGroups() {
+        if (!this.currentSimulationIndex) {
+          console.error("No simulation index set.");
+          return; // Prevent saving if no index is set
+        }
         const db = getFirestore();
         
         try {
             await Promise.all(this.groups.map(group => {
                 // Use the group name as the document ID
-                const groupDocRef = doc(db, this.userUID, 'Simulation', 'Groups', group.name);
+                const groupDocRef = doc(db, this.userUID, `Simulation ${this.currentSimulationIndex}`, 'Groups', group.name);
                 return setDoc(groupDocRef, group);
             }));
         } catch (err) {
@@ -201,10 +216,18 @@ import LoginPage from './LoginPage.vue';
         // Navigate to the simulation page
         this.router.push({ name: 'SimulationPage' });
     },
-      async startSimulation() {
-        await this.clearGroups(); // Make sure all groups are cleared before saving new ones
-        await this.saveGroups(); // Proceed to save the current groups in the component's data
-      },
+    async startSimulation() {
+      const latestIndex = await this.fetchLatestSimulationIndex();
+      if (latestIndex === null) {
+        console.error("No existing simulations found.");
+        alert("No existing simulations found. Please create a new simulation first.");
+        return; // Exit if no simulations are found
+      }
+      this.currentSimulationIndex = latestIndex; // Set the current index to the latest found
+      await this.clearGroups(); // Clear existing groups using the latest index
+      await this.saveGroups(); // Save the current groups under the latest simulation index
+    },
+
       generateRandomValues(index) {
         const group = this.groups[index];
         let remainingValue = this.maxPortfolioValue;

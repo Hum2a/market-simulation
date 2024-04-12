@@ -54,7 +54,7 @@
 
 <script>
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import Chart from 'chart.js';
 import BiggestAssetGain from '../components/awards/biggestAssetGain.vue';
 import BiggestAssetLoss from '../components/awards/biggestAssetLoss.vue';
@@ -72,6 +72,7 @@ export default {
   data() {
     return {
       userUID: null,
+      latestSimulationIndex: null,
       finalResults: [],
       quarterResults: [],
       visibleDetails: [],
@@ -81,9 +82,10 @@ export default {
   },
   mounted() {
     const auth = getAuth();
-      onAuthStateChanged(auth, (user) => {
+      onAuthStateChanged(auth, async (user) => {
         if (user) {
           this.userUID = user.uid;
+          this.latestSimulationIndex = await this.fetchLatestSimulationIndex();
           this.fetchFinalResults();
           this.fetchQuarterlyResults(); // Fetch quarterly results
         } else {
@@ -123,13 +125,19 @@ export default {
   },
 
   methods: {
+      async fetchLatestSimulationIndex() {
+        const db = getFirestore();
+        const simulationsRef = collection(db, this.userUID);
+        const querySnapshot = await getDocs(simulationsRef);
+        return querySnapshot.size;  // Assumes index based on count
+      },
       async fetchFinalResults() {
         if (!this.userUID) {
           console.error("User UID not available.");
           return;
         }
           const db = getFirestore();
-          const docRef = doc(db, this.userUID, 'Simulation', "Results", "Final");
+          const docRef = doc(db, this.userUID, `Simulation ${this.latestSimulationIndex}`, "Results", "Final");
 
           try {
               const docSnap = await getDoc(docRef);
@@ -148,7 +156,7 @@ export default {
           return;
         }
         const db = getFirestore();
-        const docRef = doc(db, this.userUID, 'Simulation', "Results", "Quarters");
+        const docRef = doc(db, this.userUID, `Simulation ${this.latestSimulationIndex}`, "Results", "Quarters");
         try {
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {

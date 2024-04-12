@@ -97,7 +97,7 @@
 
   
 <script>
-  import { getFirestore, doc, setDoc } from 'firebase/firestore';
+  import { getFirestore, doc, setDoc, getDocs, collection } from 'firebase/firestore';
   import * as XLSX from 'xlsx';
   
   export default {
@@ -126,6 +126,22 @@
       },
     },
     methods: {
+      async getNextSimulationIndex() {
+        if (!this.userUID) {
+          console.error("User UID not available.");
+          return; // Handle gracefully when userUID is not available
+        }
+        const db = getFirestore();
+        const simulationRef = collection(db, this.userUID);
+        try {
+          const snapshot = await getDocs(simulationRef);
+          console.log(`Number of documents in collection '${this.userUID}':`, snapshot.size);
+          return snapshot.size + 1; // Returns the next index
+        } catch (error) {
+          console.error("Error fetching documents:", error);
+        }
+      },
+
       handleEventFileUpload(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -192,18 +208,40 @@
           console.error('User UID is not available.');
           return; // Do not proceed if UserUID is not available
         }
+
+        const simulationIndex = await this.getNextSimulationIndex();
+        console.log(`Simulation Index: ${simulationIndex}`);
+
+        if (!simulationIndex) {
+          console.error('Failed to fetch simulation index');
+          return; // Exit if failed to fetch the index
+        }
+
         const db = getFirestore();
-        const docRef = doc(db, this.UserUID, 'Simulation', 'Simulation Controls', 'Controls');
+
+        // Reference to the main document where you want to log the creation time
+        const mainDocRef = doc(db, this.UserUID, `Simulation ${simulationIndex}`);
+        const controlsDocRef = doc(db, this.UserUID, `Simulation ${simulationIndex}`, 'Simulation Controls', 'Controls');
+
+        // Data to initialize the main simulation document with the current timestamp
+        const mainData = {
+          createdAt: new Date() // Stores current date and time
+        };
 
         // Prepare the data to update, directly including the events from the component's state
-        let updatedData = {
+        const controlsData = {
           years: this.years,
           assetChanges: this.assetChanges,
           events: this.events // Directly use the updated events object
         };
 
         try {
-          await setDoc(docRef, updatedData);
+          // First, set the creation date in the main document
+          await setDoc(mainDocRef, mainData);
+
+          // Then, set the controls data in the specific 'Controls' document
+          await setDoc(controlsDocRef, controlsData);
+
           console.log('All changes, including events, have been saved to Firestore');
         } catch (error) {
           console.error('Error saving data to Firestore:', error);
@@ -322,7 +360,6 @@
       getRandomNumber() {
         return parseFloat((Math.random() * 20 - 10).toFixed(2));
       },
-
 
       toggleEventList() {
           this.showEventList = !this.showEventList;
