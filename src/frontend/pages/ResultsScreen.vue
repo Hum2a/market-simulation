@@ -53,6 +53,7 @@
 </template>
 
 <script>
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import Chart from 'chart.js';
 import BiggestAssetGain from '../components/awards/biggestAssetGain.vue';
@@ -70,6 +71,7 @@ export default {
   },
   data() {
     return {
+      userUID: null,
       finalResults: [],
       quarterResults: [],
       visibleDetails: [],
@@ -77,9 +79,18 @@ export default {
       charts: [],
     };
   },
-  async created() {
-    await this.fetchFinalResults();
-    await this.fetchQuarterlyResults(); // Fetch quarterly results
+  mounted() {
+    const auth = getAuth();
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          this.userUID = user.uid;
+          this.fetchFinalResults();
+          this.fetchQuarterlyResults(); // Fetch quarterly results
+        } else {
+          console.log("User is not authenticated.");
+          // Optionally redirect to login
+        }
+      });
   },
   computed: {
     rankedResults() {
@@ -113,8 +124,12 @@ export default {
 
   methods: {
       async fetchFinalResults() {
+        if (!this.userUID) {
+          console.error("User UID not available.");
+          return;
+        }
           const db = getFirestore();
-          const docRef = doc(db, "Results", "Final");
+          const docRef = doc(db, this.userUID, 'Simulation', "Results", "Final");
 
           try {
               const docSnap = await getDoc(docRef);
@@ -128,8 +143,12 @@ export default {
           }
       },
       async fetchQuarterlyResults() {
+        if (!this.userUID) {
+          console.error("User UID not available.");
+          return;
+        }
         const db = getFirestore();
-        const docRef = doc(db, "Results", "Quarters");
+        const docRef = doc(db, this.userUID, 'Simulation', "Results", "Quarters");
         try {
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {

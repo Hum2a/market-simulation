@@ -167,7 +167,7 @@ body {
   transform: scale(0.95); /* Slightly smaller on click */
 }
 
-.calculator-toggle, .simulation-controls-toggle, .simulation-history-toggle {
+.calculator-toggle, .simulation-controls-toggle, .simulation-history-toggle, .simulation-login-toggle {
   position: absolute;
   top: 35px;
   right: 20px;
@@ -185,11 +185,22 @@ body {
 .simulation-history-toggle {
   right: 140px; /* Adjust based on your layout */
 }
-.calculator-toggle i, .simulation-controls-toggle i, .simulation-history-toggle i {
+
+.simulation-login-toggle {
+  right: 200px;
+}
+
+.simulation-login-toggle img {
+  width: 40px;  /* Adjust the width as needed */
+  height: 40px; /* Maintain the aspect ratio */
+}
+
+
+.calculator-toggle i, .simulation-controls-toggle i, .simulation-history-toggle i, .simulation-login-toggle i {
   transition: transform 0.3s ease;
   }
 
-.calculator-toggle:hover i, .simulation-controls-toggle:hover i, .simulation-history-toggle:hover i {
+.calculator-toggle:hover i, .simulation-controls-toggle:hover i, .simulation-history-toggle:hover i, .simulation-login-toggle:hover i {
 transform: scale(1.2);
 }
 
@@ -267,8 +278,17 @@ transform: scale(1.2);
   border-top-right-radius: 0;     /* Top right corner */
   border-bottom-right-radius: 25px;  /* Bottom right corner */
   border-bottom-left-radius: 25px;   /* Bottom left corner */
+  position: relative;
 }
 
+.header p {
+  color: white; /* Choose a color that fits your header's theme */
+  position: absolute;
+  color: white;
+  top: 50%; /* Aligns the top of the element at the center of the parent */
+  left: 50%; /* Aligns the left of the element at the center of the parent */
+  transform: translate(-50%, -50%); 
+}
 
 .toolbar {
   display: flex;

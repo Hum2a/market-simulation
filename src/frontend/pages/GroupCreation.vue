@@ -2,6 +2,7 @@
   <div class="dashboard">
     <header class="header">
       <img src="../assets/LifeSmartLogo.png" alt="Logo" class="logo">
+      <p v-if="userEmail">Welcome Back, {{ userEmail }}, {{ userUID }}</p>
       <div>
         <button @click="toggleCalculator" class="calculator-toggle">
           <i class="fas fa-calculator"></i>
@@ -12,10 +13,14 @@
         <button @click="toggleSimulationHistory" class="simulation-history-toggle">
           <img src="../assets/calendar 1.png" alt="Calendar">
         </button>
+        <button @click="toggleLogin" class ="simulation-login-toggle">
+          <img src="../assets/login.png" alt="Login">
+        </button>
       </div>
     </header>
 
-    <SimulationControls v-if="showSimulationControls" />
+    <SimulationControls v-if="showSimulationControls" :userUID="userUID"/>
+    <LoginPage v-if="showLoginPage" @login-success="handleUserLogin" />
 
     <main>
       <h1 class="header-content">
@@ -99,13 +104,16 @@
 
 import Chart from 'chart.js';
 import { useRouter } from 'vue-router';
-import { getFirestore, doc, setDoc, collection, query, getDocs, writeBatch} from 'firebase/firestore';
+import { getFirestore, doc, setDoc, collection, query, getDocs, writeBatch } from 'firebase/firestore';
 import SimulationControls from './SimulationControls.vue'; // Adjust the path as necessary
+import LoginPage from './LoginPage.vue';
+// import RegisterPage from './RegisterPage.vue';
 
   export default {
     name: 'GroupCreation',
     components: {
     SimulationControls,
+    LoginPage
     },
     setup() {
         const router = useRouter();
@@ -126,7 +134,10 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
         showCalculator: false,
         showSimulationControls: false,
         showModal: false,
+        showLoginPage: false,
         newGroupName: '',
+        userEmail: null,
+        userUID: null
       };
     },
     methods: {
@@ -157,8 +168,12 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
         this.groups.splice(index, 1);
       },
       async clearGroups() {
+        if (!this.userUID) {
+            console.error('User UID is undefined or empty.');
+            return;
+        }
         const db = getFirestore();
-        const querySnapshot = await getDocs(query(collection(db, 'Groups')));
+        const querySnapshot = await getDocs(query(collection(db, this.userUID, 'Simulation', 'Groups')));
         const batch = writeBatch(db);
 
         querySnapshot.forEach((doc) => {
@@ -168,13 +183,14 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
         await batch.commit();
         console.log('All groups have been removed from Firestore.');
     },
+
       async saveGroups() {
         const db = getFirestore();
         
         try {
             await Promise.all(this.groups.map(group => {
                 // Use the group name as the document ID
-                const groupDocRef = doc(db, 'Groups', group.name);
+                const groupDocRef = doc(db, this.userUID, 'Simulation', 'Groups', group.name);
                 return setDoc(groupDocRef, group);
             }));
         } catch (err) {
@@ -323,7 +339,14 @@ import SimulationControls from './SimulationControls.vue'; // Adjust the path as
     },
       toggleSimulationControls() {
           this.showSimulationControls = !this.showSimulationControls;
-      },  
+      },
+      toggleLogin() {
+        this.showLoginPage = !this.showLoginPage;
+      },
+      handleUserLogin(user) {
+        this.userEmail = user.email;
+        this.userUID = user.uid;
+      }
     },
     mounted() {
     this.groups.forEach((group, index) => {

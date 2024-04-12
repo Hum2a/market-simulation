@@ -102,6 +102,7 @@
   
   export default {
     name: 'SimulationControls',
+    props: ['userUID'],
     data() {
       return {
         years: 1,
@@ -187,8 +188,12 @@
       },
 
       async onSubmit() {
+        if (!this.UserUID) {
+          console.error('User UID is not available.');
+          return; // Do not proceed if UserUID is not available
+        }
         const db = getFirestore();
-        const docRef = doc(db, 'Simulation Controls', 'Controls');
+        const docRef = doc(db, this.UserUID, 'Simulation', 'Simulation Controls', 'Controls');
 
         // Prepare the data to update, directly including the events from the component's state
         let updatedData = {
@@ -354,6 +359,9 @@
       totalYears() {
         return Array.from({ length: this.years }, (_, i) => i + 1);
       },
+      UserUID() {
+        return this.userUID || ''; // Fallback to an empty string if userUID is not available
+      }
     },
     created() {
       this.initializeAssetChanges(this.years);

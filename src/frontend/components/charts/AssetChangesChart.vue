@@ -42,6 +42,7 @@
   
   <script>
   import { getFirestore, doc, getDoc } from 'firebase/firestore';
+  import { getAuth, onAuthStateChanged } from 'firebase/auth';
   import Chart from 'chart.js';
   import 'chartjs-plugin-annotation';
 
@@ -50,6 +51,7 @@
     name: 'AssetChangesChart',
     data() {
       return {
+        userUID: null,
         assetChanges: [],
         assetChangesChart: null,
         assetTypes: ['Equity', 'Bonds', 'RealEstate', 'Commodities', 'Other'],
@@ -69,8 +71,12 @@
     },
     methods: {
       async fetchAssetChanges() {
+        if (!this.userUID) {
+          console.log("User UID is not available.");
+          return;
+        }
         const db = getFirestore();
-        const docRef = doc(db, 'Simulation Controls', 'Controls');
+        const docRef = doc(db, this.userUID, 'Simulation', 'Simulation Controls', 'Controls');
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
@@ -237,7 +243,15 @@
       },
     },
     mounted() {
-      this.fetchAssetChanges();
+      const auth = getAuth();
+        onAuthStateChanged(auth, (user) => {
+          if (user) {
+            this.userUID = user.uid;
+            this.fetchAssetChanges(); // Now fetches data using the authenticated user's UID
+          } else {
+            console.log("User is not authenticated.");
+          }
+        });
       this.$nextTick(() => {
         const canvas = this.$refs.assetChangesChart;
         canvas.addEventListener('click', this.onCanvasClick);

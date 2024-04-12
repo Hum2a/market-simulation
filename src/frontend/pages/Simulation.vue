@@ -122,6 +122,7 @@
 <script>
 
 import { getFirestore, collection, getDocs, doc, getDoc, setDoc } from 'firebase/firestore';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import AssetGrowthChart from '../components/charts/AssetGrowthChart.vue';
 import AssetChangesChart from '../components/charts/AssetChangesChart.vue';
 import Chart from 'chart.js';
@@ -142,29 +143,47 @@ export default {
     },
   data() {
       return {
-          groups: [],
-          simulationMonths: 0,
-          simulationYears: 1,
-          assetChanges: [],
-          detailedGrowth: {},
-          currentQuarterIndex: 0,
-          totalPortfolioValues: {},
-          colorPalette: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FAA74B', '#9D56F7', '#5A6FFA', '#56D9FA', '#FAB256'],
-      };
+        userUID: null,
+        groups: [],
+        simulationMonths: 0,
+        simulationYears: 1,
+        assetChanges: [],
+        detailedGrowth: {},
+        currentQuarterIndex: 0,
+        totalPortfolioValues: {},
+        colorPalette: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FAA74B', '#9D56F7', '#5A6FFA', '#56D9FA', '#FAB256'],
+    };
   },
   async created() {
-      await this.fetchGroups();
-      await this.fetchAssetChanges();
-      this.$nextTick(() => {
-      if (this.groups.length > 0) {
-        this.renderAllPieCharts();
-      }
+    const auth = getAuth();
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          this.userUID = user.uid;
+          this.initializeData();
+        } else {
+          // User is signed out
+          // Redirect to login or handle accordingly
+          console.log("No user is signed in.");
+        }
     });
   },
   methods: {
+    async initializeData() {
+      await this.fetchGroups();
+      await this.fetchAssetChanges();
+      this.$nextTick(() => {
+        if (this.groups.length > 0) {
+          this.renderAllPieCharts();
+        }
+      });
+    },
       async fetchGroups() {
+        if (!this.userUID) {
+          console.error("User UID not set.");
+          return;
+        }
         const db = getFirestore();
-        const querySnapshot = await getDocs(collection(db, "Groups"));
+        const querySnapshot = await getDocs(collection(db, this.userUID, 'Simulation', "Groups"));
         this.groups = querySnapshot.docs.map(doc => {
           // Map document data to include future values initialized to current values
           const data = doc.data();
@@ -189,7 +208,7 @@ export default {
       },
       async fetchAssetChanges() {
         const db = getFirestore();
-        const docRef = doc(db, 'Simulation Controls', 'Controls');
+        const docRef = doc(db, this.userUID, 'Simulation', 'Simulation Controls', 'Controls');
         const docSnap = await getDoc(docRef);
         
         if (docSnap.exists()) {
@@ -515,7 +534,7 @@ export default {
       const db = getFirestore();
 
       // Reference to the "Results" collection and "Final" document
-      const docRef = doc(db, "Results", "Final");
+      const docRef = doc(db, this.userUID, 'Simulation', "Results", "Final");
 
       // Set the finalValues in the "Final" document
       setDoc(docRef, { finalValues })
@@ -556,7 +575,7 @@ export default {
       const db = getFirestore();
 
       // Reference to the "Results" collection and "Quarters" document
-      const docRef = doc(db, "Results", "Quarters");
+      const docRef = doc(db, this.userUID, 'Simulation', "Results", "Quarters");
 
       // Set the quarterResults in the "Quarters" document
       setDoc(docRef, { quarterResults })
