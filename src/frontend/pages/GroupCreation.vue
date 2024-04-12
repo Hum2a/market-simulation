@@ -19,10 +19,12 @@
       </div>
     </header>
 
-    <SimulationControls v-if="showSimulationControls" :userUID="userUID"/>
     <LoginPage v-if="showLoginPage" @login-success="handleUserLogin" />
+    <SimulationControls v-if="showSimulationControls" :userUID="userUID"/>
+    <SimulationHistory v-if="showSimulationHistory" :userUID="userUID" @viewSimulationDetails="handleViewSimulationDetails" />
+    <SimulationDetails v-if="currentSimulationIndex" :userUID="userUID" :simulation-index="currentSimulationIndex" />
 
-    <main>
+    <main v-if="!currentSimulationIndex">
       <h1 class="header-content">
         <img src="../assets/Blue line.png" alt="BlueLine" class="blueline">
         <span>Group Management</span>
@@ -107,12 +109,16 @@ import { useRouter } from 'vue-router';
 import { getFirestore, doc, setDoc, collection, query, getDocs, writeBatch } from 'firebase/firestore';
 import SimulationControls from './SimulationControls.vue'; // Adjust the path as necessary
 import LoginPage from './LoginPage.vue';
+import SimulationHistory from './PastSimulations.vue';
+import SimulationDetails from './SimulationDetails.vue';
 
   export default {
     name: 'GroupCreation',
     components: {
     SimulationControls,
-    LoginPage
+    LoginPage,
+    SimulationHistory,
+    SimulationDetails
     },
     setup() {
         const router = useRouter();
@@ -132,6 +138,7 @@ import LoginPage from './LoginPage.vue';
         ],
         showCalculator: false,
         showSimulationControls: false,
+        showSimulationHistory: false,
         showModal: false,
         showLoginPage: false,
         newGroupName: '',
@@ -362,6 +369,14 @@ import LoginPage from './LoginPage.vue';
     },
       toggleSimulationControls() {
           this.showSimulationControls = !this.showSimulationControls;
+      },
+      handleViewSimulationDetails(simulationIndex) {
+        this.currentSimulationIndex = simulationIndex;
+        this.showSimulationHistory = false; // Optionally close the history view when a detail view is opened
+      },
+      toggleSimulationHistory() {
+        this.showSimulationHistory = !this.showSimulationHistory;
+        this.currentSimulationIndex = null; // Reset currentSimulationIndex when toggling the history view
       },
       toggleLogin() {
         this.showLoginPage = !this.showLoginPage;
