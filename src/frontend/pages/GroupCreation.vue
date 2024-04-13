@@ -2,7 +2,7 @@
   <div class="dashboard">
     <header class="header">
       <img src="../assets/LifeSmartLogo.png" alt="Logo" class="logo">
-      <p v-if="userEmail">Welcome Back, {{ userEmail }}, {{ userUID }}</p>
+      <p v-if="userEmail" class="welcome-message">Welcome Back {{ userEmail }}</p>
       <div>
         <button @click="toggleCalculator" class="calculator-toggle">
           <i class="fas fa-calculator"></i>
