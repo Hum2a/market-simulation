@@ -9,7 +9,10 @@
     </div>
   </header>
   <div class="results-screen">
-    <h1 class="title">Simulation Results</h1>
+    <h1 class="title">
+      <img src="../assets/Blue line.png" alt="BlueLine" class="blueline">
+      Simulation Results
+    </h1>
     <div class="results-container">
       <div v-for="(result, index) in rankedResults" :key="index" class="result-group"
            :class="{'gold': index === 0, 'silver': index === 1, 'bronze': index === 2}"
@@ -38,37 +41,36 @@
         </div>
       </div>
     </div>
+    <button @click="restartSimulation" class="restart-button">Restart Simulation</button>
   </div>
 
-  <!-- Restart Button -->
-  <button @click="restartSimulation" class="restart-button">Restart Simulation</button>
 
-  <div class="awards-container">
+
+  <!-- <div class="awards-container">
     <BiggestAssetGain />
     <BiggestAssetLoss />
     <HighestPortfolioAtAnyTime />
     <ComebackKing />
-    <!-- <SteadyHandAward /> -->
-  </div>
+  </div> -->
 </template>
 
 <script>
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import Chart from 'chart.js';
-import BiggestAssetGain from '../components/awards/biggestAssetGain.vue';
-import BiggestAssetLoss from '../components/awards/biggestAssetLoss.vue';
-import HighestPortfolioAtAnyTime from '../components/awards/highestPortfolioAnyTime.vue'
-import ComebackKing from '../components/awards/comeBackKing.vue';
+// import BiggestAssetGain from '../components/awards/biggestAssetGain.vue';
+// import BiggestAssetLoss from '../components/awards/biggestAssetLoss.vue';
+// import HighestPortfolioAtAnyTime from '../components/awards/highestPortfolioAnyTime.vue'
+// import ComebackKing from '../components/awards/comeBackKing.vue';
 
 export default {
   name: 'ResultsScreen',
-  components: {
-    BiggestAssetGain,
-    BiggestAssetLoss,
-    HighestPortfolioAtAnyTime,
-    ComebackKing,
-  },
+  // components: {
+  //   BiggestAssetGain,
+  //   BiggestAssetLoss,
+  //   HighestPortfolioAtAnyTime,
+  //   ComebackKing,
+  // },
   data() {
     return {
       userUID: null,
@@ -352,6 +354,10 @@ export default {
   background-color: #F6F2EF; /* A light gray background */
 }
 
+.results-screen h1 {
+  display: flex;
+}
+
 .title {
   text-align: center;
   color: #172b4d; /* Navy */
@@ -429,13 +435,15 @@ export default {
 .asset-list li {
   display: block; /* Ensures the list behaves like a block element */
   margin-bottom: 10px;
-  padding: 10px;
+  padding: 20px;
   font-size: 1rem;
-  color: #333; /* Dark text for better readability */
-  background-color: #f9f9f9; /* Light background for each item */
+  color: #ffffff; /* Dark text for better readability */
+  background-color: #221A3C; /* Light background for each item */
   border-bottom: 1px solid #ddd; /* Adds a subtle separator between items */
-  transition: background-color 0.3s ease; /* Smooth transition for hover effect */
-  border-radius: 5px; /* Rounded corners */
+  transition: background-color 0.4s ease-in; /* Smooth transition for hover effect */
+  border-radius: 15px; /* Rounded corners */
+  border: none;
+  z-index: -1;
 }
 
 .asset-list li:last-child {
@@ -446,11 +454,13 @@ export default {
   content: "• ";
   color: #FFC107; /* Yellow dot before each item */
   font-weight: bold; /* Makes the dot a bit bolder */
+  z-index: -1;
 }
 
 .asset-list li:hover {
-  background-color: #fceb8f; /* Slightly darker background on hover */
+  background-color: #46357e; /* Slightly darker background on hover */
   cursor: pointer; /* Changes the cursor to indicate the item is interactive */
+  box-shadow: 0 0 5px #46357e, 0 0 25px #46357e, 0 0 50px #46357e, 0 0 100px #46357e;
 }
 
 .chart-area {
