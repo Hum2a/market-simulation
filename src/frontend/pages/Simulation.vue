@@ -42,7 +42,7 @@
           <canvas :id="'pieChart-' + index"></canvas>
         </div>
       </div>
-
+<!-- 
       <h2>Asset Changes from Firebase</h2>
         <table>
           <thead>
@@ -69,9 +69,9 @@
               </template>
             </template>
           </tbody>
-        </table>
+        </table> -->
 
-      <h2>Detailed Asset Growth Projections</h2>
+      <!-- <h2>Detailed Asset Growth Projections</h2>
         <table>
           <thead>
             <tr>
@@ -93,14 +93,14 @@
               </tr>
             </template>
           </tbody>
-        </table>
+        </table> -->
 
-        <h2>Total Portfolio Values by Quarter</h2>
+        <!-- <h2>Total Portfolio Values by Quarter</h2>
           <table>
             <thead>
               <tr>
                 <th>Group Name</th>
-                <th>Initial Value</th> <!-- Ensure this is included -->
+                <th>Initial Value</th>
                 <th v-for="n in simulationYears * 4" :key="'total-quarter-header-' + n">Q{{ n }}</th>
               </tr>
             </thead>
@@ -112,7 +112,7 @@
                 </td>
               </tr>
             </tbody>
-          </table>
+          </table> -->
 
     </div>
     <button @click="finishSimulation" class="modern-button">Finish Simulation</button>
