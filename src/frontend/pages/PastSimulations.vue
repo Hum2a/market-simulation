@@ -8,57 +8,118 @@
           <p><strong>Number of Quarters:</strong> {{ simulation.numberOfQuarters }}</p>
           <p><strong>Total Asset Changes:</strong> {{ simulation.totalAssetChanges }}</p>
           <button @click="emitDetails(simulation.id)">View Details</button>
+          <button @click="deleteSimulation(simulation.id, index)" class="delete-btn">Delete</button>
         </div>
       </div>
     </div>
-  </template>
-  
-  <script>
-  import { getFirestore, collection, getDocs } from 'firebase/firestore';
-  import { getAuth, onAuthStateChanged } from 'firebase/auth';
-  
-  export default {
-    name: 'SimulationHistory',
-    data() {
-      return {
-        userUID: null,
-        simulations: []
-      };
+</template>
+
+<script>
+import { getFirestore, collection, getDocs, doc, deleteDoc, getDoc, setDoc } from 'firebase/firestore';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+
+export default {
+  name: 'SimulationHistory',
+  data() {
+    return {
+      userUID: null,
+      simulations: []
+    };
+  },
+  async mounted() {
+    const auth = getAuth();
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        this.userUID = user.uid;
+        await this.fetchSimulations();
+      } else {
+        console.log("User is not authenticated.");
+      }
+    });
+  },
+  methods: {
+    async fetchSimulations() {
+      const db = getFirestore();
+      const simulationsRef = collection(db, this.userUID);
+      const querySnapshot = await getDocs(simulationsRef);
+      this.simulations = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        dateCreated: doc.data().dateCreated || 'Unknown date',
+        numberOfQuarters: doc.data().quarters ? doc.data().quarters.length : 'Unknown',
+        totalAssetChanges: doc.data().assetChanges ? Object.keys(doc.data().assetChanges).length : 'Unknown'
+      }));
     },
-    async mounted() {
-      const auth = getAuth();
-      onAuthStateChanged(auth, async (user) => {
-        if (user) {
-          this.userUID = user.uid;
-          await this.fetchSimulations();
-        } else {
-          console.log("User is not authenticated.");
-        }
-      });
-    },
-    methods: {
-      async fetchSimulations() {
+    async deleteSimulation(simulationId, index) {
+        await this.deleteSubcollections(simulationId); // Delete subcollections first
         const db = getFirestore();
-        const simulationsRef = collection(db, this.userUID);
-        const querySnapshot = await getDocs(simulationsRef);
-        this.simulations = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          dateCreated: doc.data().dateCreated || 'Unknown date',
-          numberOfQuarters: doc.data().quarters ? doc.data().quarters.length : 'Unknown',
-          totalAssetChanges: doc.data().assetChanges ? Object.keys(doc.data().assetChanges).length : 'Unknown'
-        }));
-      },
-    //   viewDetails(simulationId) {
-    //     console.log('Viewing details for simulation:', simulationId);
-    //     this.$router.push({ name: 'SimulationDetails', params: { simulationId: simulationId } });
-    //   },
-      emitDetails(simulationId) {
-        this.$emit('viewSimulationDetails', simulationId);
-        },
+        await deleteDoc(doc(db, this.userUID, simulationId)); // Then delete the main simulation document
+        this.simulations.splice(index, 1); // Remove from the local state
+        await this.shiftSimulations(index); // Shift the IDs of remaining simulations
+        if (index === this.simulations.length) { // Check if the last simulation needs handling
+            await this.deleteSubcollections(`Simulation ${index + 2}`);
+        }
+    },
+    async deleteSubcollections(simulationId) {
+      const db = getFirestore();
+      const subcollections = ['Groups', 'Results', 'Simulation Controls'];
+      for (let subcollection of subcollections) {
+        const subcollectionRef = collection(db, this.userUID, simulationId, subcollection);
+        const snapshot = await getDocs(subcollectionRef);
+        snapshot.forEach(async (doc) => {
+          await deleteDoc(doc.ref);
+        });
+      }
+    },
+    async shiftSimulations(startIndex) {
+        const db = getFirestore();
+        for (let i = startIndex; i < this.simulations.length; i++) {
+            const oldId = `Simulation ${i + 2}`;
+            const newId = `Simulation ${i + 1}`;
+            const oldDocRef = doc(db, this.userUID, oldId);
+            const newDocRef = doc(db, this.userUID, newId);
+            // Fetch and recreate each document and its subcollections
+            const docData = await getDoc(oldDocRef);
+            if (docData.exists()) {
+            await setDoc(newDocRef, docData.data()); // Copy data to new doc
+            await this.copySubcollections(db, oldDocRef, newDocRef);
+            await deleteDoc(oldDocRef); // Delete the old document after copying
+            }
+        }
+    },
+    async copySubcollections(db, oldDocRef, newDocRef) {
+        const subcollections = ['Groups', 'Results', 'Simulation Controls'];
+        for (let subcollection of subcollections) {
+            const oldSubRef = collection(db, oldDocRef.path, subcollection);
+            const newSubRef = collection(db, newDocRef.path, subcollection);
+            const subDocs = await getDocs(oldSubRef);
+            subDocs.forEach(async (subDoc) => {
+            const newSubDocRef = doc(newSubRef, subDoc.id);
+            await setDoc(newSubDocRef, subDoc.data()); // Copy subcollection doc
+            await deleteDoc(doc(oldSubRef, subDoc.id)); // Ensure old subcollection docs are removed
+            });
+        }
+    },
+    async copyDocumentWithSubcollections(db, oldDocRef, newDocRef) {
+      const docSnap = await getDoc(oldDocRef);
+      if (docSnap.exists()) {
+        await setDoc(newDocRef, docSnap.data()); // Copy data to new doc
+        // Handle subcollections
+        const subcollections = ['Groups', 'Results', 'Simulation Controls'];
+        for (let subcollection of subcollections) {
+          const oldSubRef = collection(db, oldDocRef.path, subcollection);
+          const newSubRef = collection(db, newDocRef.path, subcollection);
+          const subDocs = await getDocs(oldSubRef);
+          subDocs.forEach(async (subDoc) => {
+            const newSubDocRef = doc(newSubRef, subDoc.id);
+            await setDoc(newSubDocRef, subDoc.data()); // Copy subcollection doc
+          });
+        }
+      }
     }
-  };
-  </script>
-  
+  }
+};
+</script>
+
   <style scoped>
   .past-simulations {
     padding: 20px;
@@ -106,5 +167,13 @@
   button:hover {
     background-color: #45a049;
   }
+
+    .delete-btn {
+    background-color: #ff4d4d;
+    color: white;
+    }
+
+    .delete-btn:hover {
+    background-color: #ff1a1a;
+    }
   </style>
-  
