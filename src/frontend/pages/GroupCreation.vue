@@ -22,7 +22,7 @@
     <LoginPage v-if="showLoginPage" @login-success="handleUserLogin" />
     <SimulationControls v-if="showSimulationControls" :userUID="userUID"/>
     <SimulationHistory v-if="showSimulationHistory" :userUID="userUID" @viewSimulationDetails="handleViewSimulationDetails" />
-    <SimulationDetails v-if="currentSimulationIndex" :userUID="userUID" :simulation-index="currentSimulationIndex" />
+    <!-- <SimulationDetails v-if="currentSimulationIndex" :userUID="userUID" :simulation-index="currentSimulationIndex" /> -->
 
     <main v-if="!currentSimulationIndex">
       <h1 class="header-content">
@@ -110,7 +110,7 @@ import { getFirestore, doc, setDoc, collection, query, getDocs, writeBatch } fro
 import SimulationControls from './SimulationControls.vue'; // Adjust the path as necessary
 import LoginPage from './LoginPage.vue';
 import SimulationHistory from './PastSimulations.vue';
-import SimulationDetails from './SimulationDetails.vue';
+// import SimulationDetails from './SimulationDetails.vue';
 
   export default {
     name: 'GroupCreation',
@@ -118,7 +118,7 @@ import SimulationDetails from './SimulationDetails.vue';
     SimulationControls,
     LoginPage,
     SimulationHistory,
-    SimulationDetails
+    // SimulationDetails
     },
     setup() {
         const router = useRouter();

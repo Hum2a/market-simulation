@@ -23,18 +23,18 @@ table {
   }
   
   table, th, td {
-    border: 1px solid #FFD700; /* Yellow borders for table */
+    border: 1px solid #ffd900ae; /* Yellow borders for table */
   }
   
   th {
-    background-color: #000080; /* Black background for header */
+    background-color: #000000; /* Black background for header */
     color: #FFFFFF; /* White text color */
     padding: 10px;
     font-size: 1.1em;
   }
   
   td {
-    background-color: #001f3f; /* Slightly lighter black for data cells */
+    background-color: #00000061; /* Slightly lighter black for data cells */
     color: #FFFFFF; /* White text color */
     padding: 8px;
   }

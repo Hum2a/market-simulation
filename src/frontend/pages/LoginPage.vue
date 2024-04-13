@@ -3,8 +3,8 @@
     <h1>Login or Register</h1>
     <form @submit.prevent="handleLogin">
       <div class="form-group">
-        <label for="email">Email:</label>
-        <input type="email" id="email" v-model="email" required>
+        <label for="username">Username or Email:</label>
+        <input type="text" id="username" v-model="username" required placeholder="Username or Email">
       </div>
       <div class="form-group">
         <label for="password">Password:</label>
@@ -25,7 +25,7 @@
     name: "LoginPage",
     data() {
       return {
-        email: "",
+        username: "",  // Now 'username' can be either a username or an email
         password: "",
         errorMessage: ""
       };
@@ -33,7 +33,9 @@
     methods: {
       handleLogin() {
         const auth = getAuth();
-        signInWithEmailAndPassword(auth, this.email, this.password)
+        const identifier = this.username;  // This could be an email or username
+        const password = this.password;
+        signInWithEmailAndPassword(auth, identifier, password)
             .then((userCredential) => {
                 // Here the user is successfully logged in
                 // You might want to store the user's info in Vuex or the component's state
@@ -46,7 +48,9 @@
       },
       handleRegister() {
         const auth = getAuth();
-        createUserWithEmailAndPassword(auth, this.email, this.password)
+        const identifier = this.username;  // Consider validation if username should not be an email
+        const password = this.password;
+        createUserWithEmailAndPassword(auth, identifier, password)
           .catch(error => {
             this.errorMessage = error.message; // Handle registration errors
           });
@@ -76,7 +80,7 @@
     font-weight: bold; /* Bold font for labels */
   }
   
-  input[type="email"],
+  input[type="text"],
   input[type="password"] {
     width: 100%;
     padding: 10px;
