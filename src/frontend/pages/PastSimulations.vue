@@ -6,7 +6,6 @@
           <h2>Simulation {{ index + 1 }}</h2>
           <p><strong>Date Created:</strong> {{ simulation.dateCreated }}</p>
           <p><strong>Number of Quarters:</strong> {{ simulation.numberOfQuarters }}</p>
-          <p><strong>Total Asset Changes:</strong> {{ simulation.totalAssetChanges }}</p>
           <button @click="emitDetails(simulation.id)">View Details</button>
           <button @click="deleteSimulation(simulation.id, index)" class="delete-btn">Delete</button>
         </div>
@@ -42,12 +41,24 @@ export default {
       const db = getFirestore();
       const simulationsRef = collection(db, this.userUID);
       const querySnapshot = await getDocs(simulationsRef);
-      this.simulations = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        dateCreated: doc.data().dateCreated || 'Unknown date',
-        numberOfQuarters: doc.data().quarters ? doc.data().quarters.length : 'Unknown',
-        totalAssetChanges: doc.data().assetChanges ? Object.keys(doc.data().assetChanges).length : 'Unknown'
-      }));
+      const simulationsData = [];
+      for (const document of querySnapshot.docs) {
+        const docData = document.data();
+        const createdAt = docData.createdAt ? docData.createdAt.toDate().toLocaleDateString() : 'Unknown date';
+        
+        // Fetch number of quarters from the Controls subcollection
+        const controlsDocRef = doc(db, this.userUID, `${document.id}/Simulation Controls/Controls`);
+        const controlsDoc = await getDoc(controlsDocRef);
+        const numberOfQuarters = controlsDoc.exists() && controlsDoc.data().assetChanges ? controlsDoc.data().assetChanges.length * 4 : 'Unknown'; // Assuming every entry in assetChanges contains all four quarters
+        
+        simulationsData.push({
+          id: document.id,
+          dateCreated: createdAt,
+          numberOfQuarters: numberOfQuarters,
+          totalAssetChanges: controlsDoc.exists() ? Object.keys(controlsDoc.data().assetChanges).length * 4 : 'Unknown' // Assuming each quarter can have changes for multiple assets
+        });
+      }
+      this.simulations = simulationsData;
     },
     async deleteSimulation(simulationId, index) {
         await this.deleteSubcollections(simulationId); // Delete subcollections first
