@@ -101,7 +101,11 @@
   
   button:hover {
     background-image: linear-gradient(to right, #0069d9, #004085); /* Darker gradient on hover */
-    transform: translateY(-2px); /* Slight lift effect on hover */
+    transform: scale(1.05); /* Slight lift effect on hover */
+  }
+
+  button:active {
+    transform: scale(0.9);
   }
   
   .login-btn {
