@@ -1,21 +1,22 @@
 <template>
-    <div class="login-container">
-      <h1>Login or Register</h1>
-      <form @submit.prevent="handleLogin">
-        <div class="form-group">
-          <label for="email">Email:</label>
-          <input type="email" id="email" v-model="email" required>
-        </div>
-        <div class="form-group">
-          <label for="password">Password:</label>
-          <input type="password" id="password" v-model="password" required>
-        </div>
-        <button type="submit">Login</button>
-        <button type="button" @click="handleRegister">Register</button>
-      </form>
-      <p v-if="errorMessage">{{ errorMessage }}</p>
-    </div>
-  </template>
+  <div class="login-container">
+    <h1>Login or Register</h1>
+    <form @submit.prevent="handleLogin">
+      <div class="form-group">
+        <label for="email">Email:</label>
+        <input type="email" id="email" v-model="email" required>
+      </div>
+      <div class="form-group">
+        <label for="password">Password:</label>
+        <input type="password" id="password" v-model="password" required>
+      </div>
+      <button type="submit" class="login-btn">Login</button>
+      <button type="button" @click="handleRegister" class="register-btn">Register</button>
+    </form>
+    <p v-if="errorMessage">{{ errorMessage }}</p>
+  </div>
+</template>
+
   
   <script>
   import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
@@ -56,49 +57,62 @@
   
   <style scoped>
   .login-container {
-    width: 300px;
-    margin: 50px auto;
-    padding: 20px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    width: 320px;
+    margin: 80px auto;
+    padding: 30px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    background-color: #ffffff; /* White background for a clean look */
   }
   
   .form-group {
-    margin-bottom: 15px;
+    margin-bottom: 20px;
   }
   
   label {
     display: block;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
+    color: #333; /* Darker font color for better readability */
+    font-weight: bold; /* Bold font for labels */
   }
   
   input[type="email"],
   input[type="password"] {
     width: 100%;
-    padding: 8px;
-    line-height: 20px;
-    margin-bottom: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    padding: 10px;
+    line-height: 1.5;
+    margin-bottom: 15px;
+    border: 2px solid #007bff; /* Blue border matching button color */
+    border-radius: 5px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
   }
   
   button {
     width: 100%;
-    padding: 10px;
-    margin-top: 10px;
-    background-color: #007bff;
+    padding: 12px;
+    margin-top: 15px;
+    background-image: linear-gradient(to right, #007bff, #0056b3); /* Gradient background for buttons */
     border: none;
     color: white;
     cursor: pointer;
-    border-radius: 4px;
+    border-radius: 5px;
+    transition: background-color 0.3s, transform 0.2s;
   }
   
   button:hover {
-    background-color: #0056b3;
+    background-image: linear-gradient(to right, #0069d9, #004085); /* Darker gradient on hover */
+    transform: translateY(-2px); /* Slight lift effect on hover */
+  }
+  
+  .login-btn {
+    margin-bottom: 10px; /* Space between login and register button */
   }
   
   p {
-    color: red;
+    color: #cc0000; /* Bright red for error messages */
     text-align: center;
+    font-size: 0.9em;
   }
   </style>
+  
   

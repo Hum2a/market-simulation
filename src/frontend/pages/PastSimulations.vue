@@ -120,60 +120,71 @@ export default {
 };
 </script>
 
-  <style scoped>
-  .past-simulations {
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .simulation-cards-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-around;
-    width: 100%;
-  }
-  
-  .simulation-card {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    padding: 20px;
-    margin: 10px;
-    width: 300px;
-    border-radius: 10px;
-    background-color: #f9f9f9;
-    transition: transform 0.3s ease-in-out;
-  }
-  
-  .simulation-card:hover {
-    transform: scale(1.05);
-  }
-  
-  .simulation-card h2 {
-    color: #333;
-    margin-bottom: 10px;
-  }
-  
-  button {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    background-color: #4CAF50;
-    color: white;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-  
-  button:hover {
-    background-color: #45a049;
-  }
+<style scoped>
+.past-simulations {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #f0f4f8; /* Light grey-blue background for the whole container */
+}
 
-    .delete-btn {
-    background-color: #ff4d4d;
-    color: white;
-    }
+.simulation-cards-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  width: 100%;
+}
 
-    .delete-btn:hover {
-    background-color: #ff1a1a;
-    }
-  </style>
+.simulation-card {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  padding: 20px;
+  margin: 10px;
+  width: 300px;
+  border-radius: 12px;
+  background-color: #ffffff;
+  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+  border-left: 5px solid #007bff; /* Blue border on the left for a modern look */
+}
+
+.simulation-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+}
+
+.simulation-card h2 {
+  color: #333;
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  background-color: #4CAF50;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-top: 10px;
+}
+
+button:hover {
+  background-color: #45a049;
+}
+
+.delete-btn {
+  background-color: #ff4d4d; /* Red color for delete button */
+  margin-left: 10px; /* Space between buttons */
+}
+
+.delete-btn:hover {
+  background-color: #ff1a1a;
+}
+
+p {
+  font-size: 14px;
+  color: #666; /* Dark gray text for better readability */
+  line-height: 1.5; /* Improved line spacing */
+}
+</style>

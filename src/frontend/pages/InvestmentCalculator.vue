@@ -21,8 +21,9 @@
         </div>
         <button @click="calculate" class="calculate-button">Calculate</button>
         <div class="result" v-if="futureValue !== null">
-          <p>Future Value of Investments: {{ futureValue }}</p>
+          <p class="future-value-display">Future Value of Investments: {{ futureValue }}</p>
         </div>
+
       </div>
       <div class="calculator-chart">
         <canvas id="investmentChart" width="800" height="400"></canvas>
@@ -131,63 +132,113 @@ export default {
 
 <style scoped>
 .investment-calculator {
-  background-color: black;
-  color: red;
-  border: 2px solid red;
-  border-radius: 10px;
+  margin: 20px auto;
   padding: 20px;
-  font-family: Arial, sans-serif;
-  justify-content: center; /* Center the content */
-  align-items: center; /* Center items vertically */
-  justify-content: space-between; /* Add space between inputs and chart */
-  font-family: Arial, sans-serif;
+  background-color: #f0f2f5;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .calculator-content {
   display: flex;
-  flex-direction: row; /* Align items in a row */
-  align-items: flex-start; /* Align items at the start of the cross axis */
-  gap: 20px; /* Add some space between the input group and the chart */
-}
-.calculator-inputs {
-  flex: 1;
+  justify-content: space-between;
+  width: 100%;
 }
 
-.calculator-chart {
-  flex: 12; /* Give more flex-grow ratio to the chart container */
-  display: absolute;
-  justify-content: center;
-  align-items: center;
+.calculator-inputs {
+  flex: 1;
+  padding-right: 20px;
 }
 
 .input-group {
-  margin-bottom: 15px;
+  margin-bottom: 20px;
 }
 
 label {
-  display: inline-block;
-  width: 200px;
-  color: red;
+  display: block;
+  margin-bottom: 5px;
+  color: #333;
+  font-size: 16px;
 }
 
 .calculator-input {
-  width: 150px;
-  padding: 5px;
+  width: 100%;
+  padding: 10px;
   border-radius: 5px;
+  border: 1px solid #ccc;
+  transition: border-color 0.3s;
+}
+
+.calculator-input:focus {
+  outline: none;
+  border-color: #007bff;
 }
 
 .calculate-button {
-  padding: 10px 20px;
-  background-color: red;
+  width: 100%;
+  padding: 10px 0;
+  background-color: #007bff;
   color: white;
   border: none;
   border-radius: 5px;
   cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.calculate-button:hover {
+  background-color: #0056b3;
 }
 
 .result {
   margin-top: 20px;
-  font-weight: bold;
-  color: red;
+  font-size: 18px;
+  color: #28a745;
+}
+
+.future-value-display {
+  font-size: 24px; /* Larger font size for better visibility */
+  font-weight: bold; /* Make the text bold */
+  color: #4CAF50; /* Bright green color for positive outlook */
+  background: rgba(255, 255, 255, 0.8); /* Semi-transparent white background */
+  padding: 15px 20px; /* Padding around the text */
+  border-radius: 10px; /* Rounded corners */
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow for 3D effect */
+  text-align: center; /* Center the text */
+  margin: 20px auto; /* Center the element horizontally and give some space */
+  max-width: 80%; /* Max width for better control */
+  transition: transform 0.3s ease-in-out, background-color 0.3s ease; /* Smooth transition for hover effects */
+
+  display: block; /* Block display to take full width */
+  position: relative; /* Relative positioning for further positioning inside container */
+  z-index: 10; /* Higher index so it's above other content */
+}
+
+.future-value-display:hover {
+  transform: scale(1.05); /* Slightly increase size on hover for interaction feedback */
+  background-color: #F8F8F8; /* Lighter background on hover to draw attention */
+}
+
+/* Optionally add a subtle entry animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.future-value-display {
+  animation: fadeIn 0.5s ease-out forwards; /* Apply the animation */
+}
+
+.calculator-chart {
+  flex: 2;
 }
 </style>
+
