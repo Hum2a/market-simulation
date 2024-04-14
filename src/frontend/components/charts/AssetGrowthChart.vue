@@ -47,15 +47,21 @@
             ...this.chartData,
             datasets: this.chartData.datasets.map(dataset => ({
               ...dataset,
-              tension: 0.4 // Adjust this value between 0 and 1 to control curve smoothness
+              tension: 1 // Adjust this value between 0 and 1 to control curve smoothness
             }))
           },
           options: {
             ...this.options,
+            animation: {
+              duration: 500, // Match this to the timeout delay
+              easing: 'linear'
+            },
             scales: {
-              y: {
-                beginAtZero: true,
-              },
+              yAxes: [{
+                ticks: {
+                  beginAtZero: true
+                }
+              }]
             },
             responsive: true,
             maintainAspectRatio: true,

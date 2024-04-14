@@ -58,19 +58,10 @@
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import Chart from 'chart.js';
-// import BiggestAssetGain from '../components/awards/biggestAssetGain.vue';
-// import BiggestAssetLoss from '../components/awards/biggestAssetLoss.vue';
-// import HighestPortfolioAtAnyTime from '../components/awards/highestPortfolioAnyTime.vue'
-// import ComebackKing from '../components/awards/comeBackKing.vue';
+
 
 export default {
   name: 'ResultsScreen',
-  // components: {
-  //   BiggestAssetGain,
-  //   BiggestAssetLoss,
-  //   HighestPortfolioAtAnyTime,
-  //   ComebackKing,
-  // },
   data() {
     return {
       userUID: null,
@@ -89,10 +80,9 @@ export default {
           this.userUID = user.uid;
           this.latestSimulationIndex = await this.fetchLatestSimulationIndex();
           this.fetchFinalResults();
-          this.fetchQuarterlyResults(); // Fetch quarterly results
+          this.fetchQuarterlyResults();
         } else {
           console.log("User is not authenticated.");
-          // Optionally redirect to login
         }
       });
   },
