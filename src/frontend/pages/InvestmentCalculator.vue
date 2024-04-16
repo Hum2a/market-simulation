@@ -37,9 +37,6 @@
           <input type="number" :id="'annualReturnRate' + rate.id" v-model="rate.value" class="calculator-input">
         </div>
         <button @click="calculate" class="calculate-button">Calculate</button>
-        <div class="result" v-if="futureValue !== null">
-          <p class="future-value-display">Future Value of Investments: {{ futureValue }}</p>
-        </div>
       </div>
       <div class="right-side">
         <h2 class="investment-calculator-title-container">
@@ -51,6 +48,9 @@
           <canvas id="investmentChart" width="800" height="400"></canvas>
         </div>
       </div>
+    </div>
+    <div class="result" v-if="futureValue !== null">
+      <p class="future-value-display">Future Value of Investments: <span class="future-value">{{ futureValue }}</span></p>
     </div>
   </div>
 </template>
@@ -85,21 +85,21 @@ export default {
       const n = 12; // Compounded monthly
       const t = years;
 
-      // Adjust the labels to display years instead of months
-      const labels = Array.from({ length: t + 1 }, (_, i) => i === 0 ? 'Start' : `${i} year${i > 1 ? 's' : ''}`);
-      
+      // Adjust the labels to display months instead of years
+      const labels = Array.from({ length: t * n + 1 }, (_, i) => {
+        if (i === 0) return 'Start';
+        const month = i % n === 0 ? n : i % n;
+        const year = Math.floor((i - 1) / n) + 1;
+        return `${month}/${year}`; // e.g., "1/1", "2/1", ..., "12/1", "1/2", ..., "12/2", ..., "12/Years"
+      });
+
       const datasets = this.annualReturnRates.map(rate => {
         const r = parseFloat(rate.value) / 100 / n;
         let currentValue = principal;
         const data = [currentValue];
         for (let i = 1; i <= t * n; i++) {
-          if (i % n === 0) { // Only push the value at the end of each year
-            currentValue = currentValue * (1 + r) + monthlyContribution;
-            data.push(currentValue);
-          } else {
-            // Calculate the value but don't push it, to keep the data points aligned with the yearly labels
-            currentValue = currentValue * (1 + r) + monthlyContribution;
-          }
+          currentValue = currentValue * (1 + r) + monthlyContribution;
+          data.push(currentValue);
         }
         return {
           label: `Investment Growth at ${rate.value}%`,
@@ -128,7 +128,7 @@ export default {
             x: {
               title: {
                 display: true,
-                text: 'Time (Years)'
+                text: 'Time (Months/Years)' // Updated to reflect the new labels
               }
             },
             y: {
@@ -142,8 +142,9 @@ export default {
       });
 
       this.futureValue = datasets.map(dataset => dataset.data.at(-1).toFixed(2)).join(', ');
-      this.legendHtml = this.generateLegend(); 
+      this.legendHtml = this.generateLegend();
     },
+
 
     getRandomColor() {
     // This is a simple method to generate random colors. You might want to customize this.
@@ -246,27 +247,27 @@ label {
 }
 
 .result {
+  background-color: #ffffff; /* Light background for the result */
+  border-radius: 10px;
+  padding: 20px;
   margin-top: 20px;
-  font-size: 18px;
-  color: #28a745;
+  box-shadow: 0 2px 15px rgba(0,0,0,0.1); /* Subtle shadow for depth */
+  text-align: center; /* Center-align the text */
+  width: 100%; /* Full width for better control in various devices */
 }
 
 .future-value-display {
-  font-size: 24px; /* Larger font size for better visibility */
-  font-weight: bold; /* Make the text bold */
-  color: #4CAF50; /* Bright green color for positive outlook */
-  background: rgba(255, 255, 255, 0.8); /* Semi-transparent white background */
-  padding: 15px 20px; /* Padding around the text */
-  border-radius: 10px; /* Rounded corners */
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow for 3D effect */
-  text-align: center; /* Center the text */
-  margin: 20px auto; /* Center the element horizontally and give some space */
-  max-width: 80%; /* Max width for better control */
-  transition: transform 0.3s ease-in-out, background-color 0.3s ease; /* Smooth transition for hover effects */
+  font-size: 20px; /* Increased font size for better visibility */
+  color: #333; /* Dark grey for text, ensuring good readability */
+  margin: 0; /* Reset margins for clean spacing */
+}
 
-  display: block; /* Block display to take full width */
-  position: relative; /* Relative positioning for further positioning inside container */
-  z-index: 10; /* Higher index so it's above other content */
+.future-value {
+  display: block; /* Block display for the value */
+  font-size: 24px; /* Larger font size for the value */
+  color: #4CAF50; /* Green color for positive outlook, change as per your branding */
+  font-weight: bold; /* Bold for emphasis */
+  margin-top: 10px; /* Space between label and value */
 }
 
 .future-value-display:hover {
