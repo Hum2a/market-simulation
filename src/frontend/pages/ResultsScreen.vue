@@ -43,15 +43,6 @@
     </div>
     <button @click="restartSimulation" class="restart-button">Restart Simulation</button>
   </div>
-
-
-
-  <!-- <div class="awards-container">
-    <BiggestAssetGain />
-    <BiggestAssetLoss />
-    <HighestPortfolioAtAnyTime />
-    <ComebackKing />
-  </div> -->
 </template>
 
 <script>
@@ -75,16 +66,19 @@ export default {
   },
   mounted() {
     const auth = getAuth();
-      onAuthStateChanged(auth, async (user) => {
-        if (user) {
-          this.userUID = user.uid;
-          this.latestSimulationIndex = await this.fetchLatestSimulationIndex();
-          this.fetchFinalResults();
-          this.fetchQuarterlyResults();
-        } else {
-          console.log("User is not authenticated.");
-        }
-      });
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        this.userUID = user.uid;
+        this.latestSimulationIndex = await this.fetchLatestSimulationIndex();
+        await Promise.all([
+          this.fetchFinalResults(),
+          this.fetchQuarterlyResults()
+        ]);
+        this.generateChartsForAllGroups(); // Call this method once all data is ready
+      } else {
+        console.log("User is not authenticated.");
+      }
+    });
   },
   computed: {
     rankedResults() {
@@ -128,20 +122,24 @@ export default {
           console.error("User UID not available.");
           return;
         }
-          const db = getFirestore();
-          const docRef = doc(db, this.userUID, `Simulation ${this.latestSimulationIndex}`, "Results", "Final");
-
-          try {
-              const docSnap = await getDoc(docRef);
-              if (docSnap.exists()) {
-              this.finalResults = docSnap.data().finalValues;
-              } else {
-              console.log("No such document!");
-              }
-          } catch (error) {
-              console.error("Error fetching document:", error);
+        const db = getFirestore();
+        const docRef = doc(db, this.userUID, `Simulation ${this.latestSimulationIndex}`, "Results", "Final");
+        try {
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            this.finalResults = docSnap.data().finalValues;
+            this.finalResults.forEach((_, index) => {
+              this.expandedGroups[index] = true;
+            });
+          } else {
+            console.log("No such document!");
           }
+        } catch (error) {
+          console.error("Error fetching document:", error);
+        }
       },
+
+
       async fetchQuarterlyResults() {
         if (!this.userUID) {
           console.error("User UID not available.");
@@ -152,7 +150,6 @@ export default {
         try {
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
-            console.log("Quarterly results found:", docSnap.data().quarterResults);
             this.quarterResults = docSnap.data().quarterResults;
           } else {
             console.error("No quarterly results found!");
@@ -161,6 +158,17 @@ export default {
           console.error("Error fetching quarterly results:", error);
         }
       },
+
+      generateChartsForAllGroups() {
+        this.$nextTick(() => {
+          this.finalResults.forEach((_, index) => {
+            if (this.expandedGroups[index] && this.quarterResults.length > 0) {
+              this.generateLineChartForGroup(index);  // Generate chart for each expanded group
+            }
+          });
+        });
+      },
+
       getInitialTotalWorth(groupName) {
         // Find the first quarter result for the group
         const initialQuarterResult = this.quarterResults.find(quarter => quarter.groups && quarter.groups[groupName]);
@@ -364,7 +372,7 @@ export default {
 
 .result-group {
   background-color: #FAEDE4;
-  border: none;
+  border: 1px solid transparent;
   border-radius: 8px;
   padding: 20px;
   box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1);
@@ -395,15 +403,18 @@ export default {
   }
 
 .gold {
-  background-color: #ffd700; /* Gold */
+  border-color: #ffd700; /* Gold */
+  box-shadow: 0 6px 10px #ffd700;
 }
 
 .silver {
-  background-color: #c0c0c0; /* Silver */
+  border-color: #c0c0c0; /* Silver */
+  box-shadow: 0 6px 10px #c0c0c0
 }
 
 .bronze {
-  background-color: #cd7f32; /* Bronze */
+  border-color: #cd7f32; /* Bronze */
+  box-shadow: 0 6px 10px #cd7f32;
 }
 
 .chart-container {
@@ -427,10 +438,10 @@ export default {
   margin-bottom: 10px;
   padding: 20px;
   font-size: 1rem;
-  color: #ffffff; /* Dark text for better readability */
-  background-color: #221A3C; /* Light background for each item */
-  border-bottom: 1px solid #ddd; /* Adds a subtle separator between items */
-  transition: background-color 0.4s ease-in; /* Smooth transition for hover effect */
+  color: #000000; /* Dark text for better readability */
+  background-color: #fafafa; /* Light background for each item */
+  border-bottom: 1px solid #000000; /* Adds a subtle separator between items */
+  transition: background-color 0.4s ease-in, box-shadow 0.4s ease-in; /* Smooth transition for hover effect */
   border-radius: 15px; /* Rounded corners */
   border: none;
   z-index: -1;
@@ -448,9 +459,9 @@ export default {
 }
 
 .asset-list li:hover {
-  background-color: #46357e; /* Slightly darker background on hover */
+  background-color: #ecffaf; /* Slightly darker background on hover */
   cursor: pointer; /* Changes the cursor to indicate the item is interactive */
-  box-shadow: 0 0 5px #46357e, 0 0 25px #46357e, 0 0 50px #46357e, 0 0 100px #46357e;
+  box-shadow: 0 0 5px #ecffaf, 0 0 10px #ecffaf, 0 0 25px #ecffaf, 0 0 50px #ecffaf;
 }
 
 .chart-area {
