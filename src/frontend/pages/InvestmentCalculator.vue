@@ -3,17 +3,8 @@
     <img src="../assets/LifeSmartLogo.png" alt="Logo" class="logo">
     <p v-if="userEmail" class="welcome-message">Welcome Back {{ userEmail }}</p>
     <div>
-      <button @click="toggleCalculator" class="calculator-toggle">
+      <button @click="toggleBack" class="calculator-toggle">
         <i class="fas fa-calculator"></i>
-      </button>
-      <button @click="toggleSimulationControls" class="simulation-controls-toggle">
-        <img src="../assets/settings (1) 1.png" alt="Controls">
-      </button>
-      <button @click="toggleSimulationHistory" class="simulation-history-toggle">
-        <img src="../assets/calendar 1.png" alt="Calendar">
-      </button>
-      <button @click="toggleLogin" class ="simulation-login-toggle">
-        <img src="../assets/login.png" alt="Login">
       </button>
     </div>
 </header>
@@ -164,6 +155,13 @@ export default {
       }).join("");
       return legendHtml;
     },
+    toggleBack() {
+      if (window.history.length > 1) {
+        this.$router.go(-1);
+      } else {
+        this.$router.push('/');  // Navigate to the home page if no history is available
+      }
+    }
   }
 };
 </script>
