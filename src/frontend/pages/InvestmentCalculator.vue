@@ -1,6 +1,23 @@
 <template>
+  <header class="header">
+    <img src="../assets/LifeSmartLogo.png" alt="Logo" class="logo">
+    <p v-if="userEmail" class="welcome-message">Welcome Back {{ userEmail }}</p>
+    <div>
+      <button @click="toggleCalculator" class="calculator-toggle">
+        <i class="fas fa-calculator"></i>
+      </button>
+      <button @click="toggleSimulationControls" class="simulation-controls-toggle">
+        <img src="../assets/settings (1) 1.png" alt="Controls">
+      </button>
+      <button @click="toggleSimulationHistory" class="simulation-history-toggle">
+        <img src="../assets/calendar 1.png" alt="Calendar">
+      </button>
+      <button @click="toggleLogin" class ="simulation-login-toggle">
+        <img src="../assets/login.png" alt="Login">
+      </button>
+    </div>
+</header>
   <div class="investment-calculator">
-    <h2>Investment Calculator</h2>
     <div class="calculator-content">
       <div class="calculator-inputs">
         <div class="input-group">
@@ -23,10 +40,16 @@
         <div class="result" v-if="futureValue !== null">
           <p class="future-value-display">Future Value of Investments: {{ futureValue }}</p>
         </div>
-
       </div>
-      <div class="calculator-chart">
-        <canvas id="investmentChart" width="800" height="400"></canvas>
+      <div class="right-side">
+        <h2 class="investment-calculator-title-container">
+          <img src="../assets/Blue line.png" alt="BlueLine" class="blueline">
+          <span class="investement-calculator-title">Group Management</span>
+          <span v-html="legendHtml" class="chart-legend"></span> <!-- This span will hold the legend -->
+        </h2>
+        <div class="calculator-chart">
+          <canvas id="investmentChart" width="800" height="400"></canvas>
+        </div>
       </div>
     </div>
   </div>
@@ -50,6 +73,7 @@ export default {
         { id: 'Rate 2', value: null },
         { id: 'Rate 3', value: null }
       ],
+      legendHtml: ''
     };
   },
   methods: {
@@ -97,6 +121,9 @@ export default {
           datasets: datasets
         },
         options: {
+          legend: {
+            display: false
+          },
           scales: {
             x: {
               title: {
@@ -115,6 +142,7 @@ export default {
       });
 
       this.futureValue = datasets.map(dataset => dataset.data.at(-1).toFixed(2)).join(', ');
+      this.legendHtml = this.generateLegend(); 
     },
 
     getRandomColor() {
@@ -126,6 +154,15 @@ export default {
     }
     return color;
   },
+    generateLegend() {
+      const legendHtml = this.chart.data.datasets.map((dataset) => {
+        return `<span style="display: flex; align-items: center; margin-right: 10px;">
+                  <span style="height: 10px; width: 10px; background-color: ${dataset.borderColor}; display: inline-block; margin-right: 5px;"></span>
+                  ${dataset.label}
+                </span>`;
+      }).join("");
+      return legendHtml;
+    },
   }
 };
 </script>
@@ -140,21 +177,33 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 95%;
 }
 
 .calculator-content {
   display: flex;
-  justify-content: space-between;
-  width: 100%;
+  flex-direction: row; /* Ensures children are side-by-side */
+  justify-content: space-between; /* Spaces children appropriately */
+  align-items: stretch; /* Ensures children stretch to fill the height */
+  width: 100%; /* Full width */
+  border-radius: 20px;
 }
 
+
 .calculator-inputs {
-  flex: 1;
-  padding-right: 20px;
+  flex: 1; /* Adjust this flex grow ratio if necessary */
+  display: block; /* Changed from inline-block to block */
+  align-items: center;
+  padding:  0 10 10 0;
+  background-color: #FAEDE4;
+  border: 1px solid rgba(0, 0, 0, 0.207);
+  width: auto; /* Changed to auto for natural width or set a specific percentage */
+  border-radius: 50px 0 0 50px; /* Top-left, top-right, bottom-right, bottom-left */
 }
 
 .input-group {
-  margin-bottom: 20px;
+  margin: 20px 20px 0 20px;
+  width: 80%;
 }
 
 label {
@@ -165,31 +214,35 @@ label {
 }
 
 .calculator-input {
-  width: 100%;
+  width: auto; /* Make inputs take the full width of their container */
   padding: 10px;
   border-radius: 5px;
+  color: white;
+  background-color: #482ebd;
   border: 1px solid #ccc;
-  transition: border-color 0.3s;
+  transition: 0.4s ease-in;
 }
+
 
 .calculator-input:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: #2707b4;
 }
 
 .calculate-button {
-  width: 100%;
-  padding: 10px 0;
-  background-color: #007bff;
+  width: 50%;
+  padding: 10 10 10 10;
+  margin-top: 10px;
+  background-color: #CB0E38;
   color: white;
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: 0.4s ease-in;
 }
 
 .calculate-button:hover {
-  background-color: #0056b3;
+  background-color: #f95d5d;
 }
 
 .result {
@@ -239,6 +292,41 @@ label {
 
 .calculator-chart {
   flex: 2;
+  background-color: #FAEDE4;
+  border: 1px solid rgba(0, 0, 0, 0.207);
+  width: 100%;
+  height: 88%;
+}
+
+.right-side {
+  display: block;
+  width: 80%;
+  height: auto;
+}
+
+.investment-calculator-title-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  color: #000000; /* Sets the text color to black */
+  height: 5%;
+  gap: 10px;
+}
+
+.investment-calculator-title {
+  text-align: left;
+}
+
+.chart-legend {
+  display: flex;
+  align-items: center; /* Vertically align the legend icons and text */
+  text-align: right;
+  justify-content: flex-end; /* Align the legend content to the right */
+  font-size: 12px; /* Smaller text size; adjust as needed */
+  white-space: nowrap; /* Ensures it stays in a single line */
 }
 </style>
 
