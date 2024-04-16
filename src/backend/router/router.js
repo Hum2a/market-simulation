@@ -1,11 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import GroupCreation from '../../frontend/pages/GroupCreation.vue';
-// import SimulationPage from '../../frontend/pages/Simulation.vue';
+import SimulationPage from '../../frontend/pages/Simulation.vue';
 import SimulationControls from '../../frontend/pages/SimulationControls.vue';
 import ResultsScreen from '../../frontend/pages/ResultsScreen.vue';
 import InvestmentCalculator from '../../frontend/pages/InvestmentCalculator.vue';
 import SimulationDetails from '../../frontend/pages/SimulationDetails.vue';
-import SimulationTest from '@/frontend/pages/SimulationTest.vue';
+// import SimulationTest from '@/frontend/pages/SimulationTest.vue';
 
 // Define your routes as before
 const routes = [
@@ -21,7 +21,7 @@ const routes = [
   {
     path: '/simulation',
     name: 'SimulationPage',
-    component: SimulationTest,
+    component: SimulationPage,
   },
   {
     path: '/simulation-controls',

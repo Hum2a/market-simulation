@@ -8,10 +8,11 @@
       <asset-changes-chart />
     </div>
     <div class="sim-chart-container">
-      <asset-growth-chart :chart-data="generateTotalPortfolioChartData()"></asset-growth-chart>
+      <canvas ref="assetGrowthChart" height="100"></canvas>
       <button @click="updateValuesForNextQuarter" class="modern-button">Next Quarter</button>
+      <button @click="runFullSimulation" class="modern-button">Run Full Simulation</button>
     </div>
-      <div class="simulation-table">
+      <!-- <div class="simulation-table">
       <h2>Simulation Data</h2>
       <table>
         <thead>
@@ -38,83 +39,12 @@
 
       <div class="pie-charts-row">
         <div class="pie-chart-container" v-for="(group, index) in groups" :key="'pie-chart-container-' + index">
-          <h3>{{ group.name }}</h3> <!-- This is the label displaying the group name -->
+          <h3>{{ group.name }}</h3>
           <canvas :id="'pieChart-' + index"></canvas>
         </div>
       </div>
-<!-- 
-      <h2>Asset Changes from Firebase</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Quarter</th>
-              <th>Equity Growth (%)</th>
-              <th>Bonds Growth (%)</th>
-              <th>Real Estate Growth (%)</th>
-              <th>Commodities (%)</th>
-              <th>Other Growth (%)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <template v-for="(yearData, yearIndex) in assetChanges" :key="'year-' + yearIndex">
-              <template v-for="(change, quarter) in yearData" :key="'quarter-' + quarter">
-                <tr>
-                  <td>{{ quarter }}</td>
-                  <td>{{ change.Equity }}</td>
-                  <td>{{ change.Bonds }}</td>
-                  <td>{{ change.RealEstate }}</td>
-                  <td>{{ change.Commodities }}</td>
-                  <td>{{ change.Other }}</td>
-                </tr>
-              </template>
-            </template>
-          </tbody>
-        </table> -->
-
-      <!-- <h2>Detailed Asset Growth Projections</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Group Name</th>
-              <th>Asset Type</th>
-              <th>Initial Value</th>
-              <th v-for="n in simulationYears * 4" :key="'quarter-header-' + n">Q{{ n }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <template v-for="(growthData, groupName) in detailedGrowth" :key="groupName">
-              <tr v-for="assetType in Object.keys(growthData)" :key="groupName + '-' + assetType">
-                <td>{{ groupName }}</td>
-                <td>{{ assetType }}</td>
-                <td>{{ growthData[assetType][0].toFixed(2) }}</td>
-                <template v-for="(value, index) in growthData[assetType].slice(1)" :key="groupName + '-' + assetType + '-' + index">
-                  <td>{{ value.toFixed(2) }}</td>
-                </template>
-              </tr>
-            </template>
-          </tbody>
-        </table> -->
-
-        <!-- <h2>Total Portfolio Values by Quarter</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Group Name</th>
-                <th>Initial Value</th>
-                <th v-for="n in simulationYears * 4" :key="'total-quarter-header-' + n">Q{{ n }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(totals, groupName) in totalPortfolioValues" :key="groupName">
-                <td>{{ groupName }}</td>
-                <td v-for="total in totals" :key="groupName + '-' + total">
-                  {{ total.toFixed(2) }}
-                </td>
-              </tr>
-            </tbody>
-          </table> -->
-
-    </div>
+      
+    </div> -->
     <button @click="finishSimulation" class="modern-button">Finish Simulation</button>
   </div>
 </template>
@@ -123,7 +53,6 @@
 
 import { getFirestore, collection, getDocs, doc, getDoc, setDoc } from 'firebase/firestore';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import AssetGrowthChart from '../components/charts/AssetGrowthChart.vue';
 import AssetChangesChart from '../components/charts/AssetChangesChart.vue';
 import Chart from 'chart.js';
 import { useRouter } from 'vue-router';
@@ -131,7 +60,7 @@ import { useRouter } from 'vue-router';
 export default {
   name: 'SimulationPage',
   components: {
-    AssetGrowthChart,
+
     AssetChangesChart,
   },
   setup() {
@@ -153,21 +82,28 @@ export default {
         currentQuarterIndex: 0,
         totalPortfolioValues: {},
         colorPalette: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FAA74B', '#9D56F7', '#5A6FFA', '#56D9FA', '#FAB256'],
+        assetGrowthChartInstance: null,
     };
   },
   async created() {
-    const auth = getAuth();
-    onAuthStateChanged(auth, async (user) => {
+      const auth = getAuth();
+      onAuthStateChanged(auth, async (user) => {
       if (user) {
-        this.userUID = user.uid;
-        this.latestSimulationIndex = await this.fetchLatestSimulationIndex();
-        if (this.latestSimulationIndex) {
-          this.initializeData();
-        }
+          this.userUID = user.uid;
+          this.latestSimulationIndex = await this.fetchLatestSimulationIndex();
+          if (this.latestSimulationIndex) {
+          await this.initializeData();
+          this.$nextTick(() => {
+              this.initializeAssetGrowthChart();
+              if (this.groups.length > 0) {
+              this.renderAllPieCharts();
+              }
+          });
+          }
       } else {
-        console.log("No user is signed in.");
+          console.log("No user is signed in.");
       }
-    });
+      });
   },
   methods: {
     async fetchLatestSimulationIndex() {
@@ -257,6 +193,20 @@ export default {
       startSimulation() {
           this.currentQuarterIndex = 0;
       },
+      runFullSimulation() {
+          const totalQuarters = this.simulationYears * 4;
+          let quarterCount = 0;
+
+          const runQuarter = () => {
+          if (quarterCount < totalQuarters && this.currentQuarterIndex < totalQuarters) {
+              this.updateValuesForNextQuarter();
+              quarterCount++;
+              setTimeout(runQuarter, 2000); // 500 milliseconds delay between quarters
+          }
+          };
+
+          runQuarter();
+      },
 
       applyAssetChanges() {
         const quarters = ['Jan-Mar', 'Apr-Jun', 'Jul-Sep', 'Oct-Dec'];
@@ -277,88 +227,163 @@ export default {
       },
 
       updateValuesForNextQuarter() {
-        // Check if the next quarter's data is available
-        const totalQuarters = this.simulationYears * 4;
-        if (this.currentQuarterIndex >= totalQuarters) {
-          console.warn("No more quarters left to simulate.");
-          return;
-        }
-
-        // Calculate which year and quarter we're working on
-        const year = Math.floor(this.currentQuarterIndex / 4);
-        const quarterIndex = this.currentQuarterIndex % 4;
-        const quarters = ['Jan-Mar', 'Apr-Jun', 'Jul-Sep', 'Oct-Dec'];
-        const currentQuarter = quarters[quarterIndex];
-
-        // Assuming `assetChanges` is structured as [{ "Jan-Mar": {...}, "Apr-Jun": {...}, ... }, { ... }]
-        // Where each object represents a year and each key in the object is a quarter with its growth rates
-        const assetChangesForQuarter = this.assetChanges[year] ? this.assetChanges[year][currentQuarter] : null;
-
-        if (!assetChangesForQuarter) {
-          console.warn(`No data available for year ${year + 1}, quarter ${currentQuarter}`);
-          return;
-        }
-
-        // Now apply the asset changes for this quarter to each group
-        this.groups.forEach(group => {
-          Object.keys(assetChangesForQuarter).forEach(assetType => {
-            const growthRate = assetChangesForQuarter[assetType] / 100; // Convert percentage to a decimal
-            const currentValue = group[assetType.toLowerCase()];
-            const newValue = currentValue * (1 + growthRate);
-            group[assetType.toLowerCase()] = newValue;
-
-            // Update the detailed growth projections
-            if (!this.detailedGrowth[group.name][assetType]) {
-              this.detailedGrowth[group.name][assetType] = [];
-            }
-            this.detailedGrowth[group.name][assetType].push(newValue);
-          });
-        });
-
-        this.groups.forEach(group => {
-          const groupName = group.name;
-          const totalValue = ['equity', 'bonds', 'realestate', 'commodities', 'other']
-            .reduce((total, key) => total + parseFloat(group[key] || 0), 0);
-
-          if (!this.totalPortfolioValues[groupName]) {
-            this.totalPortfolioValues[groupName] = [];
+          const totalQuarters = this.simulationYears * 4;
+          if (this.currentQuarterIndex >= totalQuarters) {
+              console.warn("No more quarters left to simulate.");
+              return;
           }
-          this.totalPortfolioValues[groupName].push(totalValue);
-        });
 
-        this.currentQuarterIndex++;
+          const year = Math.floor(this.currentQuarterIndex / 4);
+          const quarterIndex = this.currentQuarterIndex % 4;
+          const quarters = ['Jan-Mar', 'Apr-Jun', 'Jul-Sep', 'Oct-Dec'];
+          const currentQuarter = quarters[quarterIndex];
+          const assetChangesForQuarter = this.assetChanges[year] ? this.assetChanges[year][currentQuarter] : null;
 
+          if (!assetChangesForQuarter) {
+              console.warn(`No data available for year ${year + 1}, quarter ${currentQuarter}`);
+              return;
+          }
+
+          this.groups.forEach((group, groupIndex) => {
+              let totalValue = 0;
+
+              Object.keys(assetChangesForQuarter).forEach(assetType => {
+                  const growthRate = assetChangesForQuarter[assetType] / 100;
+                  const assetKey = assetType.toLowerCase();
+                  const currentValue = group[assetKey];
+                  const newValue = currentValue * (1 + growthRate);
+                  group[assetKey] = newValue;
+
+                  totalValue += newValue;  // Accumulate the total value of all assets
+
+                  // Update the detailed growth projections
+                  if (!this.detailedGrowth[group.name][assetType]) {
+                      this.detailedGrowth[group.name][assetType] = [];
+                  }
+                  this.detailedGrowth[group.name][assetType].push(newValue);
+              });
+
+              // Update the total portfolio value for the current quarter
+              if (!this.totalPortfolioValues[group.name]) {
+                  this.totalPortfolioValues[group.name] = [];
+              }
+              this.totalPortfolioValues[group.name].push(totalValue);
+
+              // Update the chart dataset for total values
+              if (this.assetGrowthChartInstance.data.datasets[groupIndex].data.length > this.currentQuarterIndex + 1) {
+                  // Update existing data point if it exists
+                  this.assetGrowthChartInstance.data.datasets[groupIndex].data[this.currentQuarterIndex + 1] = totalValue;
+              } else {
+                  // Add a new data point if it does not exist
+                  this.assetGrowthChartInstance.data.datasets[groupIndex].data.push(totalValue);
+              }
+          });
+
+          console.log("Updated dataset:", this.assetGrowthChartInstance.data.datasets);
+          this.currentQuarterIndex++;
+          this.assetGrowthChartInstance.options.animation = {
+              duration: 2000,  // Adjust the duration as needed
+              easing: 'linear'
+          };
+          this.assetGrowthChartInstance.update();
       },
-      // generateChartData() {
-      //   const datasets = [];
-      //   // Start with 'Initial Value', followed by the quarters
-      //   const labels = ['Initial Value'].concat(Array.from({ length: this.simulationYears * 4 }, (_, i) => `Q${i + 1}`));
 
-      //   Object.entries(this.detailedGrowth).forEach(([groupName, assets]) => {
-      //     Object.entries(assets).forEach(([assetType, values]) => {
-      //       // Create a copy of the values array starting from the second element
-      //       const adjustedValues = [values[0]].concat(values.slice(1, this.currentQuarterIndex + 1));
 
-      //       // Fill the rest of the array with nulls up to the total number of quarters
-      //       while (adjustedValues.length < this.simulationYears * 4 + 1) {
-      //         adjustedValues.push(null);
-      //       }
+      initializeAssetGrowthChart() {
+          const ctx = this.$refs.assetGrowthChart.getContext('2d');
+          const totalQuarters = this.simulationYears * 4;  // Calculate total number of quarters
+          const datasets = this.groups.map(group => ({
+              label: group.name,
+              data: new Array(totalQuarters + 1).fill(null),  // +1 for the initial value
+              fill: false,
+              borderColor: this.colorPalette[this.groups.indexOf(group) % this.colorPalette.length],
+          }));
 
-      //       const dataset = {
-      //         label: `${groupName} - ${assetType}`,
-      //         data: adjustedValues,
-      //         fill: false,
-      //         borderColor: this.getRandomColor(),
-      //       };
-      //       datasets.push(dataset);
-      //     });
-      //   });
+          const smoothLineDrawPlugin = {
+              id: 'smoothLineDraw',
+              beforeDatasetsDraw: function(chart, easing) {
+                  const ctx = chart.ctx;
+                  chart.data.datasets.forEach((dataset, i) => {
+                      const meta = chart.getDatasetMeta(i);
+                      if (!meta.hidden) {
+                          meta.data.forEach((point, index) => {
+                              if (index === 0) return; // skip the first point
+                              const previousPoint = meta.data[index - 1];
+                              const currentLineProgress = easing * (point._model.x - previousPoint._model.x);
 
-      //   return {
-      //     labels,
-      //     datasets
-      //   };
-      // },
+                              // Draw line from previous point to current point based on easing
+                              ctx.beginPath();
+                              ctx.moveTo(previousPoint._model.x, previousPoint._model.y);
+                              ctx.lineTo(previousPoint._model.x + currentLineProgress, point._model.y);
+                              ctx.strokeStyle = dataset.borderColor;
+                              ctx.lineWidth = dataset.borderWidth;
+                              ctx.stroke();
+                          });
+                      }
+                  });
+              }
+          };
+
+
+          // Populate initial data
+          this.groups.forEach((group, index) => {
+              const initialTotal = ['equity', 'bonds', 'realestate', 'commodities', 'other']
+              .reduce((total, key) => total + parseFloat(group[key] || 0), 0);
+              datasets[index].data[0] = initialTotal;  // Set initial value correctly
+          });
+
+          this.assetGrowthChartInstance = new Chart(ctx, {
+              type: 'line',
+              data: {
+              labels: ['Initial'].concat(Array.from({ length: totalQuarters }, (_, i) => `Q${i + 1}`)),
+              datasets: datasets
+              },
+              options: {
+              scales: {
+                  y: { beginAtZero: true },
+              },
+              responsive: true,
+              maintainAspectRatio: true,
+              animation: {
+                  duration: 500,  // Duration in milliseconds for the entire dataset to animate
+                  easing: 'linear'  // Ensure the animation is smooth
+              },
+              plugins: [smoothLineDrawPlugin]
+              },
+          });
+
+          this.assetGrowthChartInstance.update();
+          },
+
+
+      updateAssetGrowthChart() {
+          this.assetGrowthChartInstance.data = this.generateTotalPortfolioChartData();
+          this.assetGrowthChartInstance.update();
+      },
+      generateTotalPortfolioChartData() {
+          const labels = ['Initial'].concat(Array.from({ length: this.simulationYears * 4 }, (_, i) => `Q${i + 1}`));
+          let colorIndex = 0;
+
+          const datasets = Object.keys(this.totalPortfolioValues).map(groupName => {
+              const values = this.totalPortfolioValues[groupName];
+              const adjustedValues = [values[0]].concat(values.slice(1, this.currentQuarterIndex + 1));
+
+              while (adjustedValues.length < this.simulationYears * 4 + 1) {
+              adjustedValues.push(null);
+              }
+
+              return {
+              label: groupName,
+              data: adjustedValues,
+              fill: false,
+              borderColor: this.colorPalette[colorIndex++ % this.colorPalette.length],
+              tension: 0.1
+              };
+          });
+
+          return { labels, datasets };
+      },
+
       generateAssetChangesChartData() {
         const assetTypes = ['Equity', 'Bonds', 'RealEstate', 'Commodities', 'Other']; // Define asset types directly
         const labels = ['Initial Value'].concat(
@@ -383,35 +408,6 @@ export default {
             borderColor: lineColors[index],
             tension: 0.5
           };
-        });
-
-        return { labels, datasets };
-      },
-
-      generateTotalPortfolioChartData() {
-        const labels = ['Initial'].concat(Array.from({ length: this.simulationYears * 4 }, (_, i) => `Q${i + 1}`));
-        let colorIndex = 0; // Start with the first color in the palette
-
-        const datasets = Object.keys(this.totalPortfolioValues).map(groupName => {
-          // Ensure the values array only extends up to the current quarter index + 1 for the initial value
-          const values = this.totalPortfolioValues[groupName];
-          const adjustedValues = [values[0]].concat(values.slice(1, this.currentQuarterIndex + 1));
-
-          // Fill the rest of the array with nulls up to the total number of quarters + initial value
-          while (adjustedValues.length < this.simulationYears * 4 + 1) {
-            adjustedValues.push(null);
-          }
-
-          const dataset = {
-            label: groupName,
-            data: adjustedValues,
-            fill: false,
-            borderColor: this.colorPalette[colorIndex % this.colorPalette.length], // Use the color from the palette
-            tension: 0.1 // Adds a slight curve to lines
-          };
-
-          colorIndex++; // Move to the next color in the palette for the next group
-          return dataset;
         });
 
         return { labels, datasets };
