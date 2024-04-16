@@ -1,6 +1,6 @@
 <template>
   <div class="login-container">
-    <h1>Login or Register</h1>
+    <h1 class="login-or-register">Login or Register</h1>
     <form @submit.prevent="handleLogin">
       <div class="form-group">
         <label for="username">Username or Email:</label>
@@ -78,11 +78,15 @@
   <style scoped>
   .login-container {
     width: 320px;
-    margin: 80px auto;
+    margin: 10px auto;
     padding: 30px;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
     border-radius: 8px;
     background-color: #ffffff; /* White background for a clean look */
+  }
+
+  .login-or-register {
+    margin: 0;
   }
   
   .form-group {
@@ -108,7 +112,7 @@
   }
   
   button {
-    width: 100%;
+    width: 80%;
     padding: 12px;
     margin-top: 15px;
     background-image: linear-gradient(to right, #007bff, #0056b3); /* Gradient background for buttons */
