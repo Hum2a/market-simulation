@@ -32,7 +32,7 @@
       <div class="right-side">
         <h2 class="investment-calculator-title-container">
           <img src="../assets/Blue line.png" alt="BlueLine" class="blueline">
-          <span class="investement-calculator-title">Group Management</span>
+          <span class="investement-calculator-title">InvestmentCalculator</span>
           <span v-html="legendHtml" class="chart-legend"></span> <!-- This span will hold the legend -->
         </h2>
         <div class="calculator-chart">
@@ -40,10 +40,13 @@
         </div>
       </div>
     </div>
-    <div class="result" v-if="futureValue !== null">
-      <p class="future-value-display">Future Value of Investments: <span class="future-value">{{ futureValue }}</span></p>
+    <div class="result" v-if="futureValues.length > 0">
+      <div v-for="(value, index) in futureValues" :key="'futureValue' + index">
+        <p class="future-value-display">Future Value {{ index + 1 }}: <span class="future-value">{{ value }}</span></p>
+      </div>
     </div>
   </div>
+
 </template>
 
 <script>
@@ -57,7 +60,7 @@ export default {
       monthlyContribution: null,
       investmentPeriod: null,
       annualReturnRate: null,
-      futureValue: null,
+      futureValues: [], // Changed from futureValue to futureValues as an array
       chart: null, // Store chart instance
       annualReturnRates: [
         { id: 'Rate 1', value: null },
@@ -126,13 +129,18 @@ export default {
               title: {
                 display: true,
                 text: 'Value'
+              },
+              ticks: {
+                callback: function(value) {
+                  return '£' + value.toFixed(2); // Ensure this formatting is consistent
+                }
               }
             }
           }
         }
       });
 
-      this.futureValue = datasets.map(dataset => dataset.data.at(-1).toFixed(2)).join(', ');
+      this.futureValues = datasets.map(dataset => dataset.data.at(-1).toFixed(2));
       this.legendHtml = this.generateLegend();
     },
 
