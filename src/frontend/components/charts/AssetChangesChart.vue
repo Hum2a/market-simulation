@@ -202,6 +202,11 @@
           data: chartData,
           options: {
             scales: {
+              xAxes: [{
+                gridLines: {
+                  display: false // Disables vertical grid lines
+                },
+              }],
               y: {
                 beginAtZero: true,
               },
