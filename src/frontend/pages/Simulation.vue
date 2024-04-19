@@ -201,7 +201,7 @@ export default {
           if (quarterCount < totalQuarters && this.currentQuarterIndex < totalQuarters) {
               this.updateValuesForNextQuarter();
               quarterCount++;
-              setTimeout(runQuarter, 2000); // 500 milliseconds delay between quarters
+              setTimeout(runQuarter, 500); // 500 milliseconds delay between quarters
           }
           };
 
@@ -282,7 +282,7 @@ export default {
           console.log("Updated dataset:", this.assetGrowthChartInstance.data.datasets);
           this.currentQuarterIndex++;
           this.assetGrowthChartInstance.options.animation = {
-              duration: 2000,  // Adjust the duration as needed
+              duration: 20,  // Adjust the duration as needed
               easing: 'linear'
           };
           this.assetGrowthChartInstance.update();
