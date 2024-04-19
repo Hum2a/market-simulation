@@ -5,13 +5,22 @@
       </div>
 
       <div class="event-buttons-container">
+        <button @click="toggleAllAnnotations" class="toggle-all-button">Toggle All Annotations</button>
         <template v-for="(yearEvents, year) in events" :key="year">
-          <button
+          <!-- <button
             v-for="(event, quarter) in yearEvents"
             :key="`${year}-${quarter}`"
             @click="showEventModal(event)"
           >
             Show {{ event.name }} for {{ quarter }} {{ year }}
+          </button> -->
+          <button
+            v-for="(event, quarter) in yearEvents"
+            :key="`${year}-${quarter}`"
+            @click="toggleEventAnnotation(year, quarter)"
+            class="toggle-individual-button"
+          >
+            Toggle {{ event.name }} for {{ quarter }} {{ year }}
           </button>
         </template>
       </div>
@@ -22,8 +31,11 @@
           <!-- <button class="update-next" @click="updateAssetData(asset)">
             Update {{ asset }} Next Quarter
           </button> -->
-          <button class="update-all" @click="updateAllQuarters(asset)">
+          <!-- <button class="update-all" @click="updateAllQuarters(asset)">
             Show {{ asset }}
+          </button> -->
+          <button class="update-all" @click="toggleAssetVisibility(asset)">
+            Toggle {{ asset }}
           </button>
         </template>
       </div>
@@ -57,6 +69,13 @@
         assetChangesChart: null,
         assetTypes: ['Equity', 'Bonds', 'RealEstate', 'Commodities', 'Other'],
         quarters: ['Jan-Mar', 'Apr-Jun', 'Jul-Sep', 'Oct-Dec'],
+        assetVisibility: {
+          Equity: false,
+          Bonds: false,
+          RealEstate: false,
+          Commodities: false,
+          Other: false
+        },
         currentQuarters: {
           Equity: 0,
           Bonds: 0,
@@ -68,6 +87,8 @@
         events: {},
         showModal: false,
         currentEvent: null,
+        eventAnnotationsVisible: {},
+
       };
     },
     methods: {
@@ -103,7 +124,13 @@
         if (docSnap.exists()) {
             const data = docSnap.data();
             this.assetChanges = data.assetChanges;
-            this.events = data.events || {}; // Initialize events if undefined
+            this.events = data.events || {};
+            Object.keys(this.events).forEach(year => {
+              Object.keys(this.events[year]).forEach(quarter => {
+                const key = `${year}-${quarter}`;
+                this.eventAnnotationsVisible[key] = true; // Start with all annotations hidden
+              });
+            });
             this.generateChart(); // Assuming generateChart uses this.assetChanges and this.events
         } else {
             console.log("ACC - fAC: No such document!");
@@ -113,62 +140,58 @@
       generateChart() {
         const totalQuarters = this.assetChanges.length * 4;
         const labels = ['Initial Value'].concat(Array.from({ length: totalQuarters }, (_, i) => `Q${i + 1}`));
-        const lineColors = ['#3C5CCD', '#FF8368', '#444444', '#D6B235', '#FD6969',];
-
-        // const datasets = this.assetTypes.map(type => {
-        //   const data = new Array(totalQuarters + 1).fill(null);
-        //   data[0] = 0; // Initial value
-          
-        //   return {
-        //     label: type,
-        //     data,
-        //     fill: false,
-        //     borderColor: this.getRandomColor(),
-        //   };
-        // });
+        const lineColors = ['#3C5CCD', '#FF8368', '#444444', '#D6B235', '#FD6969'];
 
         // Initialize each asset type with a starting value of 1000
         const datasets = this.assetTypes.map((type, index) => {
-            const data = [1000]; // Start with £1000 for each asset type
-            for (let i = 1; i <= totalQuarters; i++) {
-                data.push(null); // Future values are null until updated
-            }
-            return {
-                label: type,
-                data,
-                fill: false,
-                borderColor: lineColors[index],
-            };
+          const data = [1000]; // Start with £1000 for each asset type
+          for (let i = 1; i <= totalQuarters; i++) {
+            data.push(null); // Future values are null until updated
+          }
+          return {
+            label: type,
+            data,
+            fill: false,
+            borderColor: lineColors[index],
+          };
         });
 
-        console.log(this.quarters);
-
-        // Calculate event annotations
+        // Calculate event annotations based on their visibility state
         const annotations = Object.entries(this.events).flatMap(([year, yearEvents]) => {
+          let alternatePosition = true; // Variable to alternate label positions
           return Object.entries(yearEvents).map(([quarter, event]) => {
-            const quarterIndex = this.quarters.indexOf(quarter) + 1; // Assuming quarters are ['Jan-Mar', 'Apr-Jun', 'Jul-Sep', 'Oct-Dec']
+            const quarterIndex = this.quarters.indexOf(quarter) + 1; // Assuming quarters are indexed
             const yearIndex = parseInt(year, 10) - 1; // Assuming year starts from 1 in your data
             const labelIndex = yearIndex * 4 + quarterIndex;
+            const key = `${year}-${quarter}`;
+
+            if (!this.eventAnnotationsVisible[key]) {
+              return null; // Skip this annotation if not visible
+            }
+
+            // Alternate label positions between "top" and "bottom"
+            const position = alternatePosition ? "bottom" : "top";
+            alternatePosition = !alternatePosition; // Toggle position for the next annotation
 
             return {
               type: 'line',
               mode: 'vertical',
               scaleID: 'x-axis-0',
               value: labels[labelIndex],
-              borderColor: 'rgba(255,53,98,0.5)',
+              borderColor: '#DAC2C2',
               borderWidth: 24,
               label: {
                 enabled: true,
                 content: event.name,
-                position: "top",
-                xAdjust: 40, // Move label 10px to the right
+                position: position,
+                xAdjust: 40, // Move label 40px to the right
                 backgroundColor: 'rgba(114,93,255,1)',
                 fontSize: 16,
                 fontColor: '#FFF', // Ensuring the text is readable
-                padding: 16
+                padding: 16,
               }
             };
-          });
+          }).filter(annotation => annotation !== null); // Remove null entries to avoid errors
         });
 
         const chartData = { labels, datasets };
@@ -184,10 +207,77 @@
               },
             },
             annotation: {
-              annotations: annotations,
+              annotations: annotations.filter(a => a !== null), // Ensure no null annotations are passed
+              drawTime: 'afterDatasetsDraw', // Render annotations after datasets are drawn
             },
           },
         });
+      },
+
+      toggleEventAnnotation(year, quarter) {
+        const key = `${year}-${quarter}`;
+        // Toggle the visibility of the annotation
+        this.eventAnnotationsVisible[key] = !this.eventAnnotationsVisible[key];
+
+        // Re-calculate the annotations based on the updated visibility
+        this.updateChartAnnotations();
+        // Redraw the chart to reflect changes
+        this.assetChangesChart.update();
+      },
+      toggleAllAnnotations() {
+        const allVisible = Object.values(this.eventAnnotationsVisible).every(visibility => visibility);
+        // Set all to the opposite of their current global visibility state
+        Object.keys(this.eventAnnotationsVisible).forEach(key => {
+          this.eventAnnotationsVisible[key] = !allVisible;
+        });
+
+        this.updateChartAnnotations();
+        this.assetChangesChart.update();
+      },
+
+      updateChartAnnotations() {
+        // const totalQuarters = this.assetChanges.length * 4;
+        const labels = this.assetChangesChart.data.labels; // Use the existing labels from the chart data
+
+        // Recalculate annotations with current visibility settings
+        const annotations = Object.entries(this.events).flatMap(([year, yearEvents]) => {
+          let alternatePosition = true; // Alternate label positions for visibility
+          return Object.entries(yearEvents).map(([quarter, event]) => {
+            const quarterIndex = this.quarters.indexOf(quarter) + 1; // Calculate quarter index
+            const yearIndex = parseInt(year, 10) - 1;
+            const labelIndex = yearIndex * 4 + quarterIndex;
+            const key = `${year}-${quarter}`;
+
+            if (!this.eventAnnotationsVisible[key]) {
+              return null; // Skip hidden annotations
+            }
+
+            const position = alternatePosition ? "bottom" : "top";
+            alternatePosition = !alternatePosition;
+
+            return {
+              type: 'line',
+              mode: 'vertical',
+              scaleID: 'x-axis-0',
+              value: labels[labelIndex],
+              borderColor: '#DAC2C2',
+              borderWidth: 24,
+              label: {
+                enabled: true,
+                content: event.name,
+                position: position,
+                xAdjust: 40,
+                backgroundColor: 'rgba(114,93,255,1)',
+                fontSize: 16,
+                fontColor: '#FFF',
+                padding: 16
+              }
+            };
+          }).filter(annotation => annotation !== null);
+        });
+
+        // Update the annotations in the chart's options
+        this.assetChangesChart.options.annotation.annotations = annotations;
       },
 
       updateAssetData(assetType) {
@@ -246,6 +336,32 @@
       this.assetChangesChart.update();
     },
 
+    toggleAssetVisibility(assetType) {
+      // Toggle the visibility state
+      this.assetVisibility[assetType] = !this.assetVisibility[assetType];
+
+      const dataset = this.assetChangesChart.data.datasets.find(d => d.label === assetType);
+      if (dataset) {
+        if (this.assetVisibility[assetType]) {
+          // If toggling on, calculate and show data
+          let currentValue = 1000; // Initial value
+          const totalQuarters = this.assetChanges.length * 4;
+          for (let i = 0; i < totalQuarters; i++) {
+            const yearIndex = Math.floor(i / 4);
+            const quarterPhase = this.quarters[i % 4];
+            const change = this.assetChanges[yearIndex] && this.assetChanges[yearIndex][quarterPhase] ? this.assetChanges[yearIndex][quarterPhase][assetType] : null;
+            if (change !== null) {
+              currentValue *= (1 + change / 100);
+            }
+            dataset.data[i + 1] = currentValue;
+          }
+        } else {
+          // If toggling off, clear data
+          dataset.data.fill(null, 1); // Start filling from index 1 to keep the initial value
+        }
+        this.assetChangesChart.update();
+      }
+    },
 
       getRandomColor() {
         const letters = '0123456789ABCDEF';
@@ -379,12 +495,12 @@
 
 .event-buttons-container button {
   padding: 10px 15px; /* Padding inside the buttons */
-  background-color: #CB0E38;
   color: rgb(253, 253, 253); /* Text color */
   border: none; /* Removes the default border */
   border-radius: 5px; /* Rounded corners */
   cursor: pointer; /* Changes the cursor to a pointer on hover */
   transition: background-color 0.3s; /* Smooth transition for background color */
+  font-size: smaller;
 }
 
 .event-buttons-container button:hover {
@@ -394,6 +510,14 @@
 .event-buttons-container button:focus {
   outline: none; /* Removes the outline to keep the design clean */
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.5); /* Adds a focus state for accessibility */
+}
+
+.toggle-all-button {
+  background-color: #d74867;
+}
+
+.toggle-individual-button {
+  background-color: #CB0E38;
 }
 
 .update-next {
