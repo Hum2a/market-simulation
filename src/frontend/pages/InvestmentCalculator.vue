@@ -24,7 +24,7 @@
           <input type="number" placeholder="£" id="investmentPeriod" v-model="investmentPeriod" class="calculator-input">
         </div>
         <div class="input-group" v-for="rate in annualReturnRates" :key="rate.id">
-          <label :for="'annualReturnRate' + rate.id">Expected Annual Return Rate (%) for {{ rate.id }}:</label>
+          <label :for="'annualReturnRate' + rate.id">Expected Annual Return {{ rate.id }}:</label>
           <input type="number" placeholder="£" :id="'annualReturnRate' + rate.id" v-model="rate.value" class="calculator-input">
         </div>
         <button @click="calculate" class="calculate-button">Calculate</button>
@@ -81,12 +81,9 @@ export default {
       const n = 12; // Compounded monthly
       const t = years;
 
-      // Adjust the labels to display months instead of years
-      const labels = Array.from({ length: t * n + 1 }, (_, i) => {
-        if (i === 0) return 'Start';
-        const month = i % n === 0 ? n : i % n;
-        const year = Math.floor((i - 1) / n) + 1;
-        return `${month}/${year}`; // e.g., "1/1", "2/1", ..., "12/1", "1/2", ..., "12/2", ..., "12/Years"
+      // Adjust the labels to display years only
+      const labels = Array.from({ length: t + 1 }, (_, i) => {
+        return i === 0 ? 'Start' : `${i}`;
       });
 
       const datasets = this.annualReturnRates.map(rate => {
@@ -95,7 +92,7 @@ export default {
         const data = [currentValue];
         for (let i = 1; i <= t * n; i++) {
           currentValue = currentValue * (1 + r) + monthlyContribution;
-          data.push(currentValue);
+          if (i % 12 === 0) data.push(currentValue); // Push the value at the end of each year
         }
         return {
           label: `Investment Growth at ${rate.value}%`,
@@ -136,15 +133,15 @@ export default {
             xAxes: [{
               title: {
                 display: true,
-                text: 'Time (Months/Years)' // Updated to reflect the new labels
+                text: 'Time (Years)'
               },
               gridLines: {
-                display: false // Disables vertical grid lines
+                display: false
               },
             }],
             yAxes: [{
               gridLines: {
-                display: true // Ensures horizontal grid lines are still shown
+                display: true
               },
               title: {
                 display: true,
@@ -152,7 +149,7 @@ export default {
               },
               ticks: {
                 callback: function(value) {
-                  return '£' + value.toFixed(2); // Ensure this formatting is consistent
+                  return '£' + value.toFixed(2);
                 }
               }
             }]
@@ -163,7 +160,6 @@ export default {
       this.futureValues = datasets.map(dataset => dataset.data.at(-1).toFixed(2));
       this.legendHtml = this.generateLegend();
     },
-
 
     getRandomColor() {
     // This is a simple method to generate random colors. You might want to customize this.

@@ -125,7 +125,7 @@ import SimulationHistory from './PastSimulations.vue';
 
         return {
             router,
-            maxPortfolioValue: 3000,
+            maxPortfolioValue: 100000,
         };
     },
     data() {

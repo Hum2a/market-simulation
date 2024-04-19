@@ -11,13 +11,13 @@
   <div class="results-screen">
     <h1 class="title">
       <img src="../assets/Blue line.png" alt="BlueLine" class="blueline">
-      Simulation Results
+      Investment Results
     </h1>
     <div class="results-container">
       <div v-for="(result, index) in rankedResults" :key="index" class="result-group"
            :class="{'gold': index === 0, 'silver': index === 1, 'bronze': index === 2}"
            @click="toggleGroup(index)">
-        <h2>{{ index + 1 }}. {{ result.name }} (Total Worth: ${{ result.totalWorth.toFixed(2) }})</h2>
+        <h2>{{ index + 1 }}. {{ result.name }} (${{ result.totalWorth.toFixed(2) }})</h2>
         <div v-if="expandedGroups[index]" class="details">
           <div class="result-details">
             <ul class="asset-list">
@@ -429,15 +429,15 @@ export default {
   margin-top: 20px;
   border-radius: 8px; /* Rounded corners for the list */
   overflow: hidden; /* Ensures the child elements' rounded corners are respected */
-  flex: 1; /* Takes up 1 fraction of the available space */
   margin-right: 20px;
+  width: 45%;
 }
 
 .asset-list li {
   display: block; /* Ensures the list behaves like a block element */
   margin-bottom: 10px;
   padding: 20px;
-  font-size: 1rem;
+  font-size: 1.2rem;
   color: #000000; /* Dark text for better readability */
   background-color: #fafafa; /* Light background for each item */
   border-bottom: 1px solid #000000; /* Adds a subtle separator between items */

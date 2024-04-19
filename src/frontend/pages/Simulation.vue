@@ -11,6 +11,11 @@
       <canvas ref="assetGrowthChart" height="100"></canvas>
       <button @click="updateValuesForNextQuarter" class="modern-button">Next Quarter</button>
       <button @click="runFullSimulation" class="modern-button">Run Full Simulation</button>
+      <button @click="pauseSimulation" class="modern-button" v-if="isSimulating">Pause Simulation</button>
+      <button @click="resumeSimulation" class="modern-button" v-else>Resume Simulation</button>
+
+      <input type="number" v-model="simulationSpeed" min="100" step="100" title="Simulation Speed (ms)">
+
     </div>
       <!-- <div class="simulation-table">
       <h2>Simulation Data</h2>
@@ -83,6 +88,9 @@ export default {
         totalPortfolioValues: {},
         colorPalette: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FAA74B', '#9D56F7', '#5A6FFA', '#56D9FA', '#FAB256'],
         assetGrowthChartInstance: null,
+        simulationSpeed: 750,
+        isSimulating: false,
+        simulationInterval: null,
     };
   },
   async created() {
@@ -193,22 +201,54 @@ export default {
       startSimulation() {
           this.currentQuarterIndex = 0;
       },
-      runFullSimulation() {
-          const totalQuarters = this.simulationYears * 4;
-          let quarterCount = 0;
+    //   runFullSimulation() {
+    //     const totalQuarters = this.simulationYears * 4;
+    //     let quarterCount = 0;
 
-          const runQuarter = () => {
-          if (quarterCount < totalQuarters && this.currentQuarterIndex < totalQuarters) {
-              this.updateValuesForNextQuarter();
-              quarterCount++;
-              setTimeout(runQuarter, 500); // 500 milliseconds delay between quarters
-          }
-          };
+    //     const runQuarter = () => {
+    //         if (quarterCount < totalQuarters && this.currentQuarterIndex < totalQuarters) {
+    //             this.updateValuesForNextQuarter();
+    //             quarterCount++;
+    //             setTimeout(runQuarter, this.simulationSpeed);  // Use the dynamic speed from data property
+    //         }
+    //     };
 
-          runQuarter();
-      },
+    //     runQuarter();
+    // },
 
-      applyAssetChanges() {
+    runFullSimulation() {
+      if (this.isSimulating) {
+        return; // Prevent multiple simultaneous simulations
+      }
+      this.isSimulating = true;
+      const totalQuarters = this.simulationYears * 4;
+      let quarterCount = this.currentQuarterIndex;
+
+      const runQuarter = () => {
+        if (quarterCount < totalQuarters && this.currentQuarterIndex < totalQuarters) {
+          this.updateValuesForNextQuarter();
+          quarterCount++;
+          this.simulationInterval = setTimeout(runQuarter, this.simulationSpeed);
+        } else {
+          this.isSimulating = false; // Stop simulation
+        }
+      };
+
+      runQuarter();
+    },
+
+    pauseSimulation() {
+      clearTimeout(this.simulationInterval);
+      this.isSimulating = false;
+    },
+
+    resumeSimulation() {
+      if (!this.isSimulating) {
+        this.runFullSimulation();
+      }
+    },  
+    
+    applyAssetChanges() {
         const quarters = ['Jan-Mar', 'Apr-Jun', 'Jul-Sep', 'Oct-Dec'];
 
         for (let year = 0; year < this.simulationYears; year++) {
@@ -297,6 +337,7 @@ export default {
               data: new Array(totalQuarters + 1).fill(null),  // +1 for the initial value
               fill: false,
               borderColor: this.colorPalette[this.groups.indexOf(group) % this.colorPalette.length],
+              borderWidth: 5
           }));
 
           const smoothLineDrawPlugin = {
@@ -339,6 +380,14 @@ export default {
               datasets: datasets
               },
               options: {
+                legend: {
+                  display: true,
+                  labels: {
+                      fontSize: 18,  // Set the font size for the legend
+                      fontColor: '#333',  // Optionally set the font color
+                      fontStyle: 'bold'  // Optionally set the font style
+                  }
+              },
               scales: {
                 xAxes: [{
                   gridLines: {

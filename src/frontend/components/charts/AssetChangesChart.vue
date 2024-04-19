@@ -5,7 +5,7 @@
       </div>
 
       <div class="event-buttons-container">
-        <button @click="toggleAllAnnotations" class="toggle-all-button">Toggle All Annotations</button>
+        <button @click="toggleAllAnnotations" class="toggle-all-button">Show All Annotations</button>
         <template v-for="(yearEvents, year) in events" :key="year">
           <!-- <button
             v-for="(event, quarter) in yearEvents"
@@ -20,7 +20,7 @@
             @click="toggleEventAnnotation(year, quarter)"
             class="toggle-individual-button"
           >
-            Toggle {{ event.name }} for {{ quarter }} {{ year }}
+            Show {{ event.name }}
           </button>
         </template>
       </div>
@@ -35,7 +35,7 @@
             Show {{ asset }}
           </button> -->
           <button class="update-all" @click="toggleAssetVisibility(asset)">
-            Toggle {{ asset }}
+            Show {{ asset }}
           </button>
         </template>
       </div>
@@ -139,7 +139,7 @@
 
       generateChart() {
         const totalQuarters = this.assetChanges.length * 4;
-        const labels = ['Initial Value'].concat(Array.from({ length: totalQuarters }, (_, i) => `Q${i + 1}`));
+        const labels = ['Q0'].concat(Array.from({ length: totalQuarters }, (_, i) => `Q${i + 1}`));
         const lineColors = ['#3C5CCD', '#FF8368', '#444444', '#D6B235', '#FD6969'];
 
         // Initialize each asset type with a starting value of 1000
