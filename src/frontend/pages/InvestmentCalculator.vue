@@ -31,8 +31,10 @@
       </div>
       <div class="right-side">
         <h2 class="investment-calculator-title-container">
-          <img src="../assets/Blue line.png" alt="BlueLine" class="blueline">
-          <span class="investement-calculator-title">InvestmentCalculator</span>
+          <div class="title-and-image">
+            <img src="../assets/Blue line.png" alt="BlueLine" class="blueline">
+            <span class="investment-calculator-title">InvestmentCalculator</span>
+          </div>
           <span v-html="legendHtml" class="chart-legend"></span> <!-- This span will hold the legend -->
         </h2>
         <div class="calculator-chart">
@@ -131,13 +133,19 @@ export default {
             display: false
           },
           scales: {
-            x: {
+            xAxes: [{
               title: {
                 display: true,
                 text: 'Time (Months/Years)' // Updated to reflect the new labels
-              }
-            },
-            y: {
+              },
+              gridLines: {
+                display: false // Disables vertical grid lines
+              },
+            }],
+            yAxes: [{
+              gridLines: {
+                display: true // Ensures horizontal grid lines are still shown
+              },
               title: {
                 display: true,
                 text: 'Value'
@@ -147,7 +155,7 @@ export default {
                   return '£' + value.toFixed(2); // Ensure this formatting is consistent
                 }
               }
-            }
+            }]
           }
         }
       });
@@ -190,7 +198,7 @@ export default {
 .investment-calculator {
   margin: 20px auto;
   padding: 20px;
-  background-color: #f0f2f5;
+  background-color: #ffffff;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   display: flex;
@@ -203,11 +211,10 @@ export default {
   display: flex;
   flex-direction: row; /* Ensures children are side-by-side */
   justify-content: space-between; /* Spaces children appropriately */
-  align-items: stretch; /* Ensures children stretch to fill the height */
+  /* align-items: stretch; */
   width: 100%; /* Full width */
   border-radius: 20px;
 }
-
 
 .calculator-inputs {
   flex: 1; /* Adjust this flex grow ratio if necessary */
@@ -215,9 +222,10 @@ export default {
   align-items: center;
   padding:  0 10 10 0;
   background-color: #FAEDE4;
-  border: 1px solid rgba(0, 0, 0, 0.207);
+  border: 1px solid rgba(0, 0, 0, 0.048);
   width: auto; /* Changed to auto for natural width or set a specific percentage */
   border-radius: 50px 0 0 50px; /* Top-left, top-right, bottom-right, bottom-left */
+  height: auto;
 }
 
 .input-group {
@@ -312,40 +320,47 @@ label {
 .calculator-chart {
   flex: 2;
   background-color: #FAEDE4;
-  border: 1px solid rgba(0, 0, 0, 0.207);
+  border: 1px solid rgba(0, 0, 0, 0.058);
   width: 100%;
   height: 88%;
 }
 
 .right-side {
-  display: block;
-  width: 80%;
-  height: auto;
+  display: flex;
+  flex-direction: column;
+  width: 80%; /* Ensure it takes the full width */
+  height: auto; /* Adjust height to contain its children or set to 100% if you want it to take full container height */
 }
+
 
 .investment-calculator-title-container {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: space-between; /* Keeps items on each end */
   text-align: left;
   margin-top: 20px;
   margin-bottom: 20px;
-  color: #000000; /* Sets the text color to black */
+  color: #000000;
   height: 5%;
-  gap: 10px;
+}
+
+.title-and-image {
+  display: flex;
+  align-items: center; /* Aligns the image and text vertically */
 }
 
 .investment-calculator-title {
-  text-align: left;
+  margin-left: 10px; /* Adds spacing between the image and the title */
 }
 
 .chart-legend {
+  flex-shrink: 0; /* Prevents the legend from shrinking */
   display: flex;
-  align-items: center; /* Vertically align the legend icons and text */
-  text-align: right;
-  justify-content: flex-end; /* Align the legend content to the right */
-  font-size: 12px; /* Smaller text size; adjust as needed */
-  white-space: nowrap; /* Ensures it stays in a single line */
+  align-items: center;
+  justify-content: flex-end;
+  font-size: 12px;
+  white-space: nowrap;
 }
+
 </style>
 

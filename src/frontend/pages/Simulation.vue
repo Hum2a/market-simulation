@@ -340,6 +340,11 @@ export default {
               },
               options: {
               scales: {
+                xAxes: [{
+                  gridLines: {
+                    display: false // Disables vertical grid lines
+                  },
+                }],
                   y: { beginAtZero: true },
               },
               responsive: true,
