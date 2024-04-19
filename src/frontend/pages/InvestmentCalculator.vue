@@ -13,19 +13,19 @@
       <div class="calculator-inputs">
         <div class="input-group">
           <label for="initialInvestment">Initial Investment:</label>
-          <input type="number" id="initialInvestment" v-model="initialInvestment" class="calculator-input">
+          <input type="number" placeholder="£" id="initialInvestment" v-model="initialInvestment" class="calculator-input">
         </div>
         <div class="input-group">
           <label for="monthlyContribution">Monthly Contribution:</label>
-          <input type="number" id="monthlyContribution" v-model="monthlyContribution" class="calculator-input">
+          <input type="number" placeholder="£" id="monthlyContribution" v-model="monthlyContribution" class="calculator-input">
         </div>
         <div class="input-group">
           <label for="investmentPeriod">Investment Period (years):</label>
-          <input type="number" id="investmentPeriod" v-model="investmentPeriod" class="calculator-input">
+          <input type="number" placeholder="£" id="investmentPeriod" v-model="investmentPeriod" class="calculator-input">
         </div>
         <div class="input-group" v-for="rate in annualReturnRates" :key="rate.id">
           <label :for="'annualReturnRate' + rate.id">Expected Annual Return Rate (%) for {{ rate.id }}:</label>
-          <input type="number" :id="'annualReturnRate' + rate.id" v-model="rate.value" class="calculator-input">
+          <input type="number" placeholder="£" :id="'annualReturnRate' + rate.id" v-model="rate.value" class="calculator-input">
         </div>
         <button @click="calculate" class="calculate-button">Calculate</button>
       </div>
@@ -42,7 +42,7 @@
     </div>
     <div class="result" v-if="futureValues.length > 0">
       <div v-for="(value, index) in futureValues" :key="'futureValue' + index">
-        <p class="future-value-display">Future Value {{ index + 1 }}: <span class="future-value">{{ value }}</span></p>
+        <p class="future-value-display">Future Value {{ index + 1 }}: <span class="future-value">£{{ value }}</span></p>
       </div>
     </div>
   </div>
@@ -115,6 +115,18 @@ export default {
           datasets: datasets
         },
         options: {
+          tooltips: {
+            callbacks: {
+              label: function(tooltipItem, data) {
+                let label = data.datasets[tooltipItem.datasetIndex].label || '';
+                if (label) {
+                  label += ': £';
+                }
+                label += tooltipItem.yLabel.toFixed(2);
+                return label;
+              }
+            }
+          },
           legend: {
             display: false
           },
@@ -225,7 +237,7 @@ label {
   padding: 10px;
   border-radius: 5px;
   color: white;
-  background-color: #482ebd;
+  background-color: #082148;
   border: 1px solid #ccc;
   transition: 0.4s ease-in;
 }
