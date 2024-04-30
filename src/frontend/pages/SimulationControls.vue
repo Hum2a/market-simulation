@@ -39,7 +39,7 @@
             {{ showEventList ? 'Hide Events' : 'Show Events' }}
         </button>
         <button type="submit" class="save-button">Save</button>
-        <button type="button" class="generate-random-button" @click="generateRandomValues">Generate Random Values</button>
+        <button type="button" class="modern-button" @click="generateRandomValues">Generate Random Values</button>
         <!-- <button @click="downloadTemplate" class="download-template-button">
           Download Excel Template
         </button> -->
