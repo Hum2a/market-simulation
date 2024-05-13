@@ -3,7 +3,7 @@
     <header class="header">
       <img src="../assets/LifeSmartLogo.png" alt="Logo" class="logo">
       <p v-if="userEmail" class="welcome-message">Welcome Back {{ userEmail }}</p>
-      <div>
+      <div class="header-icons">
         <button @click="toggleCalculator" class="calculator-toggle">
           <i class="fas fa-calculator"></i>
         </button>
@@ -25,6 +25,12 @@
     <!-- <SimulationDetails v-if="currentSimulationIndex" :userUID="userUID" :simulation-index="currentSimulationIndex" /> -->
 
     <main v-if="!currentSimulationIndex">
+      <div class="settings">
+        <label for="max-value-input">Max Portfolio Value:</label>
+        <input id="max-value-input" type="number" v-model.number="maxPortfolioValue" class="modern-input" step="5000">
+        <label for="round-to-input">Round Up To:</label>
+        <input id="round-to-input" type="number" v-model.number="roundTo" class="modern-input" step="1000">
+      </div>
       <h1 class="header-content">
         <img src="../assets/Blue line.png" alt="BlueLine" class="blueline">
         <span>Group Management</span>
@@ -126,6 +132,7 @@ import SimulationHistory from './PastSimulations.vue';
         return {
             router,
             maxPortfolioValue: 100000,
+            roundTo: 5000
         };
     },
     data() {
@@ -223,37 +230,39 @@ import SimulationHistory from './PastSimulations.vue';
         // Navigate to the simulation page
         this.router.push({ name: 'SimulationPage' });
     },
-    async startSimulation() {
-      const latestIndex = await this.fetchLatestSimulationIndex();
-      if (latestIndex === null) {
-        console.error("No existing simulations found.");
-        alert("No existing simulations found. Please create a new simulation first.");
-        return; // Exit if no simulations are found
-      }
-      this.currentSimulationIndex = latestIndex; // Set the current index to the latest found
-      await this.clearGroups(); // Clear existing groups using the latest index
-      await this.saveGroups(); // Save the current groups under the latest simulation index
-    },
+      async startSimulation() {
+        const latestIndex = await this.fetchLatestSimulationIndex();
+        if (latestIndex === null) {
+          console.error("No existing simulations found.");
+          alert("No existing simulations found. Please create a new simulation first.");
+          return; // Exit if no simulations are found
+        }
+        this.currentSimulationIndex = latestIndex; // Set the current index to the latest found
+        await this.clearGroups(); // Clear existing groups using the latest index
+        await this.saveGroups(); // Save the current groups under the latest simulation index
+      },
 
       generateRandomValues(index) {
-        const group = this.groups[index];
-        let remainingValue = this.maxPortfolioValue;
+      const group = this.groups[index];
+      let remainingValue = this.maxPortfolioValue;
+      let roundTo = this.roundTo;
 
-        const keys = ['equity', 'bonds', 'realestate', 'commodities', 'other'];
-        keys.forEach((key, i) => {
-          if (i === keys.length - 1) {
-            // Assign remaining value to the last asset
-            group[key] = remainingValue.toString();
-          } else {
-            // Assign a random portion of the remaining value to the current asset
-            const value = Math.floor(Math.random() * (remainingValue + 1));
-            group[key] = value.toString();
-            remainingValue -= value;
-          }
-        });
+      const keys = ['equity', 'bonds', 'realestate', 'commodities', 'other'];
+      keys.forEach((key, i) => {
+        if (i === keys.length - 1) {
+          // Assign remaining value to the last asset
+          group[key] = Math.round(remainingValue / roundTo) * roundTo;
+        } else {
+          // Assign a random portion of the remaining value to the current asset
+          const value = Math.round((Math.random() * remainingValue) / roundTo) * roundTo;
+          group[key] = value;
+          remainingValue -= value;
+        }
+      });
 
-        this.$nextTick(() => this.renderPieChart(index));
-      },
+      this.$nextTick(() => this.renderPieChart(index));
+  },
+
 
       renderPieChart(index) {
         const group = this.groups[index];

@@ -10,11 +10,20 @@ body {
 .header-content {
   display: flex;
   align-items: center; /* Centers the image and text vertically */
+  justify-items: center;
   text-align: left;
   margin-top: 20px;
   margin-bottom: 20px;
-  margin-left: 80px; /* Adjust as needed */
   color: #000000; /* Sets the text color to black */
+}
+
+.header-icons {
+  display: inline-flex;
+  justify-items: center;
+  align-self: center;
+  align-items: center;
+  justify-content: flex-end;
+  width: auto;
 }
 
 .blueline {
@@ -169,7 +178,6 @@ body {
 
 .calculator-toggle, .simulation-controls-toggle, .simulation-history-toggle, .simulation-login-toggle {
   position: absolute;
-  top: 35px;
   right: 20px;
   background: transparent;
   border: none;
@@ -317,7 +325,7 @@ button:active {
 
 .logo {
   height: auto; /* Maintain aspect ratio */
-  width: 400px; /* Example width; adjust as needed */
+  width: auto; /* Example width; adjust as needed */
   display: block; /* To prevent inline default behavior */
   margin-left: 0; /* Align the logo to the left */
   clip-path: polygon(0 0, 60% 0, 60% 100%, 0% 100%);
@@ -362,6 +370,32 @@ button:active {
   margin-bottom: 20px; /* Space it out from other content */
   display: inline-block; /* Aligns better with other inline or block elements */
 }
+
+.settings {
+  background-color: #f2f2f2; /* Light grey background */
+  padding: 15px;            /* Padding around the content */
+  margin: 20px 0;           /* Vertical spacing for separation */
+  border-radius: 8px;       /* Rounded corners */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Subtle shadow for depth */
+  display: flex;            /* Flexible box layout */
+  align-items: center;      /* Vertically align items in the middle */
+  justify-content: space-between; /* Space between label and input field */
+}
+
+.settings label {
+  font-weight: bold;        /* Bold font for label */
+  margin-right: 10px;       /* Space between label and input */
+  color: #333;              /* Darker text color for better readability */
+}
+
+.settings input[type="number"] {
+  width: 100px;             /* Fixed width for the input field */
+  padding: 8px;             /* Padding inside the input field */
+  border: 1px solid #ccc;   /* Light grey border */
+  border-radius: 4px;       /* Rounded corners for the input field */
+  font-size: 16px;          /* Sufficiently large font size for easy reading */
+}
+
   
 
 
