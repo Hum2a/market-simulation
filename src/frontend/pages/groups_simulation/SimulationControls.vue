@@ -132,7 +132,7 @@
           return; // Handle gracefully when userUID is not available
         }
         const db = getFirestore();
-        const simulationRef = collection(db, this.userUID);
+        const simulationRef = collection(db, this.userUID, 'Asset Market Simulations', 'Simulations',);
         try {
           const snapshot = await getDocs(simulationRef);
           console.log(`Number of documents in collection '${this.userUID}':`, snapshot.size);
@@ -220,8 +220,8 @@
         const db = getFirestore();
 
         // Reference to the main document where you want to log the creation time
-        const mainDocRef = doc(db, this.UserUID, `Simulation ${simulationIndex}`);
-        const controlsDocRef = doc(db, this.UserUID, `Simulation ${simulationIndex}`, 'Simulation Controls', 'Controls');
+        const mainDocRef = doc(db, this.UserUID, 'Asset Market Simulations', 'Simulations', `Simulation ${simulationIndex}`);
+        const controlsDocRef = doc(db, this.UserUID, 'Asset Market Simulations', 'Simulations', `Simulation ${simulationIndex}`, 'Simulation Controls', 'Controls');
 
         // Data to initialize the main simulation document with the current timestamp
         const mainData = {
@@ -407,5 +407,5 @@
 </script>
   
 <style scoped>
-     @import url('../styles/SimulationControlsStyles.css');
+     @import url('../../styles/SimulationControlsStyles.css');
 </style>

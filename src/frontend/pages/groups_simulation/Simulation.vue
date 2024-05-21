@@ -1,7 +1,7 @@
 <template>
   <div>
     <header class="header">
-      <img src="../assets/LifeSmartLogo.png" alt="Logo" class="logo">
+      <img src="../../assets/LifeSmartLogo.png" alt="Logo" class="logo">
     </header>
 
     <div class="sim-chart-container">
@@ -58,7 +58,7 @@
 
 import { getFirestore, collection, getDocs, doc, getDoc, setDoc } from 'firebase/firestore';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import AssetChangesChart from '../components/charts/AssetChangesChart.vue';
+import AssetChangesChart from '../../components/charts/AssetChangesChart.vue';
 import Chart from 'chart.js';
 import { useRouter } from 'vue-router';
 
@@ -117,7 +117,7 @@ export default {
     async fetchLatestSimulationIndex() {
       const db = getFirestore();
       console.log(`UserUID: ${this.userUID}`);
-      const simulationsRef = collection(db, this.userUID);
+      const simulationsRef = collection(db, this.userUID, 'Asset Market Simulations', 'Simulations',);
       const querySnapshot = await getDocs(simulationsRef);
       if (querySnapshot.empty) {
         console.log("No simulations found. Initializing first simulation.");
@@ -143,7 +143,7 @@ export default {
         }
         const db = getFirestore();
         console.log(`Simulation ${this.latestSimulationIndex}`);
-        const querySnapshot = await getDocs(collection(db, this.userUID, `Simulation ${this.latestSimulationIndex}`, "Groups"));
+        const querySnapshot = await getDocs(collection(db, this.userUID, 'Asset Market Simulations', 'Simulations', `Simulation ${this.latestSimulationIndex}`, "Groups"));
         this.groups = querySnapshot.docs.map(doc => {
           // Map document data to include future values initialized to current values
           const data = doc.data();
@@ -172,7 +172,7 @@ export default {
         return;
       }
         const db = getFirestore();
-        const docRef = doc(db, this.userUID, `Simulation ${this.latestSimulationIndex}`, 'Simulation Controls', 'Controls');
+        const docRef = doc(db, this.userUID, 'Asset Market Simulations', 'Simulations', `Simulation ${this.latestSimulationIndex}`, 'Simulation Controls', 'Controls');
         const docSnap = await getDoc(docRef);
         
         if (docSnap.exists()) {
@@ -604,7 +604,7 @@ export default {
       const db = getFirestore();
 
       // Reference to the "Results" collection and "Final" document
-      const docRef = doc(db, this.userUID, `Simulation ${this.latestSimulationIndex}`, "Results", "Final");
+      const docRef = doc(db, this.userUID, 'Asset Market Simulations', 'Simulations', `Simulation ${this.latestSimulationIndex}`, "Results", "Final");
 
       // Set the finalValues in the "Final" document
       setDoc(docRef, { finalValues })
@@ -645,7 +645,7 @@ export default {
       const db = getFirestore();
 
       // Reference to the "Results" collection and "Quarters" document
-      const docRef = doc(db, this.userUID, `Simulation ${this.latestSimulationIndex}`, "Results", "Quarters");
+      const docRef = doc(db, this.userUID, 'Asset Market Simulations', 'Simulations', `Simulation ${this.latestSimulationIndex}`, "Results", "Quarters");
 
       // Set the quarterResults in the "Quarters" document
       setDoc(docRef, { quarterResults })
@@ -667,5 +667,5 @@ export default {
 </script>
 
 <style>
-@import url('../styles/SimulationStyles.css');
+@import url('../../styles/SimulationStyles.css');
 </style>

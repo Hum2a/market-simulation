@@ -20,7 +20,7 @@ export default {
         // https://firebase.google.com/docs/reference/js/firebase.User
         this.user = user;
         // Optionally redirect the user or update the state
-        this.$router.push({ name: 'GroupCreation' });
+        this.$router.push({ name: 'HomePage' });
       } else {
         // User is signed out
         this.user = null;

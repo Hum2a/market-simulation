@@ -1,20 +1,20 @@
 <template>
   <div class="dashboard">
     <header class="header">
-      <img src="../assets/LifeSmartLogo.png" alt="Logo" class="logo">
+      <img src="../../assets/LifeSmartLogo.png" alt="Logo" class="logo">
       <p v-if="userEmail" class="welcome-message">Welcome Back {{ userEmail }}</p>
       <div class="header-icons">
         <button @click="toggleCalculator" class="calculator-toggle">
           <i class="fas fa-calculator"></i>
         </button>
         <button @click="toggleSimulationControls" class="simulation-controls-toggle">
-          <img src="../assets/settings (1) 1.png" alt="Controls">
+          <img src="../../assets/settings (1) 1.png" alt="Controls">
         </button>
         <button @click="toggleSimulationHistory" class="simulation-history-toggle">
-          <img src="../assets/calendar 1.png" alt="Calendar">
+          <img src="../../assets/calendar 1.png" alt="Calendar">
         </button>
         <button @click="toggleLogin" class ="simulation-login-toggle">
-          <img src="../assets/login.png" alt="Login">
+          <img src="../../assets/login.png" alt="Login">
         </button>
       </div>
     </header>
@@ -32,7 +32,7 @@
         <input id="round-to-input" type="number" v-model.number="roundTo" class="modern-input" step="1000">
       </div>
       <h1 class="header-content">
-        <img src="../assets/Blue line.png" alt="BlueLine" class="blueline">
+        <img src="../../assets/Blue line.png" alt="BlueLine" class="blueline">
         <span>Group Management</span>
       </h1>
       <div class="groups">
@@ -41,10 +41,10 @@
             <h2>
               {{ group.name }}
               <button @click="editGroupName(index)" class="edit-group-btn">
-                <img src="../assets/pencil 1.png" alt="Pencil">
+                <img src="../../assets/pencil 1.png" alt="Pencil">
               </button>
               <button @click="removeGroup(index)" class="remove-group-btn">
-                <img src="../assets/remove.png" alt="Remove">
+                <img src="../../assets/remove.png" alt="Remove">
               </button>
             </h2>
           </div>
@@ -89,7 +89,7 @@
 
       <button @click="startSimulation" class="modern-button">
         Start Simulation
-        <img src="../assets/Arrow 17.png" alt="Icon" style="margin-left: 5px;">
+        <img src="../../assets/Arrow 17.png" alt="Icon" style="margin-left: 5px;">
       </button>
 
     </main>
@@ -114,7 +114,7 @@ import Chart from 'chart.js';
 import { useRouter } from 'vue-router';
 import { getFirestore, doc, setDoc, collection, query, getDocs, writeBatch } from 'firebase/firestore';
 import SimulationControls from './SimulationControls.vue'; // Adjust the path as necessary
-import LoginPage from './LoginPage.vue';
+import LoginPage from '../LoginPage.vue';
 import SimulationHistory from './PastSimulations.vue';
 // import SimulationDetails from './SimulationDetails.vue';
 
@@ -127,13 +127,13 @@ import SimulationHistory from './PastSimulations.vue';
     // SimulationDetails
     },
     setup() {
-        const router = useRouter();
+      const router = useRouter();
 
-        return {
-            router,
-            maxPortfolioValue: 100000,
-            roundTo: 5000
-        };
+      return {
+          router,
+          maxPortfolioValue: 100000,
+          roundTo: 5000
+      };
     },
     data() {
       return {
@@ -183,7 +183,7 @@ import SimulationHistory from './PastSimulations.vue';
       },
       async fetchLatestSimulationIndex() {
         const db = getFirestore();
-        const simulationsRef = collection(db, this.userUID);
+        const simulationsRef = collection(db, this.userUID, 'Asset Market Simulations', 'Simulations',);
         const querySnapshot = await getDocs(simulationsRef);
         return querySnapshot.size; // Returns the count of documents directly
       },
@@ -198,7 +198,7 @@ import SimulationHistory from './PastSimulations.vue';
           return; // Prevent saving if no index is set
         }
         const db = getFirestore();
-        const querySnapshot = await getDocs(query(collection(db, this.userUID, `Simulation ${this.currentSimulationIndex}`, 'Groups')));
+        const querySnapshot = await getDocs(query(collection(db, this.userUID, 'Asset Market Simulations', 'Simulations', `Simulation ${this.currentSimulationIndex}`, 'Groups')));
         const batch = writeBatch(db);
 
         querySnapshot.forEach((doc) => {
@@ -219,7 +219,7 @@ import SimulationHistory from './PastSimulations.vue';
         try {
             await Promise.all(this.groups.map(group => {
                 // Use the group name as the document ID
-                const groupDocRef = doc(db, this.userUID, `Simulation ${this.currentSimulationIndex}`, 'Groups', group.name);
+                const groupDocRef = doc(db, this.userUID, 'Asset Market Simulations', 'Simulations', `Simulation ${this.currentSimulationIndex}`, 'Groups', group.name);
                 return setDoc(groupDocRef, group);
             }));
         } catch (err) {
@@ -416,6 +416,6 @@ import SimulationHistory from './PastSimulations.vue';
 </script>
   
 <style scoped>
-    @import url('../styles/GroupCreationStyles.css');
+    @import url('../../styles/GroupCreationStyles.css');
 </style>
   

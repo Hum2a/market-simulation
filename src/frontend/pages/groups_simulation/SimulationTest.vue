@@ -642,5 +642,5 @@
   </script>
   
   <style>
-  @import url('../styles/SimulationStyles.css');
+  @import url('../../styles/SimulationStyles.css');
   </style>

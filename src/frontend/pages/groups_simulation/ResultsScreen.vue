@@ -1,7 +1,7 @@
 <template>
 
   <header class="header">
-    <img src="../assets/LifeSmartLogo.png" alt="Logo" class="logo">
+    <img src="../../assets/LifeSmartLogo.png" alt="Logo" class="logo">
     <div>
       <button @click="toggleCalculator" class="calculator-toggle">
         <i class="fas fa-calculator"></i>
@@ -10,7 +10,7 @@
   </header>
   <div class="results-screen">
     <h1 class="title">
-      <img src="../assets/Blue line.png" alt="BlueLine" class="blueline">
+      <img src="../../assets/Blue line.png" alt="BlueLine" class="blueline">
       Investment Results
     </h1>
     <div class="results-container">
@@ -113,7 +113,7 @@ export default {
   methods: {
       async fetchLatestSimulationIndex() {
         const db = getFirestore();
-        const simulationsRef = collection(db, this.userUID);
+        const simulationsRef = collection(db, this.userUID, 'Asset Market Simulations', 'Simulations',);
         const querySnapshot = await getDocs(simulationsRef);
         return querySnapshot.size;  // Assumes index based on count
       },
@@ -123,7 +123,7 @@ export default {
           return;
         }
         const db = getFirestore();
-        const docRef = doc(db, this.userUID, `Simulation ${this.latestSimulationIndex}`, "Results", "Final");
+        const docRef = doc(db, this.userUID, 'Asset Market Simulations', 'Simulations', `Simulation ${this.latestSimulationIndex}`, "Results", "Final");
         try {
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
@@ -146,7 +146,7 @@ export default {
           return;
         }
         const db = getFirestore();
-        const docRef = doc(db, this.userUID, `Simulation ${this.latestSimulationIndex}`, "Results", "Quarters");
+        const docRef = doc(db, this.userUID, 'Asset Market Simulations', 'Simulations', `Simulation ${this.latestSimulationIndex}`, "Results", "Quarters");
         try {
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {

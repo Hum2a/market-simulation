@@ -39,7 +39,7 @@ export default {
   methods: {
     async fetchSimulations() {
       const db = getFirestore();
-      const simulationsRef = collection(db, this.userUID);
+      const simulationsRef = collection(db, this.userUID, 'Asset Market Simulations', 'Simulations');
       const querySnapshot = await getDocs(simulationsRef);
       const simulationsData = [];
       for (const document of querySnapshot.docs) {
@@ -47,7 +47,7 @@ export default {
         const createdAt = docData.createdAt ? docData.createdAt.toDate().toLocaleDateString() : 'Unknown date';
         
         // Fetch number of quarters from the Controls subcollection
-        const controlsDocRef = doc(db, this.userUID, `${document.id}/Simulation Controls/Controls`);
+        const controlsDocRef = doc(db, this.userUID, 'Asset Market Simulations', 'Simulations', `${document.id}/Simulation Controls/Controls`);
         const controlsDoc = await getDoc(controlsDocRef);
         const numberOfQuarters = controlsDoc.exists() && controlsDoc.data().assetChanges ? controlsDoc.data().assetChanges.length * 4 : 'Unknown'; // Assuming every entry in assetChanges contains all four quarters
         

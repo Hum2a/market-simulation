@@ -1,6 +1,6 @@
 <template>
   <header class="header">
-    <img src="../assets/LifeSmartLogo.png" alt="Logo" class="logo">
+    <img src="../../assets/LifeSmartLogo.png" alt="Logo" class="logo">
     <p v-if="userEmail" class="welcome-message">Welcome Back {{ userEmail }}</p>
     <div>
       <button @click="toggleBack" class="calculator-toggle">
@@ -32,7 +32,7 @@
       <div class="right-side">
         <h2 class="investment-calculator-title-container">
           <div class="title-and-image">
-            <img src="../assets/Blue line.png" alt="BlueLine" class="blueline">
+            <img src="../../assets/Blue line.png" alt="BlueLine" class="blueline">
             <span class="investment-calculator-title">InvestmentCalculator</span>
           </div>
           <span v-html="legendHtml" class="chart-legend"></span> <!-- This span will hold the legend -->
