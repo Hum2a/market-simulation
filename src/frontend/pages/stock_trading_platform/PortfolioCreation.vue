@@ -12,30 +12,68 @@
     <LoginPage v-if="showLogin" @close="showLogin = false" @login-success="handleLoginSuccess" />
     <main class="main-content">
       <h1>Create Your Portfolio</h1>
-      <p>Divide £10,000 amongst the top 30 US companies on the stock market.</p>
+      <p>Divide your chosen amount amongst the top 30 US companies on the stock market.</p>
       <form @submit.prevent="submitPortfolio" class="portfolio-form">
+        <div class="funds-input">
+          <label for="total-funds">Enter Maximum Portfolio Value (£):</label>
+          <input type="number" id="total-funds" v-model.number="userFunds" @input="updateTotalFunds" />
+        </div>
         <div class="date-picker">
           <label for="portfolio-date">Select Start Date:</label>
-          <VueDatePicker v-model="selectedDate" />
+          <Datepicker v-model="selectedDate" />
         </div>
-        <div v-for="company in companies" :key="company.name" class="company">
-          <label :for="company.name" class="company-label">{{ company.name }}:</label>
-          <input
-            type="range"
-            :id="company.name"
-            v-model.number="company.allocation"
-            :max="totalFunds"
-            @input="updateTotal"
-            step="1"
-            class="company-range"
-          />
-          <input
-            type="number"
-            v-model.number="company.allocation"
-            :max="totalFunds"
-            @input="updateTotal"
-            class="company-value-input"
-          />
+        <div class="view-toggle">
+          <button type="button" @click="toggleView">
+            {{ viewMode === 'card' ? 'Switch to Spreadsheet View' : 'Switch to Card View' }}
+          </button>
+        </div>
+        <div class="generate-random">
+          <button type="button" @click="generateRandomPortfolio">Generate Random Portfolio</button>
+        </div>
+        <div v-if="viewMode === 'card'">
+          <div v-for="company in companies" :key="company.name" class="company">
+            <label :for="company.name" class="company-label">{{ company.name }}:</label>
+            <input
+              type="range"
+              :id="company.name"
+              v-model.number="company.allocation"
+              :max="totalFunds"
+              @input="updateTotal"
+              step="1"
+              class="company-range"
+            />
+            <input
+              type="number"
+              v-model.number="company.allocation"
+              :max="totalFunds"
+              @input="updateTotal"
+              class="company-value-input"
+            />
+          </div>
+        </div>
+        <div v-else class="spreadsheet-view-container">
+          <div class="spreadsheet-view">
+            <table>
+              <thead>
+                <tr>
+                  <th v-for="company in companies" :key="company.name">{{ company.name }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td v-for="company in companies" :key="company.name">
+                    <input
+                      type="number"
+                      v-model.number="company.allocation"
+                      :max="totalFunds"
+                      @input="updateTotal"
+                      class="company-value-input"
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
         <div class="total-allocation">
           <strong>Total Allocation: £{{ totalAllocation }}</strong>
@@ -43,6 +81,12 @@
         <button type="submit" :disabled="totalAllocation > totalFunds || totalAllocation === 0">Submit</button>
       </form>
     </main>
+    <MessageModal
+      :isVisible="isModalVisible"
+      :title="modalTitle"
+      :message="modalMessage"
+      @close="isModalVisible = false"
+    />
   </div>
 </template>
 
@@ -50,18 +94,22 @@
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import LoginPage from '../LoginPage.vue';
-import VueDatePicker from 'vue-datepicker-next';
-import 'vue-datepicker-next/index.css';
+import Datepicker from '@vuepic/vue-datepicker';
+import '@vuepic/vue-datepicker/dist/main.css';
+import MessageModal from './MessageModal.vue';  // Ensure the path to MessageModal.vue is correct
 
 export default {
   name: 'PortfolioCreation',
   components: {
     LoginPage,
-    VueDatePicker
+    Datepicker,
+    MessageModal
   },
   data() {
     return {
+      userFunds: 10000,  // Default value for the maximum portfolio value
       totalFunds: 10000,
+      viewMode: 'card',  // Default view mode
       companies: [
         { name: 'Apple', allocation: 0 },
         { name: 'Microsoft', allocation: 0 },
@@ -96,6 +144,9 @@ export default {
       ],
       showLogin: false,
       selectedDate: new Date(),
+      isModalVisible: false,
+      modalTitle: '',
+      modalMessage: ''
     };
   },
   computed: {
@@ -103,14 +154,46 @@ export default {
       return this.companies.reduce((total, company) => total + company.allocation, 0);
     },
   },
+  watch: {
+    selectedDate(newVal, oldVal) {
+      console.log('selectedDate changed from', oldVal, 'to', newVal);
+    }
+  },
   methods: {
     updateTotal() {
       this.$forceUpdate();
     },
-    logDateChange(newDate) {
-      console.log('Date changed to:', newDate);
-      this.selectedDate = newDate;
+    updateTotalFunds() {
+      this.totalFunds = this.userFunds;
+      this.updateTotal();
     },
+    toggleView() {
+      this.viewMode = this.viewMode === 'card' ? 'spreadsheet' : 'card';
+    },
+    generateRandomPortfolio() {
+      let remainingFunds = this.totalFunds;
+      this.companies.forEach(company => {
+        company.allocation = 0;
+      });
+
+      // Divide the remaining funds into smaller chunks
+      const chunkSize = 100; // Adjust the chunk size as needed for performance
+      while (remainingFunds >= chunkSize) {
+        const company = this.companies[Math.floor(Math.random() * this.companies.length)];
+        const allocation = Math.min(chunkSize, remainingFunds);
+        company.allocation += allocation;
+        remainingFunds -= allocation;
+      }
+
+      // Distribute any remaining funds
+      if (remainingFunds > 0) {
+        const company = this.companies[Math.floor(Math.random() * this.companies.length)];
+        company.allocation += remainingFunds;
+      }
+
+      this.updateTotal();
+    },
+
     handleLoginSuccess(user) {
       this.showLogin = false;
       console.log('Logged in user:', user);
@@ -132,22 +215,29 @@ export default {
               totalAllocation: this.totalAllocation,
               date: this.selectedDate,
             });
-            alert('Portfolio Submitted Successfully!');
+            this.modalTitle = 'Success';
+            this.modalMessage = 'Portfolio Submitted Successfully!';
+            this.isModalVisible = true;
           } catch (error) {
             console.error('Error saving portfolio:', error);
-            alert('Error submitting portfolio. Please try again.');
+            this.modalTitle = 'Error';
+            this.modalMessage = 'Error submitting portfolio. Please try again.';
+            this.isModalVisible = true;
           }
         } else {
-          alert('You need to be logged in to submit a portfolio.');
+          this.modalTitle = 'Error';
+          this.modalMessage = 'You need to be logged in to submit a portfolio.';
+          this.isModalVisible = true;
         }
       } else {
-        alert('Total allocation exceeds available funds!');
+        this.modalTitle = 'Error';
+        this.modalMessage = 'Total allocation exceeds available funds!';
+        this.isModalVisible = true;
       }
     },
   },
 };
 </script>
-
 
 <style scoped>
 .portfolio-creation {
@@ -223,12 +313,61 @@ export default {
   margin-bottom: 1em;
 }
 
+.funds-input {
+  margin-bottom: 1em;
+}
+
+.funds-input label {
+  color: #102454;
+}
+
+.funds-input input {
+  width: 100px;
+  margin-left: 10px;
+}
+
 .date-picker {
   margin-bottom: 1em;
 }
 
 .date-picker label {
   color: #102454;
+}
+
+.view-toggle {
+  margin-bottom: 1em;
+}
+
+.view-toggle button {
+  background-color: #102454;
+  color: #fff;
+  padding: 0.5em 1em;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.view-toggle button:hover {
+  background-color: #0d1b3f;
+}
+
+.generate-random {
+  margin-bottom: 1em;
+}
+
+.generate-random button {
+  background-color: #28a745;
+  color: #fff;
+  padding: 0.5em 1em;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.generate-random button:hover {
+  background-color: #218838;
 }
 
 .portfolio-form {
@@ -266,7 +405,6 @@ export default {
   border-radius: 5px;
   outline: none;
   transition: opacity 0.2s;
-  color: #0d1b3f;
 }
 
 .company-range::-webkit-slider-thumb {
@@ -296,6 +434,27 @@ export default {
   background: none;
   width: 80px;
   text-align: center;
+}
+
+.spreadsheet-view-container {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.spreadsheet-view table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.spreadsheet-view th, .spreadsheet-view td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+}
+
+.spreadsheet-view th {
+  background-color: #f2f2f2;
+  color: #102454;
 }
 
 .total-allocation {
