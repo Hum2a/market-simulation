@@ -17,6 +17,9 @@
           <router-link to="/portfolio-display" class="option">View Your Portfolio</router-link>
           <router-link to="/stock-market-today" class="option">Stock Market Today</router-link>
         </div>
+        <div class="options">
+          <router-link to="/portfolio-simulation" class="option">Simulation</router-link>
+        </div>
       </main>
     </div>
   </template>
@@ -131,6 +134,7 @@
     border-radius: 10px;
     transition: background-color 0.3s, transform 0.2s;
     cursor: pointer;
+    margin-bottom: 10px;
   }
   
   .option:hover {
