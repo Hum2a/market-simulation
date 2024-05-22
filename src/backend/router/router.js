@@ -8,6 +8,7 @@ import SimulationDetails from '../../frontend/pages/groups_simulation/Simulation
 import HomePage from '../../frontend/pages/HomePage.vue';
 import PortfolioCreation from '../../frontend/pages/stock_trading_platform/PortfolioCreation';
 import PortfolioDisplay from '../../frontend/pages/stock_trading_platform/PortfolioDisplay';
+import PortfolioSimulation from '../../frontend/pages/stock_trading_platform/PortfolioSimulation';
 import StockTradingSelect from '../../frontend/pages/stock_trading_platform/StockTradingSelect.vue';
 import StockMarketToday from '../../frontend/pages/stock_trading_platform/StockMarketToday.vue';
 
@@ -60,6 +61,11 @@ const routes = [
     path: '/portfolio-display',
     name: "PortfolioDisplay",
     component: PortfolioDisplay,
+  },
+  {
+    path: '/portfolio-simulation',
+    name: "PortfolioSimulation",
+    component: PortfolioSimulation
   },
   {
     path: '/stock-trading-select',
