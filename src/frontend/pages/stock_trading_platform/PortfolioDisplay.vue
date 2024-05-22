@@ -14,15 +14,25 @@
       <div v-if="loading">Loading...</div>
       <div v-else-if="portfolios.length === 0">No portfolios found.</div>
       <div v-else class="portfolio">
-        <div v-for="portfolio in portfolios" :key="portfolio.id" class="portfolio-card">
+        <div
+          v-for="portfolio in portfolios"
+          :key="portfolio.id"
+          class="portfolio-card"
+          @mouseover="showIcons = portfolio.id"
+          @mouseleave="showIcons = null"
+        >
           <h2 @click="togglePortfolio(portfolio.id)">
-            Portfolio Created On: {{ formatDate(portfolio.timestamp.toDate()) }}
+            Portfolio Created On: {{ formatDate(portfolio.date.toDate()) }}
           </h2>
           <div v-if="expandedPortfolio === portfolio.id">
             <div v-for="company in portfolio.companies" :key="company.name" class="stock">
               <h3>{{ company.name }}</h3>
               <p>Allocation: £{{ company.allocation }}</p>
             </div>
+          </div>
+          <div v-if="showIcons === portfolio.id" class="icons">
+            <router-link to="/simulate" class="icon">Simulate</router-link>
+            <router-link to="/real-time" class="icon">Real Time</router-link>
           </div>
         </div>
       </div>
@@ -41,6 +51,7 @@ export default {
       portfolios: [],
       loading: true,
       expandedPortfolio: null,
+      showIcons: null,
     };
   },
   async created() {
@@ -157,6 +168,7 @@ export default {
 }
 
 .portfolio-card {
+  position: relative;
   background: #fff;
   padding: 1em;
   border-radius: 10px;
@@ -184,5 +196,33 @@ export default {
 .stock p {
   color: #0d1b3f;
   text-align: center;
+}
+
+.icons {
+  position: absolute;
+  top: 50%;
+  left: 100%; /* Initially positioned outside the card */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transform: translateY(-50%);
+  transition: left 0.3s ease;
+}
+
+.portfolio-card:hover .icons {
+  left: calc(100% + 10px); /* Slide into view */
+}
+
+.icon {
+  background-color: #102454;
+  color: white;
+  padding: 0.5em;
+  border-radius: 5px;
+  text-decoration: none;
+  transition: background-color 0.3s;
+}
+
+.icon:hover {
+  background-color: #0d1b3f;
 }
 </style>
