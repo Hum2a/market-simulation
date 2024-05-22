@@ -19,7 +19,6 @@
           :key="portfolio.id"
           class="portfolio-card"
           @mouseover="showIcons = portfolio.id"
-          @mouseleave="showIcons = null"
         >
           <h2 @click="togglePortfolio(portfolio.id)">
             Portfolio Created On: {{ formatDate(portfolio.date.toDate()) }}
@@ -30,9 +29,10 @@
               <p>Allocation: £{{ company.allocation }}</p>
             </div>
           </div>
-          <div v-if="showIcons === portfolio.id" class="icons">
+          <div v-if="showIcons === portfolio.id" class="icons active">
             <router-link to="/simulate" class="icon">Simulate</router-link>
             <router-link to="/real-time" class="icon">Real Time</router-link>
+            <button @click="deletePortfolio(portfolio.id)" class="icon delete-icon">Delete</button>
           </div>
         </div>
       </div>
@@ -41,7 +41,7 @@
 </template>
 
 <script>
-import { getFirestore, collection, query, getDocs } from "firebase/firestore";
+import { getFirestore, collection, query, getDocs, doc, deleteDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 export default {
@@ -83,6 +83,27 @@ export default {
         this.expandedPortfolio = null;
       } else {
         this.expandedPortfolio = portfolioId;
+      }
+    },
+    async deletePortfolio(portfolioId) {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (user) {
+        const db = getFirestore();
+        try {
+          await deleteDoc(doc(db, user.uid, 'Stock Trading Platform', 'Portfolio', portfolioId));
+          this.portfolios = this.portfolios.filter(portfolio => portfolio.id !== portfolioId);
+          if (this.showIcons === portfolioId) {
+            this.showIcons = null;
+          }
+          if (this.expandedPortfolio === portfolioId) {
+            this.expandedPortfolio = null;
+          }
+        } catch (error) {
+          console.error('Error deleting portfolio:', error);
+        }
+      } else {
+        console.error("User is not logged in");
       }
     },
     formatDate(date) {
@@ -209,7 +230,8 @@ export default {
   transition: left 0.3s ease;
 }
 
-.portfolio-card:hover .icons {
+.portfolio-card:hover .icons,
+.icons.active {
   left: calc(100% + 10px); /* Slide into view */
 }
 
@@ -224,5 +246,13 @@ export default {
 
 .icon:hover {
   background-color: #0d1b3f;
+}
+
+.delete-icon {
+  background-color: #d9534f;
+}
+
+.delete-icon:hover {
+  background-color: #c9302c;
 }
 </style>
