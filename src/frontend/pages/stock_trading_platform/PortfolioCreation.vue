@@ -96,7 +96,7 @@ import { getAuth } from 'firebase/auth';
 import LoginPage from '../LoginPage.vue';
 import Datepicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css';
-import MessageModal from './MessageModal.vue';  // Ensure the path to MessageModal.vue is correct
+import MessageModal from './components/MessageModal.vue';  // Ensure the path to MessageModal.vue is correct
 
 export default {
   name: 'PortfolioCreation',
