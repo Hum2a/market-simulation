@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import GroupCreation from '../../frontend/pages/groups_simulation/GroupCreation.vue';
-import SimulationPage from '../../frontend/pages/groups_simulation/Simulation.vue';
+import SimulationPage from '../../frontend/pages/groups_simulation/SimulationTest.vue';
 import SimulationControls from '../../frontend/pages/groups_simulation/SimulationControls.vue';
 import ResultsScreen from '../../frontend/pages/groups_simulation/ResultsScreen.vue';
 import InvestmentCalculator from '../../frontend/pages/groups_simulation/InvestmentCalculator.vue';
@@ -11,16 +11,22 @@ import PortfolioDisplay from '../../frontend/pages/stock_trading_platform/Portfo
 import PortfolioSimulation from '../../frontend/pages/stock_trading_platform/PortfolioSimulation';
 import StockTradingSelect from '../../frontend/pages/stock_trading_platform/StockTradingSelect.vue';
 import StockMarketToday from '../../frontend/pages/stock_trading_platform/StockMarketToday.vue';
+import CreateAccount from '../../frontend/pages/CreateAccount.vue';
 
 const routes = [
   {
     path: '/',
-    redirect: '/homepage'
+    redirect: '/stock-trading-select'
   },
   {
     path: '/homepage',
     name: 'HomePage',
     component: HomePage,
+  },
+  {
+    path: '/create-account',
+    name: 'CreateAccount',
+    component: CreateAccount,
   },
   {
     path: '/groupcreation',
