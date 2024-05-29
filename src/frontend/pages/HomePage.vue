@@ -7,6 +7,7 @@
         <router-link to="/stock-trading-select" class="nav-link">Stock Market Tool</router-link>
         <router-link to="#" class="nav-link">Financial Literacy Course</router-link>
         <router-link to="#" class="nav-link">Investment Calculator</router-link>
+        <router-link to="/create-account" class="nav-link">Create Account</router-link>
         <button @click="showLogin = !showLogin" class="nav-link login-button">Login</button>
       </nav>
     </header>
