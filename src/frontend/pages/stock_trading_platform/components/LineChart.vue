@@ -1,37 +1,68 @@
 <template>
-    <div>
-      <canvas ref="canvas"></canvas>
-    </div>
-  </template>
-  
-  <script>
-  import { Line } from 'chart.js';
-  
-  export default {
-    name: 'LineChart',
-    props: {
-      data: {
-        type: Object,
-        required: true
-      },
-      options: {
-        type: Object,
-        required: true
-      }
+  <div>
+    <canvas ref="canvas"></canvas>
+  </div>
+</template>
+
+<script>
+import { Chart, registerables } from 'chart.js';
+import { defineComponent, ref, onMounted, watch } from 'vue';
+
+Chart.register(...registerables);
+
+export default defineComponent({
+  name: 'LineChart',
+  props: {
+    chartData: {
+      type: Object,
+      required: true
     },
-    mounted() {
-      new Line(this.$refs.canvas, {
-        type: 'line',
-        data: this.data,
-        options: this.options
-      });
+    chartOptions: {
+      type: Object,
+      required: true
     }
-  };
-  </script>
-  
-  <style scoped>
-  canvas {
-    max-width: 100%;
+  },
+  setup(props) {
+    const canvas = ref(null);
+    let chartInstance = null;
+
+    const renderChart = () => {
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+      chartInstance = new Chart(canvas.value, {
+        type: 'line',
+        data: props.chartData,
+        options: props.chartOptions
+      });
+    };
+
+    onMounted(() => {
+      renderChart();
+    });
+
+    watch(() => props.chartData, (newVal, oldVal) => {
+      if (newVal !== oldVal) {
+        renderChart();
+      }
+    }, { deep: true });
+
+    watch(() => props.chartOptions, (newVal, oldVal) => {
+      if (newVal !== oldVal) {
+        renderChart();
+      }
+    }, { deep: true });
+
+    return {
+      canvas
+    };
   }
-  </style>
-  
+});
+</script>
+
+<style scoped>
+canvas {
+  width: 100%;
+  height: 400px;
+}
+</style>
