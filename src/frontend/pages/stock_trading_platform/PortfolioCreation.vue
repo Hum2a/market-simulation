@@ -3,83 +3,89 @@
     <header class="header">
       <img src="../../assets/LifeSmartLogo.png" alt="Logo" class="logo" />
       <nav class="header-links">
-        <router-link to="/homepage" class="nav-link">Home</router-link>
-        <router-link to="/groupcreation" class="nav-link">Asset Market Tool</router-link>
         <router-link to="/stock-trading-select" class="nav-link">Stock Market Tool</router-link>
         <button @click="showLogin = !showLogin" class="nav-link login-button">Login</button>
       </nav>
     </header>
     <LoginPage v-if="showLogin" @close="showLogin = false" @login-success="handleLoginSuccess" />
     <main class="main-content">
-      <h1>Create Your Portfolio</h1>
-      <p>Divide your chosen amount amongst the top 30 US companies on the stock market.</p>
-      <form @submit.prevent="submitPortfolio" class="portfolio-form">
-        <div class="funds-input">
-          <label for="total-funds">Enter Maximum Portfolio Value (£):</label>
-          <input type="number" id="total-funds" v-model.number="userFunds" @input="updateTotalFunds" />
-        </div>
-        <div class="date-picker">
-          <label for="portfolio-date">Select Start Date:</label>
-          <Datepicker v-model="selectedDate" />
-        </div>
-        <div class="view-toggle">
-          <button type="button" @click="toggleView">
-            {{ viewMode === 'card' ? 'Switch to Spreadsheet View' : 'Switch to Card View' }}
-          </button>
-        </div>
-        <div class="generate-random">
-          <button type="button" @click="generateRandomPortfolio">Generate Random Portfolio</button>
-        </div>
-        <div v-if="viewMode === 'card'">
-          <div v-for="company in companies" :key="company.name" class="company">
-            <label :for="company.name" class="company-label">{{ company.name }}:</label>
-            <input
-              type="range"
-              :id="company.name"
-              v-model.number="company.allocation"
-              :max="totalFunds"
-              @input="updateTotal"
-              step="1"
-              class="company-range"
-            />
-            <input
-              type="number"
-              v-model.number="company.allocation"
-              :max="totalFunds"
-              @input="updateTotal"
-              class="company-value-input"
-            />
+      <div v-if="totalFunds === 0">
+        <h2>You have no funds available to allocate.</h2>
+      </div>
+      <div v-else>
+        <h1>Create or Append to Your Portfolio</h1>
+        <p>Divide your chosen amount amongst the top 30 US companies on the stock market.</p>
+        <form @submit.prevent="submitPortfolio" class="portfolio-form">
+          <div class="funds-input">
+            <label for="total-funds">Available Funds (£):</label>
+            <input type="number" id="total-funds" v-model.number="totalFunds" disabled />
           </div>
-        </div>
-        <div v-else class="spreadsheet-view-container">
-          <div class="spreadsheet-view">
-            <table>
-              <thead>
-                <tr>
-                  <th v-for="company in companies" :key="company.name">{{ company.name }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td v-for="company in companies" :key="company.name">
-                    <input
-                      type="number"
-                      v-model.number="company.allocation"
-                      :max="totalFunds"
-                      @input="updateTotal"
-                      class="company-value-input"
-                    />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="date-picker">
+            <label for="portfolio-date">Select Start Date:</label>
+            <Datepicker v-model="selectedDate" />
           </div>
-        </div>
-        <div class="total-allocation">
-          <strong>Total Allocation: £{{ totalAllocation }}</strong>
-        </div>
-        <button type="submit" :disabled="totalAllocation > totalFunds || totalAllocation === 0">Submit</button>
-      </form>
+          <div class="view-toggle">
+            <button type="button" @click="toggleView">
+              {{ viewMode === 'card' ? 'Switch to Spreadsheet View' : 'Switch to Card View' }}
+            </button>
+          </div>
+          <div class="generate-random">
+            <button type="button" @click="generateRandomPortfolio">Generate Random Portfolio</button>
+          </div>
+          <div v-if="viewMode === 'card'">
+            <div v-for="company in companies" :key="company.name" class="company">
+              <label :for="company.name" class="company-label">{{ company.name }}:</label>
+              <input
+                type="range"
+                :id="company.name"
+                v-model.number="company.allocation"
+                :max="totalFunds"
+                @input="updateTotal"
+                step="1"
+                class="company-range"
+              />
+              <input
+                type="number"
+                v-model.number="company.allocation"
+                :max="totalFunds"
+                @input="updateTotal"
+                class="company-value-input"
+              />
+            </div>
+          </div>
+          <div v-else class="spreadsheet-view-container">
+            <div class="spreadsheet-view">
+              <table>
+                <thead>
+                  <tr>
+                    <th v-for="company in companies" :key="company.name">{{ company.name }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td v-for="company in companies" :key="company.name">
+                      <input
+                        type="number"
+                        v-model.number="company.allocation"
+                        :max="totalFunds"
+                        @input="updateTotal"
+                        class="company-value-input"
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="total-allocation">
+            <strong>Total Allocation: £{{ totalAllocation }}</strong>
+          </div>
+          <div class="form-buttons">
+            <button type="submit" :disabled="totalAllocation > totalFunds || totalAllocation === 0">Submit</button>
+            <button type="button" @click="navigateToPortfolioDisplay">View Portfolio</button>
+          </div>
+        </form>
+      </div>
     </main>
     <MessageModal
       :isVisible="isModalVisible"
@@ -91,7 +97,7 @@
 </template>
 
 <script>
-import { getFirestore, doc, setDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import LoginPage from '../LoginPage.vue';
 import Datepicker from '@vuepic/vue-datepicker';
@@ -107,15 +113,15 @@ export default {
   },
   data() {
     return {
-      userFunds: 10000,  // Default value for the maximum portfolio value
-      totalFunds: 10000,
+      userFunds: 0,
+      totalFunds: 0,
       viewMode: 'card',  // Default view mode
       companies: [
         { name: 'Apple', allocation: 0 },
         { name: 'Microsoft', allocation: 0 },
         { name: 'Amazon', allocation: 0 },
         { name: 'Google', allocation: 0 },
-        { name: 'Facebook', allocation: 0 },
+        { name: 'Meta', allocation: 0 },
         { name: 'Tesla', allocation: 0 },
         { name: 'Berkshire Hathaway', allocation: 0 },
         { name: 'Johnson & Johnson', allocation: 0 },
@@ -146,7 +152,7 @@ export default {
       selectedDate: new Date(),
       isModalVisible: false,
       modalTitle: '',
-      modalMessage: ''
+      modalMessage: '',
     };
   },
   computed: {
@@ -159,13 +165,26 @@ export default {
       console.log('selectedDate changed from', oldVal, 'to', newVal);
     }
   },
+  mounted() {
+    this.fetchUserFunds();
+  },
   methods: {
+    async fetchUserFunds() {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (user) {
+        const db = getFirestore();
+        const userUID = user.uid;
+        const docRef = doc(db, userUID, 'Total Funds');
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          this.totalFunds = docSnap.data().totalFunds;
+        }
+      }
+    },
     updateTotal() {
       this.$forceUpdate();
-    },
-    updateTotalFunds() {
-      this.totalFunds = this.userFunds;
-      this.updateTotal();
     },
     toggleView() {
       this.viewMode = this.viewMode === 'card' ? 'spreadsheet' : 'card';
@@ -193,10 +212,10 @@ export default {
 
       this.updateTotal();
     },
-
     handleLoginSuccess(user) {
       this.showLogin = false;
       console.log('Logged in user:', user);
+      this.fetchUserFunds();  // Fetch user funds again after login
     },
     async submitPortfolio() {
       if (this.totalAllocation <= this.totalFunds) {
@@ -207,14 +226,34 @@ export default {
 
         if (user) {
           try {
-            const docId = new Date().toISOString();
+            const portfolioDocRef = doc(db, userUID, 'Stock Trading Platform', 'Portfolio', 'Initial Portfolio');
+            const portfolioDocSnap = await getDoc(portfolioDocRef);
 
-            await setDoc(doc(db, userUID, 'Stock Trading Platform', 'Portfolio', docId), {
+            let updatedCompanies = this.companies;
+
+            if (portfolioDocSnap.exists()) {
+              const existingPortfolio = portfolioDocSnap.data();
+              updatedCompanies = existingPortfolio.companies.map(existingCompany => {
+                const newCompany = this.companies.find(company => company.name === existingCompany.name);
+                if (newCompany) {
+                  return { ...existingCompany, allocation: existingCompany.allocation + newCompany.allocation };
+                }
+                return existingCompany;
+              });
+            }
+
+            await setDoc(portfolioDocRef, {
               userId: user.uid,
-              companies: this.companies,
+              companies: updatedCompanies,
               totalAllocation: this.totalAllocation,
               date: this.selectedDate,
             });
+
+            // Update the user's total funds after allocation
+            await setDoc(doc(db, userUID, 'Total Funds'), {
+              totalFunds: this.totalFunds - this.totalAllocation,
+            }, { merge: true });
+
             this.modalTitle = 'Success';
             this.modalMessage = 'Portfolio Submitted Successfully!';
             this.isModalVisible = true;
@@ -234,6 +273,9 @@ export default {
         this.modalMessage = 'Total allocation exceeds available funds!';
         this.isModalVisible = true;
       }
+    },
+    navigateToPortfolioDisplay() {
+      this.$router.push('/portfolio-display');
     },
   },
 };
@@ -305,6 +347,12 @@ export default {
   font-size: 2em;
   color: #102454;
   margin-bottom: 0.5em;
+}
+
+.main-content h2 {
+  font-size: 1em;
+  color: #102454;
+  margin-bottom: 0.5em
 }
 
 .main-content p {
@@ -461,6 +509,13 @@ export default {
   margin-top: 1em;
   font-size: 1.2em;
   color: #333;
+}
+
+.form-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1em;
 }
 
 button {

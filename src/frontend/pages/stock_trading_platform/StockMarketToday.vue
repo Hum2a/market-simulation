@@ -14,43 +14,57 @@
       <button @click="showDatePicker = !showDatePicker">
         Pick a Date
       </button>
-      <VueDatePicker v-if="showDatePicker" v-model="selectedDate" @input="fetchStockDataForDate"/>
+      <Datepicker v-if="showDatePicker" v-model="selectedDate" @change="fetchStockDataForDate" />
+      <button @click="retrieveMostRecentData">Retrieve Most Recent Stock Market Data</button>
       <div v-if="loading">Loading...</div>
-      <table v-else class="stock-table">
-        <thead>
-          <tr>
-            <th>Company</th>
-            <th>Symbol</th>
-            <th>Price</th>
-            <th>Change</th>
-            <th>Change (%)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="stock in stocks" :key="stock.symbol">
-            <td>{{ stock.name }}</td>
-            <td>{{ stock.symbol }}</td>
-            <td v-if="stock.price !== null">${{ stock.price.toFixed(2) }}</td>
-            <td v-else>N/A</td>
-            <td v-if="stock.change !== null" :class="{'positive-change': stock.change > 0, 'negative-change': stock.change < 0}">
-              {{ stock.change.toFixed(2) }}
-            </td>
-            <td v-else>N/A</td>
-            <td v-if="stock.changePercent !== null" :class="{'positive-change': stock.changePercent > 0, 'negative-change': stock.changePercent < 0}">
-              {{ stock.changePercent.toFixed(2) }}%
-            </td>
-            <td v-else>N/A</td>
-          </tr>
-        </tbody>
-      </table>
+      <div v-else>
+        <p class="display-date">Displaying data for: {{ formattedSelectedDate }}</p>
+        <table class="stock-table">
+          <thead>
+            <tr>
+              <th>Company</th>
+              <th>Symbol</th>
+              <th>Price</th>
+              <th>Change</th>
+              <th>Change (%)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template v-for="stock in stocks" :key="stock.symbol">
+              <tr @click="toggleStock(stock.symbol)">
+                <td>{{ stock.name }}</td>
+                <td>{{ stock.symbol }}</td>
+                <td v-if="stock.price !== null">${{ stock.price.toFixed(2) }}</td>
+                <td v-else>N/A</td>
+                <td v-if="stock.change !== null" :class="{'positive-change': stock.change > 0, 'negative-change': stock.change < 0}">
+                  {{ stock.change.toFixed(2) }}
+                </td>
+                <td v-else>N/A</td>
+                <td v-if="stock.changePercent !== null" :class="{'positive-change': stock.changePercent > 0, 'negative-change': stock.changePercent < 0}">
+                  {{ stock.changePercent.toFixed(2) }}%
+                </td>
+                <td v-else>N/A</td>
+              </tr>
+              <tr v-if="expandedStock === stock.symbol" class="expanded-row">
+                <td colspan="5">
+                  <line-chart :chart-data="chartData" v-if="chartData && expandedStock === stock.symbol"></line-chart>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
     </main>
   </div>
 </template>
 
 <script>
 import { fetchStockDataFromFirestore, saveStockDataToFirestore, isDataFetchedForToday } from '../../../backend/firebase/initFirebase';
-import VueDatePicker from 'vue-datepicker-next';
-import 'vue-datepicker-next/index.css';
+import Datepicker from '@vuepic/vue-datepicker';
+import '@vuepic/vue-datepicker/dist/main.css';
+import { Line } from 'vue-chartjs';
+import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement } from 'chart.js';
+ChartJS.register(Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement);
 
 const API_KEY = 'Z2G35L67NYNFFXHT';
 
@@ -68,7 +82,8 @@ const getStockData = async (symbol) => {
 export default {
   name: 'StockMarketToday',
   components: {
-    VueDatePicker
+    Datepicker,
+    LineChart: Line
   },
   data() {
     return {
@@ -76,12 +91,14 @@ export default {
       loading: true,
       showDatePicker: false,
       selectedDate: new Date(),
+      expandedStock: null,
+      chartData: null,
       companies: [
         { name: 'Apple', symbol: 'AAPL' },
         { name: 'Microsoft', symbol: 'MSFT' },
         { name: 'Amazon', symbol: 'AMZN' },
         { name: 'Google', symbol: 'GOOGL' },
-        { name: 'Facebook', symbol: 'FB' },
+        { name: 'Meta', symbol: 'META' },
         { name: 'Tesla', symbol: 'TSLA' },
         { name: 'Berkshire Hathaway', symbol: 'BRK.B' },
         { name: 'Johnson & Johnson', symbol: 'JNJ' },
@@ -110,6 +127,11 @@ export default {
       ],
     };
   },
+  computed: {
+    formattedSelectedDate() {
+      return this.selectedDate.toDateString();
+    }
+  },
   async created() {
     await this.fetchStockData();
   },
@@ -124,6 +146,10 @@ export default {
             return this.processStockData(company, data);
           } else {
             const data = await fetchStockDataFromFirestore(company.symbol);
+            const missingDates = this.getMissingDates(data.data["Time Series (Daily)"]);
+            if (missingDates.length > 0) {
+              await this.fetchMissingDates(company.symbol, missingDates);
+            }
             return this.processStockData(company, data.data);
           }
         } catch (error) {
@@ -165,6 +191,54 @@ export default {
       this.stocks = await Promise.all(stockDataPromises);
       this.loading = false;
     },
+    async fetchMissingDates(symbol, missingDates) {
+      for (const date of missingDates) {
+        const response = await fetch(`https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&apikey=${API_KEY}`);
+        const data = await response.json();
+        if (data && data["Time Series (Daily)"]) {
+          const dateData = data["Time Series (Daily)"][date];
+          if (dateData) {
+            console.log(`Saving data for ${symbol} on ${date}`);  // Log the date being saved
+            await saveStockDataToFirestore(symbol, { [date]: dateData });
+          }
+        }
+      }
+    },
+    getMissingDates(timeSeries) {
+      const dates = Object.keys(timeSeries);
+      const currentDate = new Date();
+      const missingDates = [];
+      while (currentDate > new Date(dates[dates.length - 1])) {
+        const dateString = currentDate.toISOString().split('T')[0];
+        if (!dates.includes(dateString) && currentDate.getDay() !== 0 && currentDate.getDay() !== 6) {
+          missingDates.push(dateString);
+        }
+        currentDate.setDate(currentDate.getDate() - 1);
+      }
+      console.log(`Missing dates for symbol: ${missingDates}`);  // Log the missing dates
+      return missingDates;
+    },
+    async toggleStock(symbol) {
+      if (this.expandedStock === symbol) {
+        this.expandedStock = null;
+        this.chartData = null;
+      } else {
+        this.expandedStock = symbol;
+        const stockData = await fetchStockDataFromFirestore(symbol);
+        this.chartData = this.prepareChartData(stockData.data["Time Series (Daily)"]);
+      }
+    },
+    async retrieveMostRecentData() {
+      this.loading = true;
+      for (const company of this.companies) {
+        const data = await fetchStockDataFromFirestore(company.symbol);
+        const missingDates = this.getMissingDates(data.data["Time Series (Daily)"]);
+        if (missingDates.length > 0) {
+          await this.fetchMissingDates(company.symbol, missingDates);
+        }
+      }
+      await this.fetchStockData();
+    },
     processStockData(company, data, date = null) {
       const timeSeries = data['Time Series (Daily)'];
       if (!timeSeries) {
@@ -187,8 +261,31 @@ export default {
         change,
         changePercent,
       };
+    },
+    prepareChartData(timeSeries) {
+      const labels = [];
+      const data = [];
+      for (const date in timeSeries) {
+        labels.push(date);
+        data.push(parseFloat(timeSeries[date]['4. close']));
+      }
+      labels.reverse();
+      data.reverse();
+      return {
+        labels,
+        datasets: [
+          {
+            label: 'Stock Price',
+            data,
+            fill: false,
+            borderColor: 'rgba(75, 192, 192, 1)',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            tension: 0.1
+          }
+        ]
+      };
     }
-  },
+  }
 };
 </script>
 
@@ -276,11 +373,22 @@ export default {
   color: #fff;
 }
 
+.display-date {
+  color: rgb(59, 6, 24);
+  font-weight: bold;
+  text-align: center;
+  justify-content: center;
+}
+
 .positive-change {
   color: #4CAF50; /* Green color for positive changes */
 }
 
 .negative-change {
   color: #F44336; /* Red color for negative changes */
+}
+
+.expanded-row {
+  background-color: #f0f2f5;
 }
 </style>
