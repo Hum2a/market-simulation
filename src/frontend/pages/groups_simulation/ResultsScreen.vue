@@ -1,5 +1,4 @@
 <template>
-
   <header class="header">
     <img src="../../assets/LifeSmartLogo.png" alt="Logo" class="logo">
     <div>
@@ -8,7 +7,7 @@
       </button>
     </div>
   </header>
-  <div class="results-screen">
+  <div class="results-screen" v-if="dataReady">
     <h1 class="title">
       <img src="../../assets/Blue line.png" alt="BlueLine" class="blueline">
       Investment Results
@@ -48,8 +47,7 @@
 <script>
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, getDoc, collection, getDocs } from 'firebase/firestore';
-import Chart from 'chart.js';
-
+import Chart from 'chart.js/auto';
 
 export default {
   name: 'ResultsScreen',
@@ -62,6 +60,7 @@ export default {
       visibleDetails: [],
       expandedGroups: {},
       charts: [],
+      dataReady: false, // Flag to check if data is ready
     };
   },
   mounted() {
@@ -74,7 +73,8 @@ export default {
           this.fetchFinalResults(),
           this.fetchQuarterlyResults()
         ]);
-        this.generateChartsForAllGroups(); // Call this method once all data is ready
+        this.processResults(); // Perform calculations and chart generation
+        this.dataReady = true; // Set flag to true after data is processed
       } else {
         console.log("User is not authenticated.");
       }
@@ -82,9 +82,10 @@ export default {
   },
   computed: {
     rankedResults() {
-      return this.finalResults.map(result => {
-        const numberOfYears = this.calculateNumberOfYears(result.name);
-        const initialTotalWorth = this.getInitialTotalWorth(result.name);
+      if (!this.dataReady) return [];
+      return this.finalResults.map((result, index) => {
+        const numberOfYears = this.calculateNumberOfYears();
+        const initialTotalWorth = this.getInitialTotalWorth(index);
         const finalTotalWorth = [
           result.equity,
           result.bonds,
@@ -96,7 +97,7 @@ export default {
         const roi = ((finalTotalWorth - initialTotalWorth) / initialTotalWorth) * 100;
         const annualizedReturn = (Math.pow((finalTotalWorth / initialTotalWorth), 1 / numberOfYears) - 1) * 100;
 
-        const mostGainsAsset = this.calculateMostGainsAsset(result.name, result.assets);
+        const mostGainsAsset = this.calculateMostGainsAsset(index);
 
         return {
           ...result,
@@ -109,239 +110,222 @@ export default {
       }).sort((a, b) => b.totalWorth - a.totalWorth);
     }
   },
-
   methods: {
-      async fetchLatestSimulationIndex() {
-        const db = getFirestore();
-        const simulationsRef = collection(db, this.userUID, 'Asset Market Simulations', 'Simulations',);
-        const querySnapshot = await getDocs(simulationsRef);
-        return querySnapshot.size;  // Assumes index based on count
-      },
-      async fetchFinalResults() {
-        if (!this.userUID) {
-          console.error("User UID not available.");
-          return;
-        }
-        const db = getFirestore();
-        const docRef = doc(db, this.userUID, 'Asset Market Simulations', 'Simulations', `Simulation ${this.latestSimulationIndex}`, "Results", "Final");
-        try {
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
-            this.finalResults = docSnap.data().finalValues;
-            this.finalResults.forEach((_, index) => {
-              this.expandedGroups[index] = true;
-            });
-          } else {
-            console.log("No such document!");
-          }
-        } catch (error) {
-          console.error("Error fetching document:", error);
-        }
-      },
-
-
-      async fetchQuarterlyResults() {
-        if (!this.userUID) {
-          console.error("User UID not available.");
-          return;
-        }
-        const db = getFirestore();
-        const docRef = doc(db, this.userUID, 'Asset Market Simulations', 'Simulations', `Simulation ${this.latestSimulationIndex}`, "Results", "Quarters");
-        try {
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
-            this.quarterResults = docSnap.data().quarterResults;
-          } else {
-            console.error("No quarterly results found!");
-          }
-        } catch (error) {
-          console.error("Error fetching quarterly results:", error);
-        }
-      },
-
-      generateChartsForAllGroups() {
-        this.$nextTick(() => {
+    async fetchLatestSimulationIndex() {
+      const db = getFirestore();
+      const simulationsRef = collection(db, this.userUID, 'Asset Market Simulations', 'Simulations');
+      const querySnapshot = await getDocs(simulationsRef);
+      return querySnapshot.size;
+    },
+    async fetchFinalResults() {
+      if (!this.userUID) {
+        console.error("User UID not available.");
+        return;
+      }
+      const db = getFirestore();
+      const docRef = doc(db, this.userUID, 'Asset Market Simulations', 'Simulations', `Simulation ${this.latestSimulationIndex}`, "Results", "Final");
+      try {
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          this.finalResults = docSnap.data().finalValues;
+          console.log('Final Results:', JSON.stringify(this.finalResults, null, 2)); // Detailed log
           this.finalResults.forEach((_, index) => {
-            if (this.expandedGroups[index] && this.quarterResults.length > 0) {
-              this.generateLineChartForGroup(index);  // Generate chart for each expanded group
-            }
+            this.expandedGroups[index] = true;
           });
-        });
-      },
-
-      getInitialTotalWorth(groupName) {
-        // Find the first quarter result for the group
-        const initialQuarterResult = this.quarterResults.find(quarter => quarter.groups && quarter.groups[groupName]);
-        if (!initialQuarterResult) {
-          return 0;
+        } else {
+          console.log("No such document!");
         }
-
-        // Sum the initial values of all assets for the group
-        const initialAssets = initialQuarterResult.groups[groupName];
-        return Object.values(initialAssets).reduce((sum, asset) => sum + Number(asset), 0);
-      },
-
-      calculateMostGainsAsset(groupName) {
-        if (!this.quarterResults.length) {
-          return { assetType: 'N/A', gain: 0 };
+      } catch (error) {
+        console.error("Error fetching document:", error);
+      }
+    },
+    async fetchQuarterlyResults() {
+      if (!this.userUID) {
+        console.error("User UID not available.");
+        return;
+      }
+      const db = getFirestore();
+      const docRef = doc(db, this.userUID, 'Asset Market Simulations', 'Simulations', `Simulation ${this.latestSimulationIndex}`, "Results", "Quarters");
+      try {
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          this.quarterResults = docSnap.data().quarterResults;
+          console.log('Quarterly Results:', JSON.stringify(this.quarterResults, null, 2)); // Detailed log
+        } else {
+          console.error("No quarterly results found!");
         }
-        
-        // Assuming the first and last entries represent the initial and final states
-        const initialAssets = this.quarterResults[0].groups[groupName] || {};
-        const finalAssets = this.quarterResults[this.quarterResults.length - 1].groups[groupName] || {};
+      } catch (error) {
+        console.error("Error fetching quarterly results:", error);
+      }
+    },
+    processResults() {
+      this.finalResults = this.finalResults.map((result, index) => {
+        const numberOfYears = this.calculateNumberOfYears();
+        const initialTotalWorth = this.getInitialTotalWorth(index);
+        const finalTotalWorth = [
+          result.equity,
+          result.bonds,
+          result.realestate,
+          result.commodities,
+          result.other
+        ].reduce((acc, value) => acc + Number(value), 0);
+        const totalGains = finalTotalWorth - initialTotalWorth;
+        const roi = ((finalTotalWorth - initialTotalWorth) / initialTotalWorth) * 100;
+        const annualizedReturn = (Math.pow((finalTotalWorth / initialTotalWorth), 1 / numberOfYears) - 1) * 100;
 
-        let mostGainsAsset = { assetType: 'N/A', gain: 0 };
-        
-        Object.keys(finalAssets).forEach(assetType => {
-          if (initialAssets[assetType] !== undefined) { // Ensure the asset exists in the initial state
-            const gain = finalAssets[assetType] - initialAssets[assetType];
-            if (gain > mostGainsAsset.gain) {
-              mostGainsAsset = { assetType, gain };
-            }
-          }
-        });
+        const mostGainsAsset = this.calculateMostGainsAsset(index);
 
         return {
-          assetType: mostGainsAsset.assetType,
-          gain: parseFloat(mostGainsAsset.gain).toFixed(2) // Ensure gain is formatted to two decimal places
+          ...result,
+          totalWorth: finalTotalWorth,
+          totalGains: isNaN(totalGains) ? 0 : totalGains,
+          mostGainsAsset,
+          roi: isNaN(roi) ? 0 : roi,
+          annualizedReturn: isNaN(annualizedReturn) ? 0 : annualizedReturn
         };
-      },
-      calculateNumberOfYears() {
-        // Assuming each entry in quarterResults represents one quarter
-        const totalQuarters = this.quarterResults.length;
-        const numberOfYears = totalQuarters / 4;
+      }).sort((a, b) => b.totalWorth - a.totalWorth);
 
-        return numberOfYears;
-  },
+      this.generateChartsForAllGroups();
+    },
+    getInitialTotalWorth(groupIndex) {
+      if (!this.quarterResults.length) {
+        console.error(`getInitialTotalWorth: No quarter results available.`);
+        return 0;
+      }
 
-      toggleDetailVisibility(index) {
-        const detailIndex = this.visibleDetails.indexOf(index);
-        if (detailIndex === -1) {
-            this.visibleDetails.push(index); // Show details
-        } else {
-            this.visibleDetails.splice(detailIndex, 1); // Hide details
+      const initialAssets = this.quarterResults[0];
+      const assetTypes = ['equity', 'bonds', 'realestate', 'commodities', 'other'];
+
+      const initialTotalWorth = assetTypes.reduce((sum, assetType) => {
+        const assetValues = initialAssets[assetType];
+        return assetValues && assetValues[groupIndex] !== undefined ? sum + assetValues[groupIndex] : sum;
+      }, 0);
+
+      return initialTotalWorth;
+    },
+    calculateMostGainsAsset(groupIndex) {
+      console.log("calculateMostGainsAsset called for groupIndex:", groupIndex);
+      if (!this.quarterResults.length) {
+        console.error("calculateMostGainsAsset: No quarter results available.");
+        return { assetType: 'N/A', gain: 0 };
+      }
+
+      const initialAssets = this.quarterResults[0];
+      const finalAssets = this.quarterResults[this.quarterResults.length - 1];
+
+      console.log("initialAssets:", JSON.stringify(initialAssets, null, 2));
+      console.log("finalAssets:", JSON.stringify(finalAssets, null, 2));
+
+      const assetTypes = ['equity', 'bonds', 'realestate', 'commodities', 'other'];
+
+      let mostGainsAsset = { assetType: 'N/A', gain: 0 };
+      assetTypes.forEach(assetType => {
+        const initialValues = initialAssets[assetType];
+        const finalValues = finalAssets[assetType];
+
+        if (initialValues && finalValues && initialValues[groupIndex] !== undefined && finalValues[groupIndex] !== undefined) {
+          const gain = finalValues[groupIndex] - initialValues[groupIndex];
+          if (gain > mostGainsAsset.gain) {
+            mostGainsAsset = { assetType, gain };
+          }
         }
-        },
-      toggleGroup(index) {
-        // Toggle group details and ensure charts are generated after the DOM updates
-        this.expandedGroups[index] = !this.expandedGroups[index];
-        this.$nextTick(() => {
-          if (this.expandedGroups[index]) {
-            // this.generatePieChartForGroup(index);
+      });
+
+      return {
+        assetType: mostGainsAsset.assetType,
+        gain: parseFloat(mostGainsAsset.gain).toFixed(2)
+      };
+    },
+    calculateNumberOfYears() {
+      const totalQuarters = this.quarterResults.length;
+      return totalQuarters / 4;
+    },
+    toggleGroup(index) {
+      this.expandedGroups[index] = !this.expandedGroups[index];
+      this.$nextTick(() => {
+        if (this.expandedGroups[index]) {
+          this.generateLineChartForGroup(index);
+        }
+      });
+    },
+    generateChartsForAllGroups() {
+      this.$nextTick(() => {
+        this.finalResults.forEach((_, index) => {
+          if (this.expandedGroups[index] && this.quarterResults.length > 0) {
             this.generateLineChartForGroup(index);
           }
         });
-      },
-      generateLineChartForGroup(index) {
-        const groupName = this.rankedResults[index].name;
-        const canvasRef = `lineChart${index}`;
-        this.$nextTick(() => {
-          const canvas = this.$refs[canvasRef] ? this.$refs[canvasRef][0] : null;
-          if (!canvas) {
-            console.error("Canvas element not found for index:", index);
-            return;
-          }
-          const ctx = canvas.getContext('2d');
-
-          // Clear existing chart if one is present
-          if (this.charts[index]) {
-            this.charts[index].destroy();
-          }
-
-          // Ensure data is ready and has the expected structure
-          if (!this.quarterResults || !this.quarterResults.length) {
-            console.error("Quarterly results data not ready or empty");
-            return;
-          }
-
-          const labels = this.quarterResults.map(q => q.quarter);
-          const datasets = [];
-
-          // Assuming 'groups' within 'quarterResults' has detailed values for each asset type per group
-          const assetTypes = ['Equity', 'Bonds', 'RealEstate', 'Commodities', 'Other'];
-
-          assetTypes.forEach(assetType => {
-            const assetData = this.quarterResults.map(quarter => {
-              const groupData = quarter.groups[groupName];
-              return groupData ? groupData[assetType] || 0 : 0;
-            });
-
-            datasets.push({
-              label: assetType,
-              data: assetData,
-              fill: false,
-              borderColor: this.getRandomColor(),
-              borderWidth: 1,
-              tension: 0.4
-            });
-          });
-
-          // Generate the line chart with detailed quarterly asset values
-          this.charts[index] = new Chart(ctx, {
-            type: 'line',
-            data: { labels, datasets },
-            options: {
-              scales: {
-                y: {
-                  beginAtZero: true
-                }
-              },
-              responsive: true,
-              maintainAspectRatio: false
-            }
-          });
-        });
-      },
-
-      prepareChartDataForGroup(groupName) {
-        // Labels for the X-axis of the chart (each quarter)
-        const labels = this.quarterResults.map(result => result.quarter);
-
-        // Initialize the dataset for the line chart
-        const dataset = {
-          label: groupName,
-          data: [],
-          borderColor: 'rgba(54, 162, 235, 0.5)',
-          borderWidth: 2,
-          fill: false,
-        };
-
-        // Iterate through each quarter
-        this.quarterResults.forEach(quarterResult => {
-          // If the group exists in this quarter
-          if (quarterResult.groups && quarterResult.groups[groupName]) {
-            const groupAssets = quarterResult.groups[groupName];
-            // Calculate the sum of all assets
-            const totalWorth = Object.values(groupAssets).reduce((sum, value) => sum + value, 0);
-            dataset.data.push(totalWorth);
-          } else {
-            // If no data for this group in the quarter, push a 0 (or you might choose to push `null`)
-            dataset.data.push(0);
-          }
-        });
-
-        return {
-          labels: labels,
-          datasets: [dataset],
-        };
-      },
-      getRandomColor() {
-        // Generate and return a random hex color
-        const letters = '0123456789ABCDEF';
-        let color = '#';
-        for (let i = 0; i < 6; i++) {
-          color += letters[Math.floor(Math.random() * 16)];
+      });
+    },
+    generateLineChartForGroup(index) {
+      const canvasRef = `lineChart${index}`;
+      this.$nextTick(() => {
+        const canvas = this.$refs[canvasRef] ? this.$refs[canvasRef][0] : null;
+        if (!canvas) {
+          console.error("Canvas element not found for index:", index);
+          return;
         }
-        return color;
-      },
-      restartSimulation() {
-        // Navigate to the GroupCreation component
-        this.$router.push({ name: 'GroupCreation' }); // Use the route name or path you have defined
-      },
+        const ctx = canvas.getContext('2d');
+        if (this.charts[index]) {
+          this.charts[index].destroy();
+        }
+        if (!this.quarterResults || !this.quarterResults.length) {
+          console.error("Quarterly results data not ready or empty");
+          return;
+        }
+        const labels = this.quarterResults.map((_, i) => `Q${i + 1}`);
+        const datasets = [];
+        const assetTypes = ['equity', 'bonds', 'realestate', 'commodities', 'other'];
 
+        const groupName = this.finalResults[index].name;
+        const groupData = this.quarterResults.find(group => group.name === groupName);
+
+        if (!groupData) {
+          console.error(`No data found for group: ${groupName}`);
+          return;
+        }
+
+        assetTypes.forEach(assetType => {
+          const assetData = groupData[assetType];
+
+          datasets.push({
+            label: assetType,
+            data: assetData,
+            fill: false,
+            borderColor: this.getRandomColor(),
+            borderWidth: 1,
+            tension: 0.4
+          });
+        });
+
+        this.charts[index] = new Chart(ctx, {
+          type: 'line',
+          data: { labels, datasets },
+          options: {
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            },
+            responsive: true,
+            maintainAspectRatio: false
+          }
+        });
+      });
+    },
+    getRandomColor() {
+      const letters = '0123456789ABCDEF';
+      let color = '#';
+      for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+      }
+      return color;
+    },
+    restartSimulation() {
+      this.$router.push({ name: 'GroupCreation' });
+    }
   }
 };
-
 </script>
 
 <style scoped>
@@ -349,7 +333,7 @@ export default {
   margin: 0 auto;
   padding: 40px;
   font-family: 'Helvetica Neue', Arial, sans-serif;
-  background-color: #F6F2EF; /* A light gray background */
+  background-color: #F6F2EF;
 }
 
 .results-screen h1 {
@@ -358,7 +342,7 @@ export default {
 
 .title {
   text-align: center;
-  color: #172b4d; /* Navy */
+  color: #172b4d;
   font-size: 2.5rem;
   margin-bottom: 2rem;
 }
@@ -378,16 +362,16 @@ export default {
   box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease-in-out;
   cursor: pointer;
-  width: 100%; /* Adjust the width as necessary */
+  width: 100%;
 }
 
 .result-group:hover {
-    transform: scale(1.02);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  transform: scale(1.02);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
 }
 
 .result-group h2 {
-  color: #172b4d; /* Navy */
+  color: #172b4d;
   font-size: 1.5rem;
   margin-bottom: 1.5rem;
   display: flex;
@@ -396,24 +380,24 @@ export default {
 }
 
 .result-details {
-    display: flex;
-    flex-direction: row; /* Arrange children in a row */
-    justify-content: space-between; /* Space between the children */
-    align-items: start; /* Align items to the start of the cross axis */
-  }
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: start;
+}
 
 .gold {
-  border-color: #ffd700; /* Gold */
+  border-color: #ffd700;
   box-shadow: 0 6px 10px #ffd700;
 }
 
 .silver {
-  border-color: #c0c0c0; /* Silver */
-  box-shadow: 0 6px 10px #c0c0c0
+  border-color: #c0c0c0;
+  box-shadow: 0 6px 10px #c0c0c0;
 }
 
 .bronze {
-  border-color: #cd7f32; /* Bronze */
+  border-color: #cd7f32;
   box-shadow: 0 6px 10px #cd7f32;
 }
 
@@ -427,40 +411,40 @@ export default {
   list-style-type: none;
   padding: 0;
   margin-top: 20px;
-  border-radius: 8px; /* Rounded corners for the list */
-  overflow: hidden; /* Ensures the child elements' rounded corners are respected */
+  border-radius: 8px;
+  overflow: hidden;
   margin-right: 20px;
   width: 45%;
 }
 
 .asset-list li {
-  display: block; /* Ensures the list behaves like a block element */
+  display: block;
   margin-bottom: 10px;
   padding: 20px;
   font-size: 1.2rem;
-  color: #000000; /* Dark text for better readability */
-  background-color: #fafafa; /* Light background for each item */
-  border-bottom: 1px solid #000000; /* Adds a subtle separator between items */
-  transition: background-color 0.4s ease-in, box-shadow 0.4s ease-in; /* Smooth transition for hover effect */
-  border-radius: 15px; /* Rounded corners */
+  color: #000000;
+  background-color: #fafafa;
+  border-bottom: 1px solid #000000;
+  transition: background-color 0.4s ease-in, box-shadow 0.4s ease-in;
+  border-radius: 15px;
   border: none;
   z-index: -1;
 }
 
 .asset-list li:last-child {
-  border-bottom: none; /* Removes the border from the last item */
+  border-bottom: none;
 }
 
 .asset-list li:before {
   content: "• ";
-  color: #FFC107; /* Yellow dot before each item */
-  font-weight: bold; /* Makes the dot a bit bolder */
+  color: #FFC107;
+  font-weight: bold;
   z-index: -1;
 }
 
 .asset-list li:hover {
-  background-color: #ecffaf; /* Slightly darker background on hover */
-  cursor: pointer; /* Changes the cursor to indicate the item is interactive */
+  background-color: #ecffaf;
+  cursor: pointer;
   box-shadow: 0 0 5px #ecffaf, 0 0 10px #ecffaf, 0 0 25px #ecffaf, 0 0 50px #ecffaf;
 }
 
@@ -473,79 +457,74 @@ export default {
 
 .pie-chart-container, .line-chart-container {
   flex: 1;
-  padding: 10px; /* Provides some spacing around each chart */
+  padding: 10px;
   width: 100%;
 }
 
 .awards-container {
   display: flex;
-  justify-content: flex-start; /* Align items to the start of the container */
-  align-items: center; /* Align items vertically in the center */
-  gap: 20px; /* Creates space between the child elements */
+  justify-content: flex-start;
+  align-items: center;
+  gap: 20px;
 }
 
-/* Restart Button Styling with Shimmer Effect */
 .restart-button {
   margin-top: 20px;
   padding: 10px 20px;
   font-size: 16px;
-  color: #fff; /* White text */
+  color: #fff;
   background: #CB0E38;
   border: none;
   border-radius: 5px;
   cursor: pointer;
   position: relative;
-  overflow: hidden; /* Ensures the shimmer effect stays within the button boundaries */
+  overflow: hidden;
 }
 
 .restart-button::after {
   content: "";
   position: absolute;
   top: 0;
-  left: -150%; /* Start from the left */
+  left: -150%;
   width: 100%;
   height: 100%;
   background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-  animation: shimmer 2s infinite; /* Adjust duration as needed */
+  animation: shimmer 2s infinite;
 }
 
 @keyframes shimmer {
   to {
-    left: 150%; /* Move the gradient to the right */
+    left: 150%;
   }
 }
 
 .restart-button:hover {
-  background-color: #0056b3; /* Darker blue on hover */
+  background-color: #0056b3;
 }
 
-
-
-/* Additional styling for chart elements if possible */
 .chartjs-render-monitor {
-  border-color: #172b4d; /* Adding navy border if applicable */
+  border-color: #172b4d;
 }
 
-/* Customizing the legend and tooltips to fit the navy and yellow theme */
 .chart-legend {
   font-family: 'Helvetica Neue', Arial, sans-serif;
-  color: #172b4d; /* Navy */
+  color: #172b4d;
 }
 
 .chart-tooltip {
-  background-color: #FFC107; /* Yellow */
-  color: #172b4d; /* Navy text on yellow background */
+  background-color: #FFC107;
+  color: #172b4d;
   border-radius: 8px;
   padding: 10px;
 }
 
 @media (max-width: 768px) {
-    .result-details {
-      flex-direction: column; /* Stack them on top of each other on smaller screens */
-    }
-
-    .asset-list, .chart-area {
-      flex-basis: 100%; /* Each child takes the full width of the flex container */
-    }
+  .result-details {
+    flex-direction: column;
   }
+
+  .asset-list, .chart-area {
+    flex-basis: 100%;
+  }
+}
 </style>

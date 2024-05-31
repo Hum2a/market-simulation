@@ -3,6 +3,7 @@
     <header class="header">
       <img src="../../assets/LifeSmartLogo.png" alt="Logo" class="logo" />
       <nav class="header-links">
+        <router-link to="/groupcreation" class="nav-link">Group Creation</router-link>
         <router-link to="/create-account" class="nav-link">Create Account</router-link>
         <button @click="showLogin = !showLogin" class="nav-link login-button">Login</button>
       </nav>
@@ -10,44 +11,77 @@
     <LoginPage v-if="showLogin" @close="showLogin = false" @login-success="handleLoginSuccess" />
     <main class="main-content">
       <h1>Stock Trading</h1>
+      <div v-if="profile" class="welcome-message">
+        Welcome back, {{ profile.firstName }}!
+      </div>
       <div class="options">
         <router-link to="/portfolio-creation" class="option">Create Your Portfolio</router-link>
         <router-link to="/portfolio-display" class="option">View Your Portfolio</router-link>
-        <router-link to="/stock-market-today" class="option">Stock Market Today</router-link>
-        <router-link to="/portfolio-simulation" class="option">Simulation</router-link>
+        <template v-if="profile && profile.role === 'admin'">
+          <router-link to="/stock-market-today" class="option">Stock Market Today</router-link>
+          <router-link to="/portfolio-simulation" class="option">Simulation</router-link>
+        </template>
       </div>
-      <button @click="deletePortfolio" class="delete-button">Delete Portfolio</button>
+      <button v-if="profile && profile.role === 'admin'" @click="deletePortfolio" class="delete-button">Delete Portfolio</button>
     </main>
     <div v-if="userFunds !== null" class="total-funds">
       <p>Total Funds: £{{ userFunds }}</p>
     </div>
+    <MessageModal
+      v-if="showModal"
+      :isVisible="showModal"
+      :title="modalTitle"
+      :message="modalMessage"
+      @close="showModal = false"
+    />
   </div>
 </template>
 
 <script>
 import LoginPage from '../LoginPage.vue';
+import MessageModal from './components/MessageModal.vue'; // Import the MessageModal component
 import { getFirestore, collection, query, getDocs, deleteDoc, doc, updateDoc, getDoc } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 export default {
   name: 'StockTradingSelect',
   components: {
-    LoginPage
+    LoginPage,
+    MessageModal // Register the MessageModal component
   },
   data() {
     return {
       showLogin: false,
       userFunds: null,
+      showModal: false,
+      modalTitle: '',
+      modalMessage: '',
+      profile: null
     };
   },
   async created() {
+    await this.fetchUserProfile();
     await this.fetchUserFunds();
   },
   methods: {
     handleLoginSuccess(user) {
       this.showLogin = false;
       console.log('Logged in user:', user);
-      this.fetchUserFunds();  // Refresh user funds after login
+      this.fetchUserProfile();  // Fetch profile after login
+      this.fetchUserFunds();    // Refresh user funds after login
+    },
+    async fetchUserProfile() {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (user) {
+        const db = getFirestore();
+        const profileRef = doc(db, user.uid, 'Profile');
+        const profileSnap = await getDoc(profileRef);
+
+        if (profileSnap.exists()) {
+          this.profile = profileSnap.data();
+        }
+      }
     },
     async fetchUserFunds() {
       const auth = getAuth();
@@ -71,12 +105,14 @@ export default {
         const portfolioQuery = query(portfolioCollectionRef);
         const portfolioSnapshot = await getDocs(portfolioQuery);
 
-        let totalAllocation = 0;
+        let initialPortfolioAllocation = 0;
 
-        // Sum total allocation from all portfolio documents
+        // Find the "Initial Portfolio" document and get its total allocation
         portfolioSnapshot.forEach(docSnap => {
           const data = docSnap.data();
-          totalAllocation += data.totalAllocation || 0;
+          if (docSnap.id === 'Initial Portfolio') {
+            initialPortfolioAllocation = data.totalAllocation || 0;
+          }
         });
 
         // Delete all portfolio documents
@@ -89,17 +125,31 @@ export default {
 
         if (totalFundsSnap.exists()) {
           const totalFundsData = totalFundsSnap.data();
-          const updatedFunds = totalFundsData.totalFunds + totalAllocation;
+          const updatedFunds = totalFundsData.totalFunds + initialPortfolioAllocation;
           await updateDoc(totalFundsRef, { totalFunds: updatedFunds });
           this.userFunds = updatedFunds; // Update the displayed total funds
         }
 
-        alert('Portfolio deleted and funds restored successfully!');
+        this.modalTitle = 'Success';
+        this.modalMessage = 'Portfolio deleted and funds restored successfully!';
+        this.showModal = true;
       } else {
-        alert('You need to be logged in to delete a portfolio.');
+        this.modalTitle = 'Error';
+        this.modalMessage = 'You need to be logged in to delete a portfolio.';
+        this.showModal = true;
       }
     }
   },
+  beforeRouteEnter(to, from, next) {
+    const auth = getAuth();
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        next('/startpage');
+      } else {
+        next();
+      }
+    });
+  }
 };
 </script>
 
@@ -169,6 +219,12 @@ export default {
   font-size: 2em;
   color: #102454;
   margin-bottom: 0.5em;
+}
+
+.welcome-message {
+  font-size: 1.5em;
+  color: #102454;
+  margin-bottom: 1em;
 }
 
 .options {

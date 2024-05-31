@@ -7,7 +7,7 @@
         <i class="fas fa-calculator"></i>
       </button>
     </div>
-</header>
+  </header>
   <div class="investment-calculator">
     <div class="calculator-content">
       <div class="calculator-inputs">
@@ -35,7 +35,7 @@
             <img src="../../assets/Blue line.png" alt="BlueLine" class="blueline">
             <span class="investment-calculator-title">InvestmentCalculator</span>
           </div>
-          <span v-html="legendHtml" class="chart-legend"></span> <!-- This span will hold the legend -->
+          <span v-html="legendHtml" class="chart-legend"></span>
         </h2>
         <div class="calculator-chart">
           <canvas id="investmentChart" width="800" height="400"></canvas>
@@ -48,11 +48,10 @@
       </div>
     </div>
   </div>
-
 </template>
 
 <script>
-import Chart from 'chart.js';
+import { Chart } from 'chart.js/auto';
 
 export default {
   name: 'InvestmentCalculator',
@@ -62,8 +61,8 @@ export default {
       monthlyContribution: null,
       investmentPeriod: null,
       annualReturnRate: null,
-      futureValues: [], // Changed from futureValue to futureValues as an array
-      chart: null, // Store chart instance
+      futureValues: [],
+      chart: null,
       annualReturnRates: [
         { id: 'Rate 1', value: null },
         { id: 'Rate 2', value: null },
@@ -78,10 +77,9 @@ export default {
       const monthlyContribution = parseFloat(this.monthlyContribution);
       const years = parseInt(this.investmentPeriod);
 
-      const n = 12; // Compounded monthly
+      const n = 12;
       const t = years;
 
-      // Adjust the labels to display years only
       const labels = Array.from({ length: t + 1 }, (_, i) => {
         return i === 0 ? 'Start' : `${i}`;
       });
@@ -92,7 +90,7 @@ export default {
         const data = [currentValue];
         for (let i = 1; i <= t * n; i++) {
           currentValue = currentValue * (1 + r) + monthlyContribution;
-          if (i % 12 === 0) data.push(currentValue); // Push the value at the end of each year
+          if (i % 12 === 0) data.push(currentValue);
         }
         return {
           label: `Investment Growth at ${rate.value}%`,
@@ -105,7 +103,7 @@ export default {
 
       const ctx = document.getElementById('investmentChart').getContext('2d');
       if (this.chart) {
-        this.chart.destroy(); // Destroy existing chart instance if any
+        this.chart.destroy();
       }
       this.chart = new Chart(ctx, {
         type: 'line',
@@ -114,45 +112,47 @@ export default {
           datasets: datasets
         },
         options: {
-          tooltips: {
-            callbacks: {
-              label: function(tooltipItem, data) {
-                let label = data.datasets[tooltipItem.datasetIndex].label || '';
-                if (label) {
-                  label += ': £';
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  let label = context.dataset.label || '';
+                  if (label) {
+                    label += ': £';
+                  }
+                  label += context.parsed.y.toFixed(2);
+                  return label;
                 }
-                label += tooltipItem.yLabel.toFixed(2);
-                return label;
               }
+            },
+            legend: {
+              display: false
             }
           },
-          legend: {
-            display: false
-          },
           scales: {
-            xAxes: [{
+            x: {
               title: {
                 display: true,
                 text: 'Time (Years)'
               },
-              gridLines: {
+              grid: {
                 display: false
-              },
-            }],
-            yAxes: [{
-              gridLines: {
-                display: true
-              },
+              }
+            },
+            y: {
               title: {
                 display: true,
                 text: 'Value'
+              },
+              grid: {
+                display: true
               },
               ticks: {
                 callback: function(value) {
                   return '£' + value.toFixed(2);
                 }
               }
-            }]
+            }
           }
         }
       });
@@ -162,14 +162,13 @@ export default {
     },
 
     getRandomColor() {
-    // This is a simple method to generate random colors. You might want to customize this.
-    const letters = '0123456789ABCDEF';
-    let color = '#';
-    for (let i = 0; i < 6; i++) {
-      color += letters[Math.floor(Math.random() * 16)];
-    }
-    return color;
-  },
+      const letters = '0123456789ABCDEF';
+      let color = '#';
+      for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+      }
+      return color;
+    },
     generateLegend() {
       const legendHtml = this.chart.data.datasets.map((dataset) => {
         return `<span style="display: flex; align-items: center; margin-right: 10px;">
@@ -183,7 +182,7 @@ export default {
       if (window.history.length > 1) {
         this.$router.go(-1);
       } else {
-        this.$router.push('/');  // Navigate to the home page if no history is available
+        this.$router.push('/');
       }
     }
   }

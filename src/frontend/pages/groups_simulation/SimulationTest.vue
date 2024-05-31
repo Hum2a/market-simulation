@@ -1,646 +1,485 @@
 <template>
-    <div>
-      <header class="header">
-        <img src="../assets/LifeSmartLogo.png" alt="Logo" class="logo">
-      </header>
-  
-      <div class="sim-chart-container">
-        <asset-changes-chart />
-      </div>
-      <div class="sim-chart-container">
-        <canvas ref="assetGrowthChart" height="100"></canvas>
-        <button @click="updateValuesForNextQuarter" class="modern-button">Next Quarter</button>
-        <button @click="runFullSimulation" class="modern-button">Run Full Simulation</button>
-      </div>
-        <div class="simulation-table">
-        <h2>Simulation Data</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Group Name</th>
-              <th>Equity</th>
-              <th>Bonds</th>
-              <th>Real Estate</th>
-              <th>Commodities</th>
-              <th>Other</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(group, index) in groups" :key="index">
-              <td>{{ group.name }}</td>
-              <td>{{ group.equity }}</td>
-              <td>{{ group.bonds }}</td>
-              <td>{{ group.realestate }}</td>
-              <td>{{ group.commodities }}</td>
-              <td>{{ group.other }}</td>
-            </tr>
-          </tbody>
-        </table>
-  
-        <div class="pie-charts-row">
-          <div class="pie-chart-container" v-for="(group, index) in groups" :key="'pie-chart-container-' + index">
-            <h3>{{ group.name }}</h3> <!-- This is the label displaying the group name -->
-            <canvas :id="'pieChart-' + index"></canvas>
-          </div>
-        </div>
-        
-      </div>
-      <button @click="finishSimulation" class="modern-button">Finish Simulation</button>
+  <div>
+    <header class="header">
+      <img src="../../assets/LifeSmartLogo.png" alt="Logo" class="logo">
+    </header>
+
+    <div class="sim-chart-container">
+      <asset-changes-chart />
     </div>
-  </template>
-  
-  <script>
-  
-  import { getFirestore, collection, getDocs, doc, getDoc, setDoc } from 'firebase/firestore';
-  import { getAuth, onAuthStateChanged } from 'firebase/auth';
-  import AssetChangesChart from '../components/charts/AssetChangesChart.vue';
-  import Chart from 'chart.js';
-  import { useRouter } from 'vue-router';
-  
-  export default {
-    name: 'SimulationPage',
-    components: {
 
-      AssetChangesChart,
-    },
-    setup() {
-          const router = useRouter();
-  
-          return {
-              router,
-          };
-      },
-    data() {
-        return {
-          userUID: null,
-          latestSimulationIndex: null,
-          groups: [],
-          simulationMonths: 0,
-          simulationYears: 1,
-          assetChanges: [],
-          detailedGrowth: {},
-          currentQuarterIndex: 0,
-          totalPortfolioValues: {},
-          colorPalette: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FAA74B', '#9D56F7', '#5A6FFA', '#56D9FA', '#FAB256'],
-          assetGrowthChartInstance: null,
-      };
-    },
-    async created() {
-        const auth = getAuth();
-        onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            this.userUID = user.uid;
-            this.latestSimulationIndex = await this.fetchLatestSimulationIndex();
-            if (this.latestSimulationIndex) {
-            await this.initializeData();
-            this.$nextTick(() => {
-                this.initializeAssetGrowthChart();
-                if (this.groups.length > 0) {
-                this.renderAllPieCharts();
-                }
-            });
-            }
-        } else {
-            console.log("No user is signed in.");
+    <div class="sim-chart-container">
+      <canvas id="portfolioChart" ref="portfolioChart"></canvas>
+      <button @click="queueUpdate" class="modern-button" :disabled="isUpdating">Next Quarter</button>
+      <button @click="runFullSimulation" class="modern-button">Run Full Simulation</button>
+      <button @click="pauseSimulation" class="modern-button" v-if="isSimulating">Pause Simulation</button>
+      <button @click="resumeSimulation" class="modern-button" v-else>Resume Simulation</button>
+      <input type="number" v-model="simulationSpeed" min="100" step="100" title="Simulation Speed (ms)">
+    </div>
+
+    <div class="simulation-table">
+      <h2>Simulation Data</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Group Name</th>
+            <th>Asset</th>
+            <th>Initial Value</th>
+            <th v-for="n in totalQuarters" :key="n">{{ `Q${n}` }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template v-for="group in groups" :key="group.id">
+            <tr>
+              <td :rowspan="6">{{ group.name }}</td>
+              <td>Equity</td>
+              <td>{{ group.initialValues.equity }}</td>
+              <td v-for="(value, index) in group.quarterlyValues.equity.slice(1)" :key="index">{{ value !== null ? value : '' }}</td>
+            </tr>
+            <tr v-for="asset in ['bonds', 'realestate', 'commodities', 'other']" :key="group.id + '-' + asset">
+              <td>{{ asset.charAt(0).toUpperCase() + asset.slice(1) }}</td>
+              <td>{{ group.initialValues[asset] }}</td>
+              <td v-for="(value, index) in group.quarterlyValues[asset].slice(1)" :key="index">{{ value !== null ? value : '' }}</td>
+            </tr>
+            <tr>
+              <td><strong>Total Portfolio</strong></td>
+              <td>{{ group.totalPortfolioValues.initial }}</td>
+              <td v-for="(value, index) in group.totalPortfolioValues.quarters.slice(1)" :key="index">{{ value !== null ? value : '' }}</td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+
+    <button @click="finishSimulation" class="modern-button">Finish Simulation</button>
+  </div>
+</template>
+
+<script>
+import { getFirestore, collection, getDocs, doc, getDoc, setDoc } from 'firebase/firestore';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import AssetChangesChart from '../../components/charts/AssetChangesChart.vue';
+import { useRouter } from 'vue-router';
+import Chart from 'chart.js/auto';
+import { shallowRef, nextTick } from 'vue';
+
+export default {
+  name: 'SimulationPage',
+  components: {
+    AssetChangesChart,
+  },
+  setup() {
+    const router = useRouter();
+    const portfolioChart = shallowRef(null);
+    return { router, portfolioChart };
+  },
+  data() {
+    return {
+      userUID: null,
+      latestSimulationIndex: null,
+      groups: [],
+      simulationMonths: 0,
+      simulationYears: 1,
+      assetChanges: [],
+      detailedGrowth: {},
+      currentQuarterIndex: 0,
+      totalPortfolioValues: {},
+      simulationSpeed: 750,
+      isSimulating: false,
+      simulationInterval: null,
+      isUpdating: false, // Flag to prevent multiple clicks
+      updateQueue: [], // Queue to handle multiple update requests
+    };
+  },
+  computed: {
+    totalQuarters() {
+      return this.simulationYears * 4;
+    }
+  },
+  async created() {
+    const auth = getAuth();
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        this.userUID = user.uid;
+        this.latestSimulationIndex = await this.fetchLatestSimulationIndex();
+        if (this.latestSimulationIndex) {
+          await this.initializeData();
+          this.initializeChart();
         }
-        });
-    },
-    methods: {
-      async fetchLatestSimulationIndex() {
-        const db = getFirestore();
-        console.log(`UserUID: ${this.userUID}`);
-        const simulationsRef = collection(db, this.userUID);
-        const querySnapshot = await getDocs(simulationsRef);
-        if (querySnapshot.empty) {
-          console.log("No simulations found. Initializing first simulation.");
-          return 1; // Start from 1 if no documents are present
-        } else {
-          return querySnapshot.size; // Return the size or last index directly
-        }
-      },
-  
-      async initializeData() {
-        await this.fetchGroups();
-        await this.fetchAssetChanges();
-        this.$nextTick(() => {
-          if (this.groups.length > 0) {
-            this.renderAllPieCharts();
-          }
-        });
-      },
-        async fetchGroups() {
-          if (!this.userUID || !this.latestSimulationIndex) {
-            console.error("User UID not set or simulation index not found.");
-            return;
-          }
-          const db = getFirestore();
-          console.log(`Simulation ${this.latestSimulationIndex}`);
-          const querySnapshot = await getDocs(collection(db, this.userUID, `Simulation ${this.latestSimulationIndex}`, "Groups"));
-          this.groups = querySnapshot.docs.map(doc => {
-            // Map document data to include future values initialized to current values
-            const data = doc.data();
-            return {
-              id: doc.id,
-              ...data,
-              futureEquity: data.equity,
-              futureBonds: data.bonds,
-              futureRealEstate: data.realestate,
-              futureCommodities: data.commodities,
-              futureOther: data.other,
-            };
-          });
-  
-          this.groups.forEach(group => {
-            const groupName = group.name;
-            const initialTotal = ['equity', 'bonds', 'realestate', 'commodities', 'other']
-              .reduce((total, key) => total + parseFloat(group[key] || 0), 0);
-  
-            this.totalPortfolioValues[groupName] = [initialTotal]; // Store initial total as the first entry
-          });
-        },
-        async fetchAssetChanges() {
-          if (!this.userUID || !this.latestSimulationIndex) {
-          console.error("User UID not set or simulation index not found.");
-          return;
-        }
-          const db = getFirestore();
-          const docRef = doc(db, this.userUID, `Simulation ${this.latestSimulationIndex}`, 'Simulation Controls', 'Controls');
-          const docSnap = await getDoc(docRef);
-          
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            this.assetChanges = data.assetChanges;
-            this.simulationYears = data.years || 1; // Assuming your document includes a 'years' field
-            // Initialize detailedGrowth based on the fetched years
-            this.initializeDetailedGrowth();
-          } else {
-            console.log("Fetch Asset Change: No such document!");
-          }
-        },
-        initializeDetailedGrowth() {
-          // Prepare detailedGrowth with initial values for each group and asset type
-          this.groups.forEach(group => {
-            if (!this.detailedGrowth[group.name]) {
-              this.detailedGrowth[group.name] = {};
-            }
-            ['Equity', 'Bonds', 'RealEstate', 'Commodities', 'Other'].forEach(asset => {
-              if (!this.detailedGrowth[group.name][asset]) {
-                this.detailedGrowth[group.name][asset] = [parseFloat(group[asset.toLowerCase()]) || 0]; // Initial value
-              }
-            });
-          });
-        },
-        startSimulation() {
-            this.currentQuarterIndex = 0;
-        },
-        runFullSimulation() {
-            const totalQuarters = this.simulationYears * 4;
-            let quarterCount = 0;
-
-            const runQuarter = () => {
-            if (quarterCount < totalQuarters && this.currentQuarterIndex < totalQuarters) {
-                this.updateValuesForNextQuarter();
-                quarterCount++;
-                setTimeout(runQuarter, 2000); // 500 milliseconds delay between quarters
-            }
-            };
-
-            runQuarter();
-        },
-  
-        applyAssetChanges() {
-          const quarters = ['Jan-Mar', 'Apr-Jun', 'Jul-Sep', 'Oct-Dec'];
-  
-          for (let year = 0; year < this.simulationYears; year++) {
-            quarters.forEach(quarter => {
-              this.groups.forEach(group => {
-                ['Equity', 'Bonds', 'RealEstate', 'Commodities', 'Other'].forEach(asset => {
-                  const lastValueIndex = this.detailedGrowth[group.name][asset].length - 1;
-                  let lastValue = this.detailedGrowth[group.name][asset][lastValueIndex];
-                  const growthRate = this.assetChanges[year][quarter][asset] / 100;
-                  const newValue = lastValue * (1 + growthRate);
-                  this.detailedGrowth[group.name][asset].push(newValue);
-                });
-              });
-            });
-          }
-        },
-  
-        updateValuesForNextQuarter() {
-            const totalQuarters = this.simulationYears * 4;
-            if (this.currentQuarterIndex >= totalQuarters) {
-                console.warn("No more quarters left to simulate.");
-                return;
-            }
-
-            const year = Math.floor(this.currentQuarterIndex / 4);
-            const quarterIndex = this.currentQuarterIndex % 4;
-            const quarters = ['Jan-Mar', 'Apr-Jun', 'Jul-Sep', 'Oct-Dec'];
-            const currentQuarter = quarters[quarterIndex];
-            const assetChangesForQuarter = this.assetChanges[year] ? this.assetChanges[year][currentQuarter] : null;
-
-            if (!assetChangesForQuarter) {
-                console.warn(`No data available for year ${year + 1}, quarter ${currentQuarter}`);
-                return;
-            }
-
-            this.groups.forEach((group, groupIndex) => {
-                let totalValue = 0;
-
-                Object.keys(assetChangesForQuarter).forEach(assetType => {
-                    const growthRate = assetChangesForQuarter[assetType] / 100;
-                    const assetKey = assetType.toLowerCase();
-                    const currentValue = group[assetKey];
-                    const newValue = currentValue * (1 + growthRate);
-                    group[assetKey] = newValue;
-
-                    totalValue += newValue;  // Accumulate the total value of all assets
-
-                    // Update the detailed growth projections
-                    if (!this.detailedGrowth[group.name][assetType]) {
-                        this.detailedGrowth[group.name][assetType] = [];
-                    }
-                    this.detailedGrowth[group.name][assetType].push(newValue);
-                });
-
-                // Update the total portfolio value for the current quarter
-                if (!this.totalPortfolioValues[group.name]) {
-                    this.totalPortfolioValues[group.name] = [];
-                }
-                this.totalPortfolioValues[group.name].push(totalValue);
-
-                // Update the chart dataset for total values
-                if (this.assetGrowthChartInstance.data.datasets[groupIndex].data.length > this.currentQuarterIndex + 1) {
-                    // Update existing data point if it exists
-                    this.assetGrowthChartInstance.data.datasets[groupIndex].data[this.currentQuarterIndex + 1] = totalValue;
-                } else {
-                    // Add a new data point if it does not exist
-                    this.assetGrowthChartInstance.data.datasets[groupIndex].data.push(totalValue);
-                }
-            });
-
-            console.log("Updated dataset:", this.assetGrowthChartInstance.data.datasets);
-            this.currentQuarterIndex++;
-            this.assetGrowthChartInstance.options.animation = {
-                duration: 2000,  // Adjust the duration as needed
-                easing: 'linear'
-            };
-            this.assetGrowthChartInstance.update();
-        },
-
-
-        initializeAssetGrowthChart() {
-            const ctx = this.$refs.assetGrowthChart.getContext('2d');
-            const totalQuarters = this.simulationYears * 4;  // Calculate total number of quarters
-            const datasets = this.groups.map(group => ({
-                label: group.name,
-                data: new Array(totalQuarters + 1).fill(null),  // +1 for the initial value
-                fill: false,
-                borderColor: this.colorPalette[this.groups.indexOf(group) % this.colorPalette.length],
-            }));
-
-            const smoothLineDrawPlugin = {
-                id: 'smoothLineDraw',
-                beforeDatasetsDraw: function(chart, easing) {
-                    const ctx = chart.ctx;
-                    chart.data.datasets.forEach((dataset, i) => {
-                        const meta = chart.getDatasetMeta(i);
-                        if (!meta.hidden) {
-                            meta.data.forEach((point, index) => {
-                                if (index === 0) return; // skip the first point
-                                const previousPoint = meta.data[index - 1];
-                                const currentLineProgress = easing * (point._model.x - previousPoint._model.x);
-
-                                // Draw line from previous point to current point based on easing
-                                ctx.beginPath();
-                                ctx.moveTo(previousPoint._model.x, previousPoint._model.y);
-                                ctx.lineTo(previousPoint._model.x + currentLineProgress, point._model.y);
-                                ctx.strokeStyle = dataset.borderColor;
-                                ctx.lineWidth = dataset.borderWidth;
-                                ctx.stroke();
-                            });
-                        }
-                    });
-                }
-            };
-
-
-            // Populate initial data
-            this.groups.forEach((group, index) => {
-                const initialTotal = ['equity', 'bonds', 'realestate', 'commodities', 'other']
-                .reduce((total, key) => total + parseFloat(group[key] || 0), 0);
-                datasets[index].data[0] = initialTotal;  // Set initial value correctly
-            });
-
-            this.assetGrowthChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                labels: ['Initial'].concat(Array.from({ length: totalQuarters }, (_, i) => `Q${i + 1}`)),
-                datasets: datasets
-                },
-                options: {
-                scales: {
-                    y: { beginAtZero: true },
-                },
-                responsive: true,
-                maintainAspectRatio: true,
-                animation: {
-                    duration: 500,  // Duration in milliseconds for the entire dataset to animate
-                    easing: 'linear'  // Ensure the animation is smooth
-                },
-                plugins: [smoothLineDrawPlugin]
-                },
-            });
-
-            this.assetGrowthChartInstance.update();
-            },
-
-
-        updateAssetGrowthChart() {
-            this.assetGrowthChartInstance.data = this.generateTotalPortfolioChartData();
-            this.assetGrowthChartInstance.update();
-        },
-        generateTotalPortfolioChartData() {
-            const labels = ['Initial'].concat(Array.from({ length: this.simulationYears * 4 }, (_, i) => `Q${i + 1}`));
-            let colorIndex = 0;
-
-            const datasets = Object.keys(this.totalPortfolioValues).map(groupName => {
-                const values = this.totalPortfolioValues[groupName];
-                const adjustedValues = [values[0]].concat(values.slice(1, this.currentQuarterIndex + 1));
-
-                while (adjustedValues.length < this.simulationYears * 4 + 1) {
-                adjustedValues.push(null);
-                }
-
-                return {
-                label: groupName,
-                data: adjustedValues,
-                fill: false,
-                borderColor: this.colorPalette[colorIndex++ % this.colorPalette.length],
-                tension: 0.1
-                };
-            });
-
-            return { labels, datasets };
-        },
-
-        generateAssetChangesChartData() {
-          const assetTypes = ['Equity', 'Bonds', 'RealEstate', 'Commodities', 'Other']; // Define asset types directly
-          const labels = ['Initial Value'].concat(
-            Array.from({ length: this.simulationYears * 4 }, (_, i) => `Q${i + 1}`)
-          );
-          const lineColors = ['#268F8F', '#5D81FF', '#5DD0FD', '#69FDB6', '#82DF96'];
-  
-          const datasets = assetTypes.map((type, index) => {
-            const data = [0]; // Initial value for the chart (no change at the start)
-  
-            for (let year = 0; year < this.simulationYears; year++) {
-              for (const quarter of ['Jan-Mar', 'Apr-Jun', 'Jul-Sep', 'Oct-Dec']) {
-                const change = this.assetChanges[year]?.[quarter]?.[type] || 0;
-                data.push(change);
-              }
-            }
-  
-            return {
-              label: type,
-              data,
-              fill: false,
-              borderColor: lineColors[index],
-              tension: 0.5
-            };
-          });
-  
-          return { labels, datasets };
-        },
-  
-        // generateTotalPortfolioChartData() {
-        //   const labels = ['Initial'].concat(Array.from({ length: this.simulationYears * 4 }, (_, i) => `Q${i + 1}`));
-        //   let colorIndex = 0; // Start with the first color in the palette
-  
-        //   const datasets = Object.keys(this.totalPortfolioValues).map(groupName => {
-        //     // Ensure the values array only extends up to the current quarter index + 1 for the initial value
-        //     const values = this.totalPortfolioValues[groupName];
-        //     const adjustedValues = [values[0]].concat(values.slice(1, this.currentQuarterIndex + 1));
-  
-        //     // Fill the rest of the array with nulls up to the total number of quarters + initial value
-        //     while (adjustedValues.length < this.simulationYears * 4 + 1) {
-        //       adjustedValues.push(null);
-        //     }
-  
-        //     const dataset = {
-        //       label: groupName,
-        //       data: adjustedValues,
-        //       fill: false,
-        //       borderColor: this.colorPalette[colorIndex % this.colorPalette.length], // Use the color from the palette
-        //       tension: 0.1 // Adds a slight curve to lines
-        //     };
-  
-        //     colorIndex++; // Move to the next color in the palette for the next group
-        //     return dataset;
-        //   });
-  
-        //   return { labels, datasets };
-        // },
-  
-        getRandomColor() {
-          // This is a simple method to generate random colors. You might want to customize this.
-          const letters = '0123456789ABCDEF';
-          let color = '#';
-          for (let i = 0; i < 6; i++) {
-            color += letters[Math.floor(Math.random() * 16)];
-          }
-          return color;
-        },
-        renderAllPieCharts() {
-          this.groups.forEach((group, index) => {
-            this.$nextTick(() => {
-              this.renderPieChart(group, index);
-            });
-          });
-        },
-  
-        renderPieChart(group, index) {
-        const canvasId = `pieChart-${index}`;
-        this.$nextTick(() => {
-          const canvas = document.getElementById(canvasId);
-          if (!canvas) {
-            console.error(`Canvas element for group ${index} not found.`);
-            return;
-          }
-          const ctx = canvas.getContext('2d');
-          const chartData = this.prepareChartData(group);
-          this.initializeChart(ctx, chartData);
-        });
-      },
-  
-      prepareChartData(group) {
-        // Prepares and returns chart data based on the group
-        return {
-          labels: ['Equity', 'Bonds', 'Real Estate', 'Commodities', 'Other'],
-          datasets: [{
-            data: [group.equity, group.bonds, group.realestate, group.other],
-            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#FAA74B', '#9966FF'],
-            label: 'Asset Distribution',
-          }]
-        };
-      },
-  
-      initializeChart(ctx, chartData) {
-        // Initializes a chart on the provided context with the given data
-        new Chart(ctx, {
-          type: 'pie',
-          data: chartData,
-          options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            aspectRatio: 1,
-            legend: {
-              display: true,
-              position: 'right',
-              labels: {
-                fontColor: '#FFFFFF', // Color of text
-                fontSize: 14, // Size of the text
-                fontFamily: 'Helvetica', // Font family of the text
-                boxWidth: 20, // Width of colored box
-                usePointStyle: true, // Use point style instead of box
-              },
-            },
-            tooltips: {
-              enabled: true,
-              mode: 'nearest',
-              intersect: false,
-              backgroundColor: 'rgba(0,0,0,0.8)', // Tooltip background color
-              titleFontFamily: 'Helvetica', // Font family for tooltip title
-              titleFontSize: 20, // Font size for tooltip title
-              titleFontStyle: 'bold', // Font style for tooltip title
-              bodyFontFamily: 'Arial', // Font family for tooltip body
-              bodyFontSize: 15, // Font size for tooltip body
-              bodyFontStyle: 'normal', // Font style for tooltip body
-              cornerRadius: 30, // Corner radius of tooltip
-              xPadding: 10, // Padding inside tooltip (x-axis)
-              yPadding: 10, // Padding inside tooltip (y-axis)
-              caretSize: 5, // Size of the tooltip arrow
-              displayColors: true, // Display color boxes in the tooltip
-            },
-            animation: {
-              animateRotate: true,
-              animateScale: true,
-            },
-            cutoutPercentage: 10,
-            rotation: -0.5 * Math.PI,
-            circumference: 2 * Math.PI,
-          },
-        });
-      },
-  
-      finalValues() {
-        // Assuming detailedGrowth has been fully populated during the simulation
-        const finalValues = Object.keys(this.detailedGrowth).map(groupName => {
-          // Initialize an object to hold the final values for the group
-          const groupFinalValues = {
-            name: groupName,
-            equity: 0,
-            bonds: 0,
-            realestate: 0,
-            commodities: 0,
-            other: 0,
-          };
-  
-          // Extract the final values from the detailedGrowth for each asset type
-          const assetTypes = Object.keys(this.detailedGrowth[groupName]);
-          assetTypes.forEach(assetType => {
-            const values = this.detailedGrowth[groupName][assetType];
-            const finalValue = values[values.length - 1]; // The last value should be the final value after all simulations
-            // Map the detailedGrowth asset types to the groupFinalValues fields
-            switch (assetType) {
-              case 'Equity':
-                groupFinalValues.equity = finalValue;
-                break;
-              case 'Bonds':
-                groupFinalValues.bonds = finalValue;
-                break;
-              case 'RealEstate':
-                groupFinalValues.realestate = finalValue;
-                break;
-              case 'Commodities':
-                groupFinalValues.commodities = finalValue;
-                break;
-              case 'Other':
-                groupFinalValues.other = finalValue;
-                break;
-            }
-          });
-  
-          return groupFinalValues;
-        });
-  
-        // Now, finalValues is ready with the actual final values from the simulation
-        // Reference to the Firestore service
-        const db = getFirestore();
-  
-        // Reference to the "Results" collection and "Final" document
-        const docRef = doc(db, this.userUID, `Simulation ${this.latestSimulationIndex}`, "Results", "Final");
-  
-        // Set the finalValues in the "Final" document
-        setDoc(docRef, { finalValues })
-          .then(() => {
-            console.log("Document successfully written with final simulation results!");
-          })
-          .catch((error) => {
-            console.error("Error writing document: ", error);
-          });
-      },
-  
-      quarterValues() {
-        const quarterResults = [];
-  
-        // Iterate through each group's growth details
-        Object.keys(this.detailedGrowth).forEach(groupName => {
-          const groupData = this.detailedGrowth[groupName];
-          Object.keys(groupData).forEach(assetType => {
-            const quarterlyValues = groupData[assetType];
-            // Push each quarter's data into the quarterResults array
-            quarterlyValues.forEach((value, quarterIndex) => {
-              // Adjust index for labeling to account for the "Initial Value"
-              let label = quarterIndex === 0 ? "Initial Value" : `Q${quarterIndex}`;
-              
-              if (!quarterResults[quarterIndex]) {
-                quarterResults[quarterIndex] = { quarter: label, groups: {} };
-              }
-              if (!quarterResults[quarterIndex].groups[groupName]) {
-                quarterResults[quarterIndex].groups[groupName] = {};
-              }
-              // Store each asset type's value under the respective group and quarter
-              quarterResults[quarterIndex].groups[groupName][assetType] = value;
-            });
-          });
-        });
-  
-        // Reference to the Firestore service
-        const db = getFirestore();
-  
-        // Reference to the "Results" collection and "Quarters" document
-        const docRef = doc(db, this.userUID, `Simulation ${this.latestSimulationIndex}`, "Results", "Quarters");
-  
-        // Set the quarterResults in the "Quarters" document
-        setDoc(docRef, { quarterResults })
-          .then(() => {
-            console.log("Quarterly results successfully written to Firestore!");
-            // Optional: Navigate to results screen or show a success message
-          })
-          .catch((error) => {
-            console.error("Error writing quarterly results to Firestore: ", error);
-          });
-      },
-      finishSimulation() {
-        this.finalValues();
-        this.quarterValues();
-        this.router.push({ name: 'ResultsScreen' });
+      } else {
+        console.log("No user is signed in.");
+      }
+    });
+  },
+  beforeUnmount() {
+    if (this.portfolioChart.value) {
+      this.portfolioChart.value.destroy();
+    }
+  },
+  methods: {
+    async fetchLatestSimulationIndex() {
+      const db = getFirestore();
+      const simulationsRef = collection(db, this.userUID, 'Asset Market Simulations', 'Simulations');
+      const querySnapshot = await getDocs(simulationsRef);
+      console.log("fetchLatestSimulationIndex: querySnapshot.size", querySnapshot.size);
+      if (querySnapshot.empty) {
+        return 1; // Start from 1 if no documents are present
+      } else {
+        return querySnapshot.size; // Return the size or last index directly
       }
     },
-  };
-  </script>
-  
-  <style>
-  @import url('../../styles/SimulationStyles.css');
-  </style>
+    async initializeData() {
+      await this.fetchGroups();
+      await this.fetchAssetChanges();
+    },
+    async fetchGroups() {
+      if (!this.userUID || !this.latestSimulationIndex) {
+        console.error("User UID not set or simulation index not found.");
+        return;
+      }
+      const db = getFirestore();
+      const querySnapshot = await getDocs(collection(db, this.userUID, 'Asset Market Simulations', 'Simulations', `Simulation ${this.latestSimulationIndex}`, "Groups"));
+      this.groups = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        const initialValues = {
+          equity: parseFloat(data.equity) || 0,
+          bonds: parseFloat(data.bonds) || 0,
+          realestate: parseFloat(data.realestate) || 0,
+          commodities: parseFloat(data.commodities) || 0,
+          other: parseFloat(data.other) || 0
+        };
+        const initialTotal = Object.values(initialValues).reduce((acc, val) => acc + val, 0);
+        return {
+          id: doc.id,
+          name: data.name,
+          initialValues: initialValues,
+          quarterlyValues: {
+            equity: [initialValues.equity],
+            bonds: [initialValues.bonds],
+            realestate: [initialValues.realestate],
+            commodities: [initialValues.commodities],
+            other: [initialValues.other]
+          },
+          totalPortfolioValues: {
+            initial: initialTotal,
+            quarters: [initialTotal]
+          }
+        };
+      });
+      console.log("fetchGroups: groups", this.groups);
+    },
+    async fetchAssetChanges() {
+      if (!this.userUID || !this.latestSimulationIndex) {
+        console.error("User UID not set or simulation index not found.");
+        return;
+      }
+      const db = getFirestore();
+      const docRef = doc(db, this.userUID, 'Asset Market Simulations', 'Simulations', `Simulation ${this.latestSimulationIndex}`, 'Simulation Controls', 'Controls');
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        this.assetChanges = data.assetChanges;
+        this.simulationYears = data.years || 1; // Assuming your document includes a 'years' field
+        console.log("fetchAssetChanges: assetChanges", this.assetChanges);
+      } else {
+        console.log("Fetch Asset Change: No such document!");
+      }
+    },
+    async calculateNextQuarter() {
+      const totalQuarters = this.simulationYears * 4;
+      console.log("calculateNextQuarter: totalQuarters", totalQuarters);
+
+      if (this.currentQuarterIndex >= totalQuarters) {
+        console.warn("No more quarters left to simulate.");
+        return;
+      }
+
+      const quarterIndex = this.currentQuarterIndex;
+      const year = Math.floor(quarterIndex / 4);
+      const quarter = quarterIndex % 4;
+      const quarters = ['Jan-Mar', 'Apr-Jun', 'Jul-Sep', 'Oct-Dec'];
+      const currentQuarter = quarters[quarter];
+      const assetChangesForQuarter = this.assetChanges[year] ? this.assetChanges[year][currentQuarter] : null;
+      console.log(`calculateNextQuarter: year ${year}, quarter ${currentQuarter}`, assetChangesForQuarter);
+
+      if (!assetChangesForQuarter) {
+        console.warn(`No data available for year ${year + 1}, quarter ${currentQuarter}`);
+        return;
+      }
+
+      this.groups.forEach(group => {
+        let totalValue = 0;
+
+        Object.keys(assetChangesForQuarter).forEach(assetType => {
+          const growthRate = assetChangesForQuarter[assetType] / 100;
+          const assetKey = assetType.toLowerCase();
+          const currentValue = group.quarterlyValues[assetKey][quarterIndex];
+          const newValue = currentValue * (1 + growthRate);
+          group.quarterlyValues[assetKey].push(newValue);
+
+          totalValue += newValue;
+        });
+
+        group.totalPortfolioValues.quarters.push(totalValue);
+      });
+
+      this.currentQuarterIndex++;
+    },
+    runFullSimulation() {
+      if (this.isSimulating) {
+        return; // Prevent multiple simultaneous simulations
+      }
+      this.isSimulating = true;
+      const totalQuarters = this.simulationYears * 4;
+      let quarterCount = this.currentQuarterIndex;
+
+      const runQuarter = () => {
+        if (quarterCount < totalQuarters && this.currentQuarterIndex < totalQuarters) {
+          this.queueUpdate();
+          quarterCount++;
+          this.simulationInterval = setTimeout(runQuarter, this.simulationSpeed);
+        } else {
+          this.isSimulating = false; // Stop simulation
+        }
+      };
+
+      runQuarter();
+    },
+    pauseSimulation() {
+      clearTimeout(this.simulationInterval);
+      this.isSimulating = false;
+    },
+    resumeSimulation() {
+      if (!this.isSimulating) {
+        this.runFullSimulation();
+      }
+    },
+    async updateValuesForNextQuarter() {
+      console.log("updateValuesForNextQuarter: start");
+
+      if (this.isUpdating) {
+        console.warn("updateValuesForNextQuarter: update already in progress");
+        return;
+      }
+
+      this.isUpdating = true; // Set flag to prevent multiple clicks
+
+      await this.calculateNextQuarter();
+      await this.updateChart();
+
+      this.isUpdating = false; // Reset flag after update is complete
+      console.log("updateValuesForNextQuarter: end");
+    },
+    finalValues() {
+      const finalValues = this.groups.map(group => {
+        return {
+          name: group.name,
+          equity: group.quarterlyValues.equity[group.quarterlyValues.equity.length - 1],
+          bonds: group.quarterlyValues.bonds[group.quarterlyValues.bonds.length - 1],
+          realestate: group.quarterlyValues.realestate[group.quarterlyValues.realestate.length - 1],
+          commodities: group.quarterlyValues.commodities[group.quarterlyValues.commodities.length - 1],
+          other: group.quarterlyValues.other[group.quarterlyValues.other.length - 1],
+        };
+      });
+
+      const db = getFirestore();
+      const docRef = doc(db, this.userUID, 'Asset Market Simulations', 'Simulations', `Simulation ${this.latestSimulationIndex}`, "Results", "Final");
+      setDoc(docRef, { finalValues })
+        .then(() => {
+          console.log("finalValues: Document successfully written with final simulation results!");
+        })
+        .catch((error) => {
+          console.error("finalValues: Error writing document: ", error);
+        });
+    },
+    quarterValues() {
+      const quarterResults = [];
+      this.groups.forEach(group => {
+        const groupData = {
+          name: group.name,
+          equity: group.quarterlyValues.equity,
+          bonds: group.quarterlyValues.bonds,
+          realestate: group.quarterlyValues.realestate,
+          commodities: group.quarterlyValues.commodities,
+          other: group.quarterlyValues.other,
+        };
+        quarterResults.push(groupData);
+      });
+
+      const db = getFirestore();
+      const docRef = doc(db, this.userUID, 'Asset Market Simulations', 'Simulations', `Simulation ${this.latestSimulationIndex}`, "Results", "Quarters");
+      setDoc(docRef, { quarterResults })
+        .then(() => {
+          console.log("quarterValues: Quarterly results successfully written to Firestore!");
+        })
+        .catch((error) => {
+          console.error("quarterValues: Error writing quarterly results to Firestore: ", error);
+        });
+    },
+    finishSimulation() {
+      this.finalValues();
+      this.quarterValues();
+      this.router.push({ name: 'ResultsScreen' });
+    },
+    async initializeChart() {
+      console.log("initializeChart: start");
+
+      if (this.portfolioChart.value) {
+        this.portfolioChart.value.destroy(); // Ensure old chart is destroyed before creating a new one
+        console.log("initializeChart: old chart destroyed");
+      }
+
+      // Wait for the next tick to ensure the canvas element is rendered
+      await nextTick();
+
+      const canvasElement = this.$refs.portfolioChart;
+      if (!canvasElement) {
+        console.error("initializeChart: Canvas element is not found");
+        return;
+      }
+
+      const ctx = canvasElement.getContext('2d');
+      if (!ctx) {
+        console.error("initializeChart: Unable to get canvas context");
+        return;
+      }
+
+      const labels = ['Initial Value'];
+      for (let i = 1; i <= this.simulationYears * 4; i++) {
+        labels.push(`Q${i}`);
+      }
+      console.log("initializeChart: labels", labels);
+
+      const datasets = this.groups.map(group => ({
+        label: group.name,
+        data: [...group.totalPortfolioValues.quarters], // Clone the data to avoid reactivity issues
+        borderColor: this.getRandomColor(),
+        fill: false,
+      }));
+
+      this.portfolioChart.value = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: datasets,
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                font: {
+                  size: 18,
+                  weight: 'bold',
+                },
+                color: '#333',
+              },
+            },
+            title: {
+              display: true,
+              text: 'Total Portfolio Value Over Time',
+            },
+          },
+          scales: {
+            x: {
+              grid: {
+                display: false,
+              },
+            },
+            y: {
+              beginAtZero: true,
+            },
+          },
+          maintainAspectRatio: true,
+          animation: {
+            duration: 500,
+            easing: 'linear',
+          },
+        },
+      });
+
+      console.log("initializeChart: chart initialized", this.portfolioChart.value);
+    },
+    async updateChart() {
+      console.log("updateChart: start");
+
+      await nextTick(); // Ensure the canvas is properly rendered
+
+      const canvasElement = this.$refs.portfolioChart;
+      if (!canvasElement) {
+        console.error("updateChart: Canvas element is not found");
+        return;
+      }
+
+      const ctx = canvasElement.getContext('2d');
+      if (!ctx) {
+        console.error("updateChart: Unable to get canvas context");
+        return;
+      }
+
+      const labels = ['Initial Value'];
+      for (let i = 1; i <= this.simulationYears * 4; i++) {
+        labels.push(`Q${i}`);
+      }
+      console.log("updateChart: labels", labels);
+
+      // Clone the data to avoid reactivity issues
+      const datasets = this.groups.map(group => ({
+        label: group.name,
+        data: [...group.totalPortfolioValues.quarters],
+        borderColor: this.getRandomColor(),
+        fill: false,
+      }));
+
+      if (this.portfolioChart.value) {
+        this.portfolioChart.value.data.labels = labels;
+        this.portfolioChart.value.data.datasets = datasets;
+        this.portfolioChart.value.update();
+      }
+
+      console.log("updateChart: chart updated", this.portfolioChart.value);
+    },
+    getRandomColor() {
+      const letters = '0123456789ABCDEF';
+      let color = '#';
+      for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+      }
+      console.log("getRandomColor: generated color", color);
+      return color;
+    },
+    async processUpdateQueue() {
+      if (this.isUpdating) return; // Prevent multiple simultaneous updates
+
+      this.isUpdating = true;
+
+      const processNextUpdate = () => {
+        if (this.updateQueue.length === 0) {
+          this.isUpdating = false;
+          return;
+        }
+
+        const nextUpdate = this.updateQueue.shift();
+        nextUpdate().then(() => {
+          setTimeout(processNextUpdate, 0); // Use setTimeout to prevent call stack overflow
+        });
+      };
+
+      processNextUpdate();
+    },
+    queueUpdate() {
+      this.updateQueue.push(async () => {
+        await this.calculateNextQuarter();
+        await this.updateChart();
+      });
+
+      this.processUpdateQueue();
+    },
+  },
+};
+</script>
+
+<style>
+@import url('../../styles/SimulationStyles.css');
+</style>

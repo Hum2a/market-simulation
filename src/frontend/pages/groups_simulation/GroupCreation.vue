@@ -52,27 +52,27 @@
             <div class="inputs">
               <div class="input-row">
                 <label for="equity">Equity:</label>
-                <input type="number" v-model="group.equity" id="equity" class="modern-input">
+                <input type="number" v-model="group.equity" @input="updatePieChart(index)" id="equity" class="modern-input">
               </div>
               <div class="input-row">
                 <label for="bonds">Bonds:</label>
-                <input type="number" v-model="group.bonds" id="bonds" class="modern-input">
+                <input type="number" v-model="group.bonds" @input="updatePieChart(index)" id="bonds" class="modern-input">
               </div>
               <div class="input-row">
                 <label for="realestate">Real Estate:</label>
-                <input type="number" v-model="group.realestate" id="realestate" class="modern-input">
+                <input type="number" v-model="group.realestate" @input="updatePieChart(index)" id="realestate" class="modern-input">
               </div>
               <!-- <div class="input-row">
                 <label for="banks">Bank Accounts:</label>
-                <input type="number" v-model="group.banks" id="banks" class="modern-input">
+                <input type="number" v-model="group.banks" @input="updatePieChart(index)" id="banks" class="modern-input">
               </div> -->
               <div class="input-row">
                 <label for="commodities">Commodities:</label>
-                <input type="number" v-model="group.commodities" id="commodities" class="modern-input">
+                <input type="number" v-model="group.commodities" @input="updatePieChart(index)" id="commodities" class="modern-input">
               </div>
               <div class="input-row">
                 <label for="other">Other:</label>
-                <input type="number" v-model="group.other" id="other" class="modern-input">
+                <input type="number" v-model="group.other" @input="updatePieChart(index)" id="other" class="modern-input">
               </div>
               <div class="total-value">
                 Total Portfolio Value: ${{ getTotalValue(group).toFixed(2) }}
@@ -106,143 +106,148 @@
         </form>
       </div>
     </div>
-  </template>
-  
-<script>
+</template>
 
-import Chart from 'chart.js';
+<script>
 import { useRouter } from 'vue-router';
 import { getFirestore, doc, setDoc, collection, query, getDocs, writeBatch } from 'firebase/firestore';
 import SimulationControls from './SimulationControls.vue'; // Adjust the path as necessary
 import LoginPage from '../LoginPage.vue';
 import SimulationHistory from './PastSimulations.vue';
-// import SimulationDetails from './SimulationDetails.vue';
+import { Chart, ArcElement, Tooltip, Legend, Title } from 'chart.js';
 
-  export default {
-    name: 'GroupCreation',
-    components: {
+Chart.register(ArcElement, Tooltip, Legend, Title);
+
+export default {
+  name: 'GroupCreation',
+  components: {
     SimulationControls,
     LoginPage,
     SimulationHistory,
-    // SimulationDetails
-    },
-    setup() {
-      const router = useRouter();
+  },
+  setup() {
+    const router = useRouter();
 
-      return {
-          router,
-          maxPortfolioValue: 100000,
-          roundTo: 5000
-      };
+    return {
+      router,
+      maxPortfolioValue: 100000,
+      roundTo: 5000
+    };
+  },
+  data() {
+    return {
+      groups: [
+        { name: 'Group 1', equity: '', bonds: '', realestate: '', commodities: '', other: '' },
+        { name: 'Group 2', equity: '', bonds: '', realestate: '', commodities: '', other: '' },
+        { name: 'Group 3', equity: '', bonds: '', realestate: '', commodities: '', other: '' },
+        { name: 'Group 4', equity: '', bonds: '', realestate: '', commodities: '', other: '' }
+      ],
+      showCalculator: false,
+      showSimulationControls: false,
+      showSimulationHistory: false,
+      showModal: false,
+      showLoginPage: false,
+      newGroupName: '',
+      userEmail: null,
+      userUID: null,
+      currentSimulationIndex: null,
+      charts: [] // Array to store chart instances
+    };
+  },
+  methods: {
+    addGroup() {
+      this.toggleModal();
     },
-    data() {
-      return {
-        groups: [
-          { name: 'Group 1', equity: '', bonds: '', realestate: '', commodities: '', other: '' },
-          { name: 'Group 2', equity: '', bonds: '', realestate: '', commodities: '', other: '' },
-          { name: 'Group 3', equity: '', bonds: '', realestate: '', commodities: '', other: '' },
-          { name: 'Group 4', equity: '', bonds: '', realestate: '', commodities: '', other: '' }
-        ],
-        showCalculator: false,
-        showSimulationControls: false,
-        showSimulationHistory: false,
-        showModal: false,
-        showLoginPage: false,
-        newGroupName: '',
-        userEmail: null,
-        userUID: null,
-        currentSimulationIndex: null
-      };
+    toggleModal() {
+      this.showModal = !this.showModal;
     },
-    methods: {
-      addGroup() {
-        this.toggleModal();
-      },
-      toggleModal() {
-        this.showModal = !this.showModal;
-      },
-      confirmAddGroup() {
-        if (this.newGroupName.trim()) {
-          this.groups.push({
-            name: this.newGroupName.trim(), equity: '', bonds: '', realestate: '', commodities: '', other: ''
-          });
-          this.newGroupName = ''; // Reset the input value
-          this.toggleModal(); // Close the modal
-        } else {
-          alert('Please enter a group name.');
-        }
-      },
-      editGroupName(index) {
-        const newName = prompt("Enter new group name:", this.groups[index].name);
-        if (newName && newName.trim() !== '') {
-            this.groups[index].name = newName.trim();
-        }
-    },
-      removeGroup(index) {
-        this.groups.splice(index, 1);
-      },
-      async fetchLatestSimulationIndex() {
-        const db = getFirestore();
-        const simulationsRef = collection(db, this.userUID, 'Asset Market Simulations', 'Simulations',);
-        const querySnapshot = await getDocs(simulationsRef);
-        return querySnapshot.size; // Returns the count of documents directly
-      },
-
-      async clearGroups() {
-        if (!this.userUID) {
-            console.error('User UID is undefined or empty.');
-            return;
-        }
-        if (!this.currentSimulationIndex) {
-          console.error("No simulation index set.");
-          return; // Prevent saving if no index is set
-        }
-        const db = getFirestore();
-        const querySnapshot = await getDocs(query(collection(db, this.userUID, 'Asset Market Simulations', 'Simulations', `Simulation ${this.currentSimulationIndex}`, 'Groups')));
-        const batch = writeBatch(db);
-
-        querySnapshot.forEach((doc) => {
-          batch.delete(doc.ref);
+    confirmAddGroup() {
+      if (this.newGroupName.trim()) {
+        this.groups.push({
+          name: this.newGroupName.trim(), equity: '', bonds: '', realestate: '', commodities: '', other: ''
         });
-
-        await batch.commit();
-        console.log('All groups have been removed from Firestore.');
+        this.newGroupName = ''; // Reset the input value
+        this.toggleModal(); // Close the modal
+      } else {
+        alert('Please enter a group name.');
+      }
+    },
+    editGroupName(index) {
+      const newName = prompt("Enter new group name:", this.groups[index].name);
+      if (newName && newName.trim() !== '') {
+        this.groups[index].name = newName.trim();
+      }
+    },
+    removeGroup(index) {
+      this.groups.splice(index, 1);
+      // Destroy the corresponding chart instance when the group is removed
+      if (this.charts[index]) {
+        this.charts[index].destroy();
+        this.charts.splice(index, 1);
+      }
+    },
+    async fetchLatestSimulationIndex() {
+      const db = getFirestore();
+      const simulationsRef = collection(db, this.userUID, 'Asset Market Simulations', 'Simulations',);
+      const querySnapshot = await getDocs(simulationsRef);
+      return querySnapshot.size; // Returns the count of documents directly
     },
 
-      async saveGroups() {
-        if (!this.currentSimulationIndex) {
-          console.error("No simulation index set.");
-          return; // Prevent saving if no index is set
-        }
-        const db = getFirestore();
-        
-        try {
-            await Promise.all(this.groups.map(group => {
-                // Use the group name as the document ID
-                const groupDocRef = doc(db, this.userUID, 'Asset Market Simulations', 'Simulations', `Simulation ${this.currentSimulationIndex}`, 'Groups', group.name);
-                return setDoc(groupDocRef, group);
-            }));
-        } catch (err) {
-            console.error('Error saving groups to Firestore: ', err);
-            alert('Failed to save groups.');
-        }
-        
-        // Navigate to the simulation page
-        this.router.push({ name: 'SimulationPage' });
-    },
-      async startSimulation() {
-        const latestIndex = await this.fetchLatestSimulationIndex();
-        if (latestIndex === null) {
-          console.error("No existing simulations found.");
-          alert("No existing simulations found. Please create a new simulation first.");
-          return; // Exit if no simulations are found
-        }
-        this.currentSimulationIndex = latestIndex; // Set the current index to the latest found
-        await this.clearGroups(); // Clear existing groups using the latest index
-        await this.saveGroups(); // Save the current groups under the latest simulation index
-      },
+    async clearGroups() {
+      if (!this.userUID) {
+        console.error('User UID is undefined or empty.');
+        return;
+      }
+      if (!this.currentSimulationIndex) {
+        console.error("No simulation index set.");
+        return; // Prevent saving if no index is set
+      }
+      const db = getFirestore();
+      const querySnapshot = await getDocs(query(collection(db, this.userUID, 'Asset Market Simulations', 'Simulations', `Simulation ${this.currentSimulationIndex}`, 'Groups')));
+      const batch = writeBatch(db);
 
-      generateRandomValues(index) {
+      querySnapshot.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+
+      await batch.commit();
+      console.log('All groups have been removed from Firestore.');
+    },
+
+    async saveGroups() {
+      if (!this.currentSimulationIndex) {
+        console.error("No simulation index set.");
+        return; // Prevent saving if no index is set
+      }
+      const db = getFirestore();
+      
+      try {
+        await Promise.all(this.groups.map(group => {
+          // Use the group name as the document ID
+          const groupDocRef = doc(db, this.userUID, 'Asset Market Simulations', 'Simulations', `Simulation ${this.currentSimulationIndex}`, 'Groups', group.name);
+          return setDoc(groupDocRef, group);
+        }));
+      } catch (err) {
+        console.error('Error saving groups to Firestore: ', err);
+        alert('Failed to save groups.');
+      }
+      
+      // Navigate to the simulation page
+      this.router.push({ name: 'SimulationPage' });
+    },
+    async startSimulation() {
+      const latestIndex = await this.fetchLatestSimulationIndex();
+      if (latestIndex === null) {
+        console.error("No existing simulations found.");
+        alert("No existing simulations found. Please create a new simulation first.");
+        return; // Exit if no simulations are found
+      }
+      this.currentSimulationIndex = latestIndex; // Set the current index to the latest found
+      await this.clearGroups(); // Clear existing groups using the latest index
+      await this.saveGroups(); // Save the current groups under the latest simulation index
+    },
+
+    generateRandomValues(index) {
       const group = this.groups[index];
       let remainingValue = this.maxPortfolioValue;
       let roundTo = this.roundTo;
@@ -261,14 +266,32 @@ import SimulationHistory from './PastSimulations.vue';
       });
 
       this.$nextTick(() => this.renderPieChart(index));
-  },
+    },
 
+    renderPieChart(index) {
+      const group = this.groups[index];
+      this.$nextTick(() => {
+        console.log(`Rendering pie chart for group index: ${index}`);
+        console.log('Group data:', group);
 
-      renderPieChart(index) {
-        const group = this.groups[index];
-        const ctx = document.getElementById('pieChart_' + index).getContext('2d');
-        // const totalValue = this.getTotalValue(group).toFixed(2);
+        const canvasId = 'pieChart_' + index;
+        console.log(`Canvas ID: ${canvasId}`);
+        const canvas = document.getElementById(canvasId);
         
+        if (!canvas) {
+          console.error(`Canvas element not found for index: ${index}`);
+          return;
+        }
+        console.log('Canvas element found:', canvas);
+
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx) {
+          console.error(`Unable to get canvas context for index: ${index}`);
+          return;
+        }
+        console.log('Canvas context obtained:', ctx);
+
         const data = {
           labels: ['Equity', 'Bonds', 'Real Estate', 'Commodities', 'Other'],
           datasets: [{
@@ -292,130 +315,94 @@ import SimulationHistory from './PastSimulations.vue';
           }]
         };
 
-        // const centerTextPlugin = {
-        //   id: 'centerTextPlugin',
-        //   afterDraw: function (chart) {
-        //     var width = chart.chart.width,
-        //         height = chart.chart.height,
-        //         ctx = chart.ctx;
+        // Destroy and recreate the chart for the specific group index
+        if (this.charts[index]) {
+          this.charts[index].destroy();
+        }
 
-        //     ctx.restore();
-        //     var fontSize = (height / 142).toFixed(2);
-        //     ctx.font = fontSize + "em sans-serif";
-        //     ctx.textBaseline = "middle";
-
-        //     // Use the options property to get the text
-        //     var text = chart.options.plugins.centerText.text,
-        //         textX = Math.round((width - ctx.measureText(text).width) / 2),
-        //         textY = height / 3;
-
-        //     ctx.fillText(text, textX, textY);
-        //     ctx.save();
-        //   }
-        // };
-
-        new Chart(ctx, {
+        this.charts[index] = new Chart(ctx, {
           type: 'pie',
           data: data,
           options: {
             responsive: true,
             maintainAspectRatio: true,
-            aspectRatio: 1,
-            legend: {
-              display: true,
-              position: 'bottom',
-              labels: {
-                fontColor: '#000', // Color of text
-                fontSize: 10, // Size of the text
-                fontFamily: 'Helvetica', // Font family of the text
-                boxWidth: 2, // Width of colored box
-                usePointStyle: true, // Use point style instead of box
+            plugins: {
+              legend: {
+                display: true,
+                position: 'bottom',
+                labels: {
+                  color: '#000', // Color of text
+                  font: {
+                    size: 10, // Size of the text
+                    family: 'Helvetica' // Font family of the text
+                  },
+                  boxWidth: 2, // Width of colored box
+                  usePointStyle: true // Use point style instead of box
+                }
               }
             },
-            // tooltips: {
-            //   enabled: true,
-            //   mode: 'nearest',
-            //   intersect: false,
-            //   backgroundColor: 'rgba(0,0,0,0.8)', // Tooltip background color
-            //   titleFontFamily: 'Helvetica', // Font family for tooltip title
-            //   titleFontSize: 20, // Font size for tooltip title
-            //   titleFontStyle: 'bold', // Font style for tooltip title
-            //   bodyFontFamily: 'Arial', // Font family for tooltip body
-            //   bodyFontSize: 15, // Font size for tooltip body
-            //   bodyFontStyle: 'normal', // Font style for tooltip body
-            //   cornerRadius: 30, // Corner radius of tooltip
-            //   xPadding: 10, // Padding inside tooltip (x-axis)
-            //   yPadding: 10, // Padding inside tooltip (y-axis)
-            //   caretSize: 5, // Size of the tooltip arrow
-            //   displayColors: true, // Display color boxes in the tooltip
-            // },
             animation: {
               animateRotate: true,
               animateScale: true,
             },
-            cutoutPercentage: 65,
-            rotation: -0.5 * Math.PI,
-            circumference: 2 * Math.PI,
-            // plugins: {
-            //   centerText: {
-            //     text: `${totalValue}`
-            //   }
-            // }
-          },
-          // plugins: [centerTextPlugin]
-        });
-      },
-      getTotalValue(group) {
-        return Object.keys(group).reduce((total, key) => {
-          if (key !== 'name') {
-            total += parseFloat(group[key]) || 0;
+            cutout: '65%'
           }
-          return total;
-        }, 0);
-      },
-      toggleCalculator() {
-        this.router.push({ name: 'InvestmentCalculator' });
+        });
+
+        console.log(`Chart instance created for index: ${index}`);
+      });
     },
-      toggleSimulationControls() {
-          this.showSimulationControls = !this.showSimulationControls;
-      },
-      handleViewSimulationDetails(simulationIndex) {
-        this.currentSimulationIndex = simulationIndex;
-        this.showSimulationHistory = false; // Optionally close the history view when a detail view is opened
-      },
-      toggleSimulationHistory() {
-        this.showSimulationHistory = !this.showSimulationHistory;
-        this.currentSimulationIndex = null; // Reset currentSimulationIndex when toggling the history view
-      },
-      toggleLogin() {
-        this.showLoginPage = !this.showLoginPage;
-      },
-      handleUserLogin(user) {
-        this.userEmail = user.email;
-        this.userUID = user.uid;
-      }
+
+    updatePieChart(index) {
+      this.renderPieChart(index);
     },
-    mounted() {
+
+    getTotalValue(group) {
+      return Object.keys(group).reduce((total, key) => {
+        if (key !== 'name') {
+          total += parseFloat(group[key]) || 0;
+        }
+        return total;
+      }, 0);
+    },
+
+    toggleCalculator() {
+      this.router.push({ name: 'InvestmentCalculator' });
+    },
+
+    toggleSimulationControls() {
+      this.showSimulationControls = !this.showSimulationControls;
+    },
+
+    handleViewSimulationDetails(simulationIndex) {
+      this.currentSimulationIndex = simulationIndex;
+      this.showSimulationHistory = false; // Optionally close the history view when a detail view is opened
+    },
+
+    toggleSimulationHistory() {
+      this.showSimulationHistory = !this.showSimulationHistory;
+      this.currentSimulationIndex = null; // Reset currentSimulationIndex when toggling the history view
+    },
+
+    toggleLogin() {
+      this.showLoginPage = !this.showLoginPage;
+    },
+
+    handleUserLogin(user) {
+      this.userEmail = user.email;
+      this.userUID = user.uid;
+    }
+  },
+
+  mounted() {
     this.groups.forEach((group, index) => {
       this.$nextTick(() => this.renderPieChart(index));
     });
-  },
-  watch: {
-    groups: {
-      handler(groups) {
-        groups.forEach((group, index) => {
-          if (group.equity || group.bonds || group.realestate || group.commodities || group.other) {
-            this.$nextTick(() => this.renderPieChart(index));
-          }
-        });
-      },
-      deep: true
-    }
   }
 };
+
 </script>
-  
+
 <style scoped>
     @import url('../../styles/GroupCreationStyles.css');
 </style>
-  
