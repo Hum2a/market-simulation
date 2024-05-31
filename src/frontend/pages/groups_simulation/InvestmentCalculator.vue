@@ -71,36 +71,11 @@ export default {
       legendHtml: ''
     };
   },
+  mounted() {
+    this.renderChart();
+  },
   methods: {
-    calculate() {
-      const principal = parseFloat(this.initialInvestment);
-      const monthlyContribution = parseFloat(this.monthlyContribution);
-      const years = parseInt(this.investmentPeriod);
-
-      const n = 12;
-      const t = years;
-
-      const labels = Array.from({ length: t + 1 }, (_, i) => {
-        return i === 0 ? 'Start' : `${i}`;
-      });
-
-      const datasets = this.annualReturnRates.map(rate => {
-        const r = parseFloat(rate.value) / 100 / n;
-        let currentValue = principal;
-        const data = [currentValue];
-        for (let i = 1; i <= t * n; i++) {
-          currentValue = currentValue * (1 + r) + monthlyContribution;
-          if (i % 12 === 0) data.push(currentValue);
-        }
-        return {
-          label: `Investment Growth at ${rate.value}%`,
-          data: data,
-          fill: false,
-          borderColor: this.getRandomColor(),
-          tension: 0.1
-        };
-      });
-
+    renderChart(datasets = []) {
       const ctx = document.getElementById('investmentChart').getContext('2d');
       if (this.chart) {
         this.chart.destroy();
@@ -108,14 +83,14 @@ export default {
       this.chart = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: labels,
+          labels: Array.from({ length: 11 }, (_, i) => (i === 0 ? 'Start' : `${i}`)),
           datasets: datasets
         },
         options: {
           plugins: {
             tooltip: {
               callbacks: {
-                label: function(context) {
+                label: function (context) {
                   let label = context.dataset.label || '';
                   if (label) {
                     label += ': £';
@@ -148,7 +123,7 @@ export default {
                 display: true
               },
               ticks: {
-                callback: function(value) {
+                callback: function (value) {
                   return '£' + value.toFixed(2);
                 }
               }
@@ -156,11 +131,37 @@ export default {
           }
         }
       });
+    },
+    calculate() {
+      const principal = parseFloat(this.initialInvestment);
+      const monthlyContribution = parseFloat(this.monthlyContribution);
+      const years = parseInt(this.investmentPeriod);
+
+      const n = 12;
+      const t = years;
+
+      const datasets = this.annualReturnRates.map(rate => {
+        const r = parseFloat(rate.value) / 100 / n;
+        let currentValue = principal;
+        const data = [currentValue];
+        for (let i = 1; i <= t * n; i++) {
+          currentValue = currentValue * (1 + r) + monthlyContribution;
+          if (i % 12 === 0) data.push(currentValue);
+        }
+        return {
+          label: `Investment Growth at ${rate.value}%`,
+          data: data,
+          fill: false,
+          borderColor: this.getRandomColor(),
+          tension: 0.1
+        };
+      });
+
+      this.renderChart(datasets);
 
       this.futureValues = datasets.map(dataset => dataset.data.at(-1).toFixed(2));
       this.legendHtml = this.generateLegend();
     },
-
     getRandomColor() {
       const letters = '0123456789ABCDEF';
       let color = '#';
