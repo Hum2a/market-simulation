@@ -12,11 +12,18 @@ import PortfolioSimulation from '../../frontend/pages/stock_trading_platform/Por
 import StockTradingSelect from '../../frontend/pages/stock_trading_platform/StockTradingSelect.vue';
 import StockMarketToday from '../../frontend/pages/stock_trading_platform/StockMarketToday.vue';
 import CreateAccount from '../../frontend/pages/CreateAccount.vue';
+import LoginPage from '../../frontend/pages/LoginPage.vue';
+import StartPage from '../../frontend/pages/StartPage.vue';
 
 const routes = [
   {
     path: '/',
-    redirect: '/stock-trading-select'
+    redirect: '/startpage'
+  },
+  {
+    path: '/startpage',
+    name: 'StartPage',
+    component: StartPage
   },
   {
     path: '/homepage',
@@ -27,6 +34,11 @@ const routes = [
     path: '/create-account',
     name: 'CreateAccount',
     component: CreateAccount,
+  },
+  {
+    path: '/login',
+    name: 'LoginPage',
+    component: LoginPage
   },
   {
     path: '/groupcreation',
