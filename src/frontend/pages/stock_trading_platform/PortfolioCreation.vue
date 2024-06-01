@@ -102,7 +102,7 @@ import { getAuth } from 'firebase/auth';
 import LoginPage from '../LoginPage.vue';
 import Datepicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css';
-import MessageModal from './components/MessageModal.vue';  // Ensure the path to MessageModal.vue is correct
+import MessageModal from './components/MessageModal.vue';
 
 export default {
   name: 'PortfolioCreation',
@@ -115,38 +115,64 @@ export default {
     return {
       userFunds: 0,
       totalFunds: 0,
-      viewMode: 'card',  // Default view mode
+      viewMode: 'card',
       companies: [
-        { name: 'Apple', allocation: 0 },
-        { name: 'Microsoft', allocation: 0 },
-        { name: 'Amazon', allocation: 0 },
-        { name: 'Google', allocation: 0 },
-        { name: 'Meta', allocation: 0 },
-        { name: 'Tesla', allocation: 0 },
-        { name: 'Berkshire Hathaway', allocation: 0 },
-        { name: 'Johnson & Johnson', allocation: 0 },
-        { name: 'JPMorgan Chase', allocation: 0 },
-        { name: 'Visa', allocation: 0 },
-        { name: 'NVIDIA', allocation: 0 },
-        { name: 'Walmart', allocation: 0 },
-        { name: 'Mastercard', allocation: 0 },
-        { name: 'Procter & Gamble', allocation: 0 },
-        { name: 'UnitedHealth', allocation: 0 },
-        { name: 'Home Depot', allocation: 0 },
-        { name: 'Disney', allocation: 0 },
-        { name: 'PayPal', allocation: 0 },
-        { name: 'Intel', allocation: 0 },
-        { name: 'Verizon', allocation: 0 },
-        { name: 'Coca-Cola', allocation: 0 },
-        { name: 'Pfizer', allocation: 0 },
-        { name: 'PepsiCo', allocation: 0 },
-        { name: 'Netflix', allocation: 0 },
-        { name: 'Comcast', allocation: 0 },
-        { name: 'Cisco', allocation: 0 },
-        { name: 'AbbVie', allocation: 0 },
-        { name: 'ExxonMobil', allocation: 0 },
-        { name: 'Nike', allocation: 0 },
-        { name: 'AT&T', allocation: 0 },
+        { name: 'AbbVie', symbol: 'ABBV', allocation: 0 },
+        { name: 'Activision Blizzard', symbol: ', allocation: 0ATVI' },
+        { name: 'Adobe', symbol: 'ADBE', allocation: 0 },
+        { name: 'Amazon', symbol: 'AMZN', allocation: 0 },
+        { name: 'American Tower Corporation', symbol: 'AMT', allocation: 0 },
+        { name: 'Apple', symbol: 'AAPL', allocation: 0 },
+        { name: 'Astra Zeneca', symbol: 'AZN', allocation: 0 },
+        { name: 'AT&T', symbol: 'T', allocation: 0 },
+        { name: 'Axon Enterprise', symbol: 'AXON', allocation: 0 },
+        { name: 'Barclays', symbol: 'BCS', allocation: 0 },
+        { name: 'Berkshire Hathaway', symbol: 'BRK.B', allocation: 0 },
+        { name: 'Blackrock', symbol: 'BLK', allocation: 0 },
+        { name: 'Boeing', symbol: 'BA', allocation: 0 },
+        { name: 'BP', symbol: 'BP', allocation: 0 },
+        { name: 'BYD', symbol: 'BYDDY', allocation: 0 },
+        { name: 'Cisco', symbol: 'CSCO', allocation: 0 },
+        { name: 'Coca-Cola', symbol: 'KO', allocation: 0 },
+        { name: 'Comcast', symbol: 'CMCSA', allocation: 0 },
+        { name: 'Costco', symbol: 'COST', allocation: 0 },
+        { name: 'Curries', symbol: 'DC.L', allocation: 0 },
+        { name: 'Disney', symbol: 'DIS', allocation: 0 },
+        { name: 'EA', symbol: 'EA', allocation: 0 },
+        { name: 'ExxonMobil', symbol: 'XOM', allocation: 0 },
+        { name: 'Goldman Sachs', symbol: 'GS', allocation: 0 },
+        { name: 'Google', symbol: 'GOOGL', allocation: 0 },
+        { name: 'Home Depot', symbol: 'HD', allocation: 0 },
+        { name: 'IBM', symbol: 'IBM', allocation: 0 },
+        { name: 'Intel', symbol: 'INTC', allocation: 0 },
+        { name: 'Johnson & Johnson', symbol: 'JNJ', allocation: 0 },
+        { name: 'JPMorgan Chase', symbol: 'JPM', allocation: 0 },
+        { name: 'LG', symbol: '066570.KS', allocation: 0 },
+        { name: 'Lockheed Martin', symbol: 'LMT', allocation: 0 },
+        { name: 'Man United', symbol: 'MANU', allocation: 0 },
+        { name: 'Mastercard', symbol: 'MA', allocation: 0 },
+        { name: 'Meta', symbol: 'META', allocation: 0 },
+        { name: 'Microsoft', symbol: 'MSFT', allocation: 0 },
+        { name: 'Netflix', symbol: 'NFLX', allocation: 0 },
+        { name: 'NIO', symbol: 'NIO', allocation: 0 },
+        { name: 'Nike', symbol: 'NKE', allocation: 0 },
+        { name: 'NVIDIA', symbol: 'NVDA', allocation: 0 },
+        { name: 'Open AI', symbol: 'Not Listed', allocation: 0 }, // Open AI is not a publicly traded company
+        { name: 'Pandora', symbol: 'P', allocation: 0 },
+        { name: 'PayPal', symbol: 'PYPL', allocation: 0 },
+        { name: 'Pfizer', symbol: 'PFE', allocation: 0 },
+        { name: 'PepsiCo', symbol: 'PEP', allocation: 0 },
+        { name: 'Procter & Gamble', symbol: 'PG', allocation: 0 },
+        { name: 'Roblox', symbol: 'RBLX', allocation: 0 },
+        { name: 'Rolls Royce', symbol: 'RR.L', allocation: 0 },
+        { name: 'Shell', symbol: 'SHEL', allocation: 0 },
+        { name: 'Spotify', symbol: 'SPOT', allocation: 0 },
+        { name: 'Tesla', symbol: 'TSLA', allocation: 0 },
+        { name: 'Tesco', symbol: 'TSCO.L', allocation: 0 },
+        { name: 'UnitedHealth', symbol: 'UNH', allocation: 0 },
+        { name: 'Verizon', symbol: 'VZ', allocation: 0 },
+        { name: 'Visa', symbol: 'V', allocation: 0 },
+        { name: 'Walmart', symbol: 'WMT', allocation: 0 }
       ],
       showLogin: false,
       selectedDate: new Date(),
@@ -195,8 +221,7 @@ export default {
         company.allocation = 0;
       });
 
-      // Divide the remaining funds into smaller chunks
-      const chunkSize = 100; // Adjust the chunk size as needed for performance
+      const chunkSize = 100;
       while (remainingFunds >= chunkSize) {
         const company = this.companies[Math.floor(Math.random() * this.companies.length)];
         const allocation = Math.min(chunkSize, remainingFunds);
@@ -204,7 +229,6 @@ export default {
         remainingFunds -= allocation;
       }
 
-      // Distribute any remaining funds
       if (remainingFunds > 0) {
         const company = this.companies[Math.floor(Math.random() * this.companies.length)];
         company.allocation += remainingFunds;
@@ -215,7 +239,7 @@ export default {
     handleLoginSuccess(user) {
       this.showLogin = false;
       console.log('Logged in user:', user);
-      this.fetchUserFunds();  // Fetch user funds again after login
+      this.fetchUserFunds();
     },
     async submitPortfolio() {
       if (this.totalAllocation <= this.totalFunds) {
@@ -229,7 +253,11 @@ export default {
             const portfolioDocRef = doc(db, userUID, 'Stock Trading Platform', 'Portfolio', 'Initial Portfolio');
             const portfolioDocSnap = await getDoc(portfolioDocRef);
 
-            let updatedCompanies = this.companies;
+            let updatedCompanies = this.companies.map(company => ({
+              name: company.name,
+              symbol: company.symbol,
+              allocation: company.allocation
+            }));
 
             if (portfolioDocSnap.exists()) {
               const existingPortfolio = portfolioDocSnap.data();
@@ -249,7 +277,6 @@ export default {
               date: this.selectedDate,
             });
 
-            // Update the user's total funds after allocation
             await setDoc(doc(db, userUID, 'Total Funds'), {
               totalFunds: this.totalFunds - this.totalAllocation,
             }, { merge: true });
@@ -280,6 +307,7 @@ export default {
   },
 };
 </script>
+
 
 <style scoped>
 .portfolio-creation {
