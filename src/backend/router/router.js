@@ -14,6 +14,10 @@ import StockMarketToday from '../../frontend/pages/stock_trading_platform/StockM
 import CreateAccount from '../../frontend/pages/CreateAccount.vue';
 import LoginPage from '../../frontend/pages/LoginPage.vue';
 import StartPage from '../../frontend/pages/StartPage.vue';
+import AdminPortfolioCreation from '../../frontend/pages/stock_trading_platform/AdminPortfolioCreation.vue';
+import PortfolioUpload from '../../frontend/pages/stock_trading_platform/PortfolioUpload';
+import PortfolioAssign from '../../frontend/pages/stock_trading_platform/PortfolioAssign';
+import PortfolioManage from '../../frontend/pages/stock_trading_platform/PortfolioManage.vue';
 
 const routes = [
   {
@@ -76,6 +80,11 @@ const routes = [
     component: PortfolioCreation,
   },
   {
+    path: '/admin-portfolio-creation',
+    name: 'AdminPortfolioCreation',
+    component: AdminPortfolioCreation
+  },  
+  {
     path: '/portfolio-display',
     name: "PortfolioDisplay",
     component: PortfolioDisplay,
@@ -94,6 +103,21 @@ const routes = [
     path: '/stock-market-today',
     name: 'StockMarketToday',
     component: StockMarketToday,
+  },
+  {
+    path: '/portfolio-upload',
+    name: 'PortfolioUpload',
+    component: PortfolioUpload
+  },
+  {
+    path: '/portfolio-assign',
+    name: 'PortfolioAssign',
+    component: PortfolioAssign
+  },
+  {
+    path: '/portfolio-manage',
+    name: 'PortfolioManage',
+    component: PortfolioManage
   }
 ];
 
