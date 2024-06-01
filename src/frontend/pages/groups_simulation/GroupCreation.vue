@@ -1,5 +1,6 @@
 <template>
-  <div class="dashboard">
+  <div v-if="isLoading" class="loading-spinner">Loading...</div>
+  <div v-else-if="isAdmin" class="dashboard">
     <header class="header">
       <img src="../../assets/LifeSmartLogo.png" alt="Logo" class="logo">
       <p v-if="userEmail" class="welcome-message">Welcome Back {{ userEmail }}</p>
@@ -22,7 +23,6 @@
     <LoginPage v-if="showLoginPage" @login-success="handleUserLogin" />
     <SimulationControls v-if="showSimulationControls" :userUID="userUID"/>
     <SimulationHistory v-if="showSimulationHistory" :userUID="userUID" @viewSimulationDetails="handleViewSimulationDetails" />
-    <!-- <SimulationDetails v-if="currentSimulationIndex" :userUID="userUID" :simulation-index="currentSimulationIndex" /> -->
 
     <main v-if="!currentSimulationIndex">
       <div class="settings">
@@ -62,10 +62,6 @@
                 <label for="realestate">Real Estate:</label>
                 <input type="number" v-model="group.realestate" @input="updatePieChart(index)" id="realestate" class="modern-input">
               </div>
-              <!-- <div class="input-row">
-                <label for="banks">Bank Accounts:</label>
-                <input type="number" v-model="group.banks" @input="updatePieChart(index)" id="banks" class="modern-input">
-              </div> -->
               <div class="input-row">
                 <label for="commodities">Commodities:</label>
                 <input type="number" v-model="group.commodities" @input="updatePieChart(index)" id="commodities" class="modern-input">
@@ -95,6 +91,9 @@
     </main>
     </div>
 
+    <div v-else>
+      <p>You do not have permission to view this page.</p>
+    </div>
 
     <div class="modal" v-if="showModal">
       <div class="modal-content">
@@ -110,8 +109,8 @@
 
 <script>
 import { useRouter } from 'vue-router';
-import { getFirestore, doc, setDoc, collection, query, getDocs, writeBatch } from 'firebase/firestore';
-import SimulationControls from './SimulationControls.vue'; // Adjust the path as necessary
+import { getFirestore, doc, getDoc, collection, query, getDocs, writeBatch, setDoc } from 'firebase/firestore';
+import SimulationControls from './SimulationControls.vue';
 import LoginPage from '../LoginPage.vue';
 import SimulationHistory from './PastSimulations.vue';
 import { Chart, ArcElement, Tooltip, Legend, Title } from 'chart.js';
@@ -151,7 +150,9 @@ export default {
       userEmail: null,
       userUID: null,
       currentSimulationIndex: null,
-      charts: [] // Array to store chart instances
+      charts: [],
+      isAdmin: false,
+      isLoading: true
     };
   },
   methods: {
@@ -166,8 +167,8 @@ export default {
         this.groups.push({
           name: this.newGroupName.trim(), equity: '', bonds: '', realestate: '', commodities: '', other: ''
         });
-        this.newGroupName = ''; // Reset the input value
-        this.toggleModal(); // Close the modal
+        this.newGroupName = ''; 
+        this.toggleModal();
       } else {
         alert('Please enter a group name.');
       }
@@ -180,7 +181,6 @@ export default {
     },
     removeGroup(index) {
       this.groups.splice(index, 1);
-      // Destroy the corresponding chart instance when the group is removed
       if (this.charts[index]) {
         this.charts[index].destroy();
         this.charts.splice(index, 1);
@@ -188,11 +188,10 @@ export default {
     },
     async fetchLatestSimulationIndex() {
       const db = getFirestore();
-      const simulationsRef = collection(db, this.userUID, 'Asset Market Simulations', 'Simulations',);
+      const simulationsRef = collection(db, this.userUID, 'Asset Market Simulations', 'Simulations');
       const querySnapshot = await getDocs(simulationsRef);
-      return querySnapshot.size; // Returns the count of documents directly
+      return querySnapshot.size;
     },
-
     async clearGroups() {
       if (!this.userUID) {
         console.error('User UID is undefined or empty.');
@@ -200,7 +199,7 @@ export default {
       }
       if (!this.currentSimulationIndex) {
         console.error("No simulation index set.");
-        return; // Prevent saving if no index is set
+        return;
       }
       const db = getFirestore();
       const querySnapshot = await getDocs(query(collection(db, this.userUID, 'Asset Market Simulations', 'Simulations', `Simulation ${this.currentSimulationIndex}`, 'Groups')));
@@ -213,17 +212,15 @@ export default {
       await batch.commit();
       console.log('All groups have been removed from Firestore.');
     },
-
     async saveGroups() {
       if (!this.currentSimulationIndex) {
         console.error("No simulation index set.");
-        return; // Prevent saving if no index is set
+        return;
       }
       const db = getFirestore();
       
       try {
         await Promise.all(this.groups.map(group => {
-          // Use the group name as the document ID
           const groupDocRef = doc(db, this.userUID, 'Asset Market Simulations', 'Simulations', `Simulation ${this.currentSimulationIndex}`, 'Groups', group.name);
           return setDoc(groupDocRef, group);
         }));
@@ -232,7 +229,6 @@ export default {
         alert('Failed to save groups.');
       }
       
-      // Navigate to the simulation page
       this.router.push({ name: 'SimulationPage' });
     },
     async startSimulation() {
@@ -240,13 +236,12 @@ export default {
       if (latestIndex === null) {
         console.error("No existing simulations found.");
         alert("No existing simulations found. Please create a new simulation first.");
-        return; // Exit if no simulations are found
+        return;
       }
-      this.currentSimulationIndex = latestIndex; // Set the current index to the latest found
-      await this.clearGroups(); // Clear existing groups using the latest index
-      await this.saveGroups(); // Save the current groups under the latest simulation index
+      this.currentSimulationIndex = latestIndex;
+      await this.clearGroups();
+      await this.saveGroups();
     },
-
     generateRandomValues(index) {
       const group = this.groups[index];
       let remainingValue = this.maxPortfolioValue;
@@ -255,10 +250,8 @@ export default {
       const keys = ['equity', 'bonds', 'realestate', 'commodities', 'other'];
       keys.forEach((key, i) => {
         if (i === keys.length - 1) {
-          // Assign remaining value to the last asset
           group[key] = Math.round(remainingValue / roundTo) * roundTo;
         } else {
-          // Assign a random portion of the remaining value to the current asset
           const value = Math.round((Math.random() * remainingValue) / roundTo) * roundTo;
           group[key] = value;
           remainingValue -= value;
@@ -267,7 +260,6 @@ export default {
 
       this.$nextTick(() => this.renderPieChart(index));
     },
-
     renderPieChart(index) {
       const group = this.groups[index];
       this.$nextTick(() => {
@@ -315,7 +307,6 @@ export default {
           }]
         };
 
-        // Destroy and recreate the chart for the specific group index
         if (this.charts[index]) {
           this.charts[index].destroy();
         }
@@ -331,13 +322,13 @@ export default {
                 display: true,
                 position: 'bottom',
                 labels: {
-                  color: '#000', // Color of text
+                  color: '#000',
                   font: {
-                    size: 10, // Size of the text
-                    family: 'Helvetica' // Font family of the text
+                    size: 10,
+                    family: 'Helvetica'
                   },
-                  boxWidth: 2, // Width of colored box
-                  usePointStyle: true // Use point style instead of box
+                  boxWidth: 2,
+                  usePointStyle: true
                 }
               }
             },
@@ -352,11 +343,9 @@ export default {
         console.log(`Chart instance created for index: ${index}`);
       });
     },
-
     updatePieChart(index) {
       this.renderPieChart(index);
     },
-
     getTotalValue(group) {
       return Object.keys(group).reduce((total, key) => {
         if (key !== 'name') {
@@ -365,44 +354,60 @@ export default {
         return total;
       }, 0);
     },
-
     toggleCalculator() {
       this.router.push({ name: 'InvestmentCalculator' });
     },
-
     toggleSimulationControls() {
       this.showSimulationControls = !this.showSimulationControls;
     },
-
     handleViewSimulationDetails(simulationIndex) {
       this.currentSimulationIndex = simulationIndex;
-      this.showSimulationHistory = false; // Optionally close the history view when a detail view is opened
+      this.showSimulationHistory = false;
     },
-
     toggleSimulationHistory() {
       this.showSimulationHistory = !this.showSimulationHistory;
-      this.currentSimulationIndex = null; // Reset currentSimulationIndex when toggling the history view
+      this.currentSimulationIndex = null;
     },
-
     toggleLogin() {
       this.showLoginPage = !this.showLoginPage;
     },
-
     handleUserLogin(user) {
       this.userEmail = user.email;
       this.userUID = user.uid;
+      this.checkUserRole();
+    },
+    async checkUserRole() {
+      if (!this.userUID) {
+        console.error('User UID is undefined or empty.');
+        this.isLoading = false;
+        return;
+      }
+
+      const db = getFirestore();
+      const userDocRef = doc(db, 'users', this.userUID, 'Profile');
+      try {
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          this.isAdmin = userData.role === 'admin';
+        } else {
+          console.error('No such document!');
+        }
+      } catch (error) {
+        console.error('Error getting document:', error);
+      } finally {
+        this.isLoading = false;
+      }
     }
   },
-
   mounted() {
     this.groups.forEach((group, index) => {
       this.$nextTick(() => this.renderPieChart(index));
     });
   }
 };
-
 </script>
 
 <style scoped>
-    @import url('../../styles/GroupCreationStyles.css');
+@import url('../../styles/GroupCreationStyles.css');
 </style>
