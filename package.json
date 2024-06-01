@@ -20,6 +20,7 @@
     "firebase": "^10.9.0",
     "firebase-admin": "^12.1.0",
     "mongoose": "^8.4.0",
+    "papaparse": "^5.4.1",
     "vue": "^3.2.13",
     "vue-chartjs": "^4.0.0",
     "vue-datepicker-next": "^1.0.3",
