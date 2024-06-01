@@ -3,23 +3,33 @@
     <header class="header">
       <img src="../../assets/LifeSmartLogo.png" alt="Logo" class="logo" />
       <nav class="header-links">
-        <router-link to="/groupcreation" class="nav-link">Group Creation</router-link>
-        <router-link to="/create-account" class="nav-link">Create Account</router-link>
-        <button @click="showLogin = !showLogin" class="nav-link login-button">Login</button>
+        <router-link to="startpage" class="nav-link">Log Out</router-link>
+        <template v-if="profile && profile.role === 'admin'">
+          <router-link to="/groupcreation" class="nav-link">Group Creation</router-link>
+        </template>
       </nav>
     </header>
-    <LoginPage v-if="showLogin" @close="showLogin = false" @login-success="handleLoginSuccess" />
     <main class="main-content">
       <h1>Stock Trading</h1>
       <div v-if="profile" class="welcome-message">
         Welcome back, {{ profile.firstName }}!
       </div>
       <div class="options">
-        <router-link to="/portfolio-creation" class="option">Create Your Portfolio</router-link>
-        <router-link to="/portfolio-display" class="option">View Your Portfolio</router-link>
+        <router-link to="/portfolio-creation" :class="['option', 'user']">Create Your Portfolio</router-link>
+        <router-link to="/portfolio-display" :class="['option', 'user']">View Your Portfolio</router-link>
+      </div>
+      <div class="options">
         <template v-if="profile && profile.role === 'admin'">
-          <router-link to="/stock-market-today" class="option">Stock Market Today</router-link>
-          <router-link to="/portfolio-simulation" class="option">Simulation</router-link>
+          <router-link to="/admin-portfolio-creation" :class="['option', 'admin']">Admin Portfolio Creation</router-link>
+          <router-link to="/portfolio-upload" :class="['option', 'admin']">Upload Portfolios</router-link>
+          <router-link to="/portfolio-assign" :class="['option', 'admin']">Assign Portfolios</router-link>
+          <router-link to="/portfolio-manage" :class="['option', 'admin']">Manage Portfolios</router-link>
+        </template>
+      </div>
+      <div class="options">
+        <template v-if="profile && profile.role === 'admin'">
+          <router-link to="/stock-market-today" :class="['option', 'stockmarket']">Stock Market Today</router-link>
+          <router-link to="/portfolio-simulation" :class="['option', 'stockmarket']">Simulation</router-link>
         </template>
       </div>
       <button v-if="profile && profile.role === 'admin'" @click="deletePortfolio" class="delete-button">Delete Portfolio</button>
@@ -38,7 +48,6 @@
 </template>
 
 <script>
-import LoginPage from '../LoginPage.vue';
 import MessageModal from './components/MessageModal.vue'; // Import the MessageModal component
 import { getFirestore, collection, query, getDocs, deleteDoc, doc, updateDoc, getDoc } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
@@ -46,7 +55,6 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 export default {
   name: 'StockTradingSelect',
   components: {
-    LoginPage,
     MessageModal // Register the MessageModal component
   },
   data() {
@@ -64,12 +72,6 @@ export default {
     await this.fetchUserFunds();
   },
   methods: {
-    handleLoginSuccess(user) {
-      this.showLogin = false;
-      console.log('Logged in user:', user);
-      this.fetchUserProfile();  // Fetch profile after login
-      this.fetchUserFunds();    // Refresh user funds after login
-    },
     async fetchUserProfile() {
       const auth = getAuth();
       const user = auth.currentUser;
@@ -248,6 +250,18 @@ export default {
   transition: background-color 0.3s, transform 0.2s;
   cursor: pointer;
   margin-bottom: 10px;
+}
+
+.user {
+  background-color: #007bff;
+}
+
+.admin {
+  background-color: rgb(45, 118, 40);
+}
+
+.stockmarket {
+  background-color: #333;
 }
 
 .option:hover {
