@@ -74,6 +74,7 @@
             class: this.classValue,
             school: this.school,
             role: 'user',
+            userUID: user.uid
           });
 
           await setDoc(doc(db, user.uid, "Profile"), {
@@ -83,6 +84,7 @@
             class: this.classValue,
             school: this.school,
             role: 'user',
+            userUID: user.uid
           });
 
           await setDoc(doc(db, user.uid, "Total Funds"), {
