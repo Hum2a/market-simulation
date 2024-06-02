@@ -22,8 +22,10 @@
         <template v-if="profile && profile.role === 'admin'">
           <router-link to="/admin-portfolio-creation" :class="['option', 'admin']">Admin Portfolio Creation</router-link>
           <router-link to="/portfolio-upload" :class="['option', 'admin']">Upload Portfolios</router-link>
-          <router-link to="/portfolio-assign" :class="['option', 'admin']">Assign Portfolios</router-link>
-          <router-link to="/portfolio-manage" :class="['option', 'admin']">Manage Portfolios</router-link>
+          <router-link to="/admin-portfolio-assign" :class="['option', 'admin']">Assign Portfolios</router-link>
+          <router-link to="/admin-portfolio-view" :class="['option', 'admin']">View all Portfolios</router-link>
+          <router-link to="/admin-portfolio-display" :class="['option', 'admin',]">View Individual Portfolios</router-link>
+          <router-link to="/sticky-note-creator" :class="['option', 'admin']">Sticky Note Creator</router-link>
         </template>
       </div>
       <div class="options">
