@@ -26,6 +26,7 @@
           <router-link to="/admin-portfolio-view" :class="['option', 'admin']">View all Portfolios</router-link>
           <router-link to="/admin-portfolio-display" :class="['option', 'admin',]">View Individual Portfolios</router-link>
           <router-link to="/sticky-note-creator" :class="['option', 'admin']">Sticky Note Creator</router-link>
+          <router-link to="/portfolio-delete" :class="['option', 'delete']">Delete A Portfolio</router-link>
         </template>
       </div>
       <div class="options">
@@ -34,7 +35,7 @@
           <router-link to="/portfolio-simulation" :class="['option', 'stockmarket']">Simulation</router-link>
         </template>
       </div>
-      <button v-if="profile && profile.role === 'admin'" @click="deletePortfolio" class="delete-button">Delete Portfolio</button>
+      <button v-if="profile && profile.role === 'admin'" @click="deletePortfolio" class="delete-button">Delete Your Portfolio</button>
     </main>
     <div v-if="userFunds !== null" class="total-funds">
       <p>Total Funds: £{{ userFunds }}</p>
@@ -255,11 +256,15 @@ export default {
 }
 
 .user {
-  background-color: #007bff;
+  background-color: #7062c0;
 }
 
 .admin {
   background-color: rgb(45, 118, 40);
+}
+
+.delete {
+  background-color: #dc3545;
 }
 
 .stockmarket {
