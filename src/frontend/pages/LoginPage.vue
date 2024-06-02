@@ -8,7 +8,7 @@
       </div>
       <div class="form-group">
         <label for="password">Password:</label>
-        <input type="password" id="password" v-model="password" required>
+        <input type="password" id="password" v-model="password" required placeholder="Password">
       </div>
       <button type="submit" class="login-btn">Login</button>
       <button type="button" @click="handleRegister" class="register-btn">Register</button>
@@ -50,6 +50,7 @@ export default {
           // Here the user is successfully logged in
           this.$emit('login-success', userCredential.user);
           this.loginSuccess = true;
+          this.$router.push({ name: 'StockTradingSelect' });
         })
         .catch(error => {
           this.errorMessage = error.message; // Handle login errors
@@ -71,16 +72,19 @@ export default {
 
 <style scoped>
 .login-container {
-  width: 320px;
-  margin: 10px auto;
-  padding: 30px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-  border-radius: 8px;
-  background-color: #ffffff; /* White background for a clean look */
+  width: 360px;
+  margin: 40px auto;
+  padding: 40px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  background-color: #f7f9fc;
 }
 
 .login-or-register {
-  margin: 0;
+  text-align: center;
+  margin-bottom: 30px;
+  font-size: 1.5em;
+  color: #333;
 }
 
 .form-group {
@@ -90,48 +94,48 @@ export default {
 label {
   display: block;
   margin-bottom: 8px;
-  color: #333; /* Darker font color for better readability */
-  font-weight: bold; /* Bold font for labels */
+  color: #555;
+  font-weight: 500;
 }
 
 input[type="text"],
 input[type="password"] {
   width: 100%;
-  padding: 10px;
-  line-height: 1.5;
-  margin-bottom: 15px;
-  border: 2px solid #007bff; /* Blue border matching button color */
+  padding: 12px;
+  margin-top: 6px;
+  border: 1px solid #ddd;
   border-radius: 5px;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 button {
-  width: 80%;
+  width: 100%;
   padding: 12px;
-  margin-top: 15px;
-  background-image: linear-gradient(to right, #007bff, #0056b3); /* Gradient background for buttons */
+  margin-top: 10px;
+  background-color: #007bff;
   border: none;
   color: white;
+  font-size: 1em;
   cursor: pointer;
   border-radius: 5px;
   transition: background-color 0.3s, transform 0.2s;
 }
 
 button:hover {
-  background-image: linear-gradient(to right, #0069d9, #004085); /* Darker gradient on hover */
-  transform: scale(1.05); /* Slight lift effect on hover */
+  background-color: #0056b3;
+  transform: scale(1.02);
 }
 
 button:active {
-  transform: scale(0.9);
+  transform: scale(0.98);
 }
 
 .login-btn {
-  margin-bottom: 10px; /* Space between login and register button */
+  margin-bottom: 10px;
 }
 
 p {
-  color: #cc0000; /* Bright red for error messages */
+  color: #cc0000;
   text-align: center;
   font-size: 0.9em;
 }
