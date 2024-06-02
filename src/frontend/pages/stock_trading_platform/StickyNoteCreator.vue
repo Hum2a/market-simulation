@@ -32,6 +32,19 @@
                 <input type="checkbox" id="show-for-all" v-model="showForAllUsers" />
               </div>
               <div class="form-group">
+                <label for="users">Show for Specific Users:</label>
+                <div class="user-buttons">
+                  <button
+                    v-for="user in users"
+                    :key="user.uid"
+                    :class="{'selected': selectedUsers.includes(user.uid)}"
+                    @click.prevent="toggleUserSelection(user.uid)"
+                  >
+                    {{ user.firstName|| user.email }}
+                  </button>
+                </div>
+              </div>
+              <div class="form-group">
                 <label for="stocks">Show for Specific Stocks:</label>
                 <div class="stock-buttons">
                   <button
@@ -84,10 +97,12 @@
         noteTitle: '',
         noteContent: '',
         showForAllUsers: false,
+        selectedUsers: [],
         selectedStocks: [],
         portfolioValueThreshold: null,
         editingNoteId: null,
         existingNotes: [],
+        users: [],
         stocks: [
           { name: 'AbbVie', symbol: 'ABBV' },
           { name: 'Activision Blizzard', symbol: 'ATVI' },
@@ -152,6 +167,7 @@
     },
     async created() {
       await this.fetchExistingNotes();
+      await this.fetchUsers();
     },
     methods: {
       async fetchExistingNotes() {
@@ -159,12 +175,18 @@
         const querySnapshot = await getDocs(collection(db, 'Sticky Notes'));
         this.existingNotes = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       },
+      async fetchUsers() {
+        const db = getFirestore();
+        const querySnapshot = await getDocs(collection(db, 'Users'));
+        this.users = querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
+      },
       async createOrUpdateStickyNote() {
         const db = getFirestore();
         const note = {
           title: this.noteTitle,
           content: this.noteContent,
           showForAllUsers: this.showForAllUsers,
+          selectedUsers: this.selectedUsers,
           selectedStocks: this.selectedStocks,
           portfolioValueThreshold: this.portfolioValueThreshold,
           position: this.stickyNotePosition,
@@ -172,28 +194,37 @@
         };
         try {
           await setDoc(doc(db, 'Sticky Notes', this.noteTitle), note);
-          await this.fetchExistingNotes(); // Refresh the list of existing notes
-          this.resetForm();
-        } catch (error) {
-          console.error('Error creating or updating sticky note:', error);
-        }
-      },
-      selectNoteForEditing(note) {
-        this.noteTitle = note.title;
-        this.noteContent = note.content;
-        this.showForAllUsers = note.showForAllUsers;
-        this.selectedStocks = note.selectedStocks;
-        this.portfolioValueThreshold = note.portfolioValueThreshold;
-        this.stickyNotePosition = note.position || { x: 0, y: 0 };
-        this.editingNoteId = note.id;
-      },
-      async deleteNote(noteId) {
-        const db = getFirestore();
-        try {
-          await deleteDoc(doc(db, 'Sticky Notes', noteId));
-          await this.fetchExistingNotes(); // Refresh the list of existing notes
-        } catch       (error) {
+          await this.fetchExistingNotes(); // Refresh the list of existing         notes
+        this.resetForm();
+      } catch (error) {
+        console.error('Error creating or updating sticky note:', error);
+      }
+    },
+    selectNoteForEditing(note) {
+      this.noteTitle = note.title;
+      this.noteContent = note.content;
+      this.showForAllUsers = note.showForAllUsers;
+      this.selectedUsers = note.selectedUsers || [];
+      this.selectedStocks = note.selectedStocks;
+      this.portfolioValueThreshold = note.portfolioValueThreshold;
+      this.stickyNotePosition = note.position || { x: 0, y: 0 };
+      this.editingNoteId = note.id;
+    },
+    async deleteNote(noteId) {
+      const db = getFirestore();
+      try {
+        await deleteDoc(doc(db, 'Sticky Notes', noteId));
+        await this.fetchExistingNotes(); // Refresh the list of existing notes
+      } catch (error) {
         console.error('Error deleting sticky note:', error);
+      }
+    },
+    toggleUserSelection(userId) {
+      const index = this.selectedUsers.indexOf(userId);
+      if (index > -1) {
+        this.selectedUsers.splice(index, 1);
+      } else {
+        this.selectedUsers.push(userId);
       }
     },
     toggleStockSelection(stock) {
@@ -208,6 +239,7 @@
       this.noteTitle = '';
       this.noteContent = '';
       this.showForAllUsers = false;
+      this.selectedUsers = [];
       this.selectedStocks = [];
       this.portfolioValueThreshold = null;
       this.stickyNotePosition = { x: 0, y: 0 };
@@ -353,13 +385,13 @@ button:hover {
   background-color: #0d1b3f;
 }
 
-.stock-buttons {
+.stock-buttons, .user-buttons {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5em;
 }
 
-.stock-buttons button {
+.stock-buttons button, .user-buttons button {
   background-color: transparent;
   border: 1px solid #102454;
   color: #102454;
@@ -369,12 +401,12 @@ button:hover {
   transition: background-color 0.3s, color 0.3s;
 }
 
-.stock-buttons button.selected {
+.stock-buttons button.selected, .user-buttons button.selected {
   background-color: #f0e5d8;
   color: #102454;
 }
 
-.stock-buttons button:hover {
+.stock-buttons button:hover, .user-buttons button:hover {
   background-color: #0d1b3f;
   color: #fff;
 }
