@@ -21,6 +21,7 @@ import PortfolioOmniView from '../../frontend/pages/stock_trading_platform/Portf
 import AdminPortfolioDisplay from '../../frontend/pages/stock_trading_platform/AdminPortfolioDisplay';
 import AdminPortfolioDisplayUID from '../../frontend/pages/stock_trading_platform/AdminPortfolioDisplayUID.vue';
 import StickyNoteCreator from '../../frontend/pages/stock_trading_platform/StickyNoteCreator.vue';
+import PortfolioDelete from '../../frontend/pages/stock_trading_platform/PortfolioDelete.vue';
 
 const routes = [
   {
@@ -137,6 +138,11 @@ const routes = [
     path: '/sticky-note-creator',
     name: 'StickyNoteCreator',
     component: StickyNoteCreator
+  },
+  {
+    path: '/portfolio-delete',
+    name: 'PortfolioDelete',
+    component: PortfolioDelete
   }
 ];
 
