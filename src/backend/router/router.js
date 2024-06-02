@@ -17,7 +17,10 @@ import StartPage from '../../frontend/pages/StartPage.vue';
 import AdminPortfolioCreation from '../../frontend/pages/stock_trading_platform/AdminPortfolioCreation.vue';
 import PortfolioUpload from '../../frontend/pages/stock_trading_platform/PortfolioUpload';
 import PortfolioAssign from '../../frontend/pages/stock_trading_platform/PortfolioAssign';
-import PortfolioManage from '../../frontend/pages/stock_trading_platform/PortfolioManage.vue';
+import PortfolioOmniView from '../../frontend/pages/stock_trading_platform/PortfolioOmniView.vue';
+import AdminPortfolioDisplay from '../../frontend/pages/stock_trading_platform/AdminPortfolioDisplay';
+import AdminPortfolioDisplayUID from '../../frontend/pages/stock_trading_platform/AdminPortfolioDisplayUID.vue';
+import StickyNoteCreator from '../../frontend/pages/stock_trading_platform/StickyNoteCreator.vue';
 
 const routes = [
   {
@@ -110,14 +113,30 @@ const routes = [
     component: PortfolioUpload
   },
   {
-    path: '/portfolio-assign',
+    path: '/admin-portfolio-assign',
     name: 'PortfolioAssign',
     component: PortfolioAssign
   },
   {
-    path: '/portfolio-manage',
-    name: 'PortfolioManage',
-    component: PortfolioManage
+    path: '/admin-portfolio-view',
+    name: 'PortfolioOmniView',
+    component: PortfolioOmniView
+  },
+  {
+    path: '/admin-portfolio-display',
+    name: 'AdminPortfolioDisplay',
+    component: AdminPortfolioDisplay
+  },
+  {
+    path: '/admin-portfolio-display/:userId',
+    name: 'AdminPortfolioDisplayUID',
+    component: AdminPortfolioDisplayUID,
+    props: true
+  },
+  {
+    path: '/sticky-note-creator',
+    name: 'StickyNoteCreator',
+    component: StickyNoteCreator
   }
 ];
 
