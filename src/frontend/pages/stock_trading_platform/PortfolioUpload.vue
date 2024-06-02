@@ -9,8 +9,13 @@
     </header>
     <main class="main-content">
       <h1>Upload Portfolios</h1>
-      <input type="file" @change="handleFileUpload" accept=".csv" />
-      <div v-if="portfolios.length">
+      <div class="upload-container">
+        <label for="file-upload" class="custom-file-upload">
+          <i class="fa fa-cloud-upload"></i> Select CSV File
+        </label>
+        <input type="file" id="file-upload" @change="handleFileUpload" accept=".csv" />
+      </div>
+      <div v-if="portfolios.length" class="portfolios-container">
         <h2>Uploaded Portfolios</h2>
         <table class="portfolios-table">
           <thead>
@@ -124,11 +129,13 @@ export default {
 </script>
 
 <style scoped>
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css');
+
 .portfolio-upload {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background-color: #f0f2f5;
+  background-color: #f9fbfd;
   height: 100vh;
   padding: 0;
   margin: 0;
@@ -138,23 +145,15 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.2em;
-  background-color: #102454;
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 25px;
-  border-bottom-left-radius: 25px;
-  position: relative;
+  padding: 0.5em 1em;
+  background-color: #204080;
   width: 100%;
-  margin: 0 auto;
 }
 
 .logo {
   height: auto;
   width: 150px;
   display: block;
-  margin-left: 0;
-  clip-path: polygon(0 0, 60% 0, 60% 100%, 0% 100%);
 }
 
 .header-links {
@@ -173,7 +172,7 @@ export default {
 }
 
 .nav-link:hover {
-  background-color: #0d1b3f;
+  background-color: #102454;
 }
 
 .main-content {
@@ -182,10 +181,35 @@ export default {
   margin: 2em auto;
   text-align: center;
   padding: 1em;
+  background-color: #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+.upload-container {
+  margin-bottom: 2em;
+}
+
+.custom-file-upload {
+  display: inline-block;
+  padding: 0.5em 1em;
+  cursor: pointer;
+  background-color: #204080;
+  color: white;
+  border-radius: 5px;
+  transition: background-color 0.3s;
+}
+
+.custom-file-upload:hover {
+  background-color: #102454;
 }
 
 input[type="file"] {
-  display: inline;
+  display: none;
+}
+
+.portfolios-container {
+  margin-top: 2em;
 }
 
 .portfolios-table {
@@ -197,17 +221,17 @@ input[type="file"] {
 .portfolios-table th,
 .portfolios-table td {
   border: 1px solid #ddd;
-  padding: 8px;
+  padding: 10px;
   text-align: center;
 }
 
 .portfolios-table th {
-  background-color: #f2f2f2;
-  color: #102454;
+  background-color: #f4f6f8;
+  color: #204080;
 }
 
 button {
-  background-color: #102454;
+  background-color: #204080;
   color: #fff;
   padding: 0.5em 1em;
   border: none;
@@ -218,6 +242,6 @@ button {
 }
 
 button:hover {
-  background-color: #0d1b3f;
+  background-color: #102454;
 }
 </style>
