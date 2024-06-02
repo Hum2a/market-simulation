@@ -1,5 +1,5 @@
 <template>
-  <div class="portfolio-creation">
+  <div class="portfolio-upload">
     <header class="header">
       <img src="../../assets/LifeSmartLogo.png" alt="Logo" class="logo" />
       <nav class="header-links">
@@ -8,33 +8,51 @@
       </nav>
     </header>
     <main class="main-content">
-      <h1>Create New Unassigned Portfolio</h1>
-      <p>Upload a CSV file to create portfolios for each student.</p>
-      <div class="file-upload">
-        <input type="file" @change="handleFileUpload" accept=".csv" />
+      <h1>Upload Portfolios</h1>
+      <input type="file" @change="handleFileUpload" accept=".csv" />
+      <div v-if="portfolios.length">
+        <h2>Uploaded Portfolios</h2>
+        <table class="portfolios-table">
+          <thead>
+            <tr>
+              <th>Student Name</th>
+              <th>Total Funds</th>
+              <th>Start Date</th>
+              <th>Allocation Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(portfolio, index) in portfolios" :key="index">
+              <td>{{ portfolio.userName }}</td>
+              <td>£{{ portfolio.totalFunds.toFixed(2) }}</td>
+              <td>{{ portfolio.startDate }}</td>
+              <td>
+                <ul>
+                  <li v-for="(allocation, stock) in portfolio.allocations" :key="stock">{{ stock }}: £{{ allocation.toFixed(2) }}</li>
+                </ul>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <button @click="submitPortfolios">Submit Portfolios</button>
       </div>
-      <form @submit.prevent="submitPortfolio" class="portfolio-form">
-        <div class="form-buttons">
-          <button type="submit">Submit Portfolios</button>
-        </div>
-      </form>
+      <MessageModal
+        :isVisible="isModalVisible"
+        :title="modalTitle"
+        :message="modalMessage"
+        @close="isModalVisible = false"
+      />
     </main>
-    <MessageModal
-      :isVisible="isModalVisible"
-      :title="modalTitle"
-      :message="modalMessage"
-      @close="isModalVisible = false"
-    />
   </div>
 </template>
 
 <script>
 import { getFirestore, collection, addDoc } from 'firebase/firestore';
-import Papa from 'papaparse';
 import MessageModal from './components/MessageModal.vue';
+import Papa from 'papaparse';
 
 export default {
-  name: 'AdminPortfolioCreation',
+  name: 'PortfolioUpload',
   components: {
     MessageModal
   },
@@ -43,7 +61,7 @@ export default {
       portfolios: [],
       isModalVisible: false,
       modalTitle: '',
-      modalMessage: ''
+      modalMessage: '',
     };
   },
   methods: {
@@ -52,70 +70,61 @@ export default {
       if (file) {
         Papa.parse(file, {
           header: true,
-          complete: this.parseCSV
+          complete: this.processCSVData,
+          skipEmptyLines: true,
+          error: (error) => {
+            console.error('CSV Parsing Error:', error);
+            this.modalTitle = 'Error';
+            this.modalMessage = 'There was an error processing the CSV file.';
+            this.isModalVisible = true;
+          }
         });
       }
     },
-    parseCSV(results) {
-      this.portfolios = results.data.map(row => ({
-        userName: row['Name'],
-        companies: this.getCompanyAllocations(row),
-        totalAllocation: this.safeParseFloat(row['TOTAL start']),
-        date: new Date(row['Date'])
-      }));
+    processCSVData(result) {
+      const data = result.data;
+      console.log('CSV Data:', data);
+      this.portfolios = data.map(row => {
+        const { "Student Name": userName, "Total Funds": totalFunds, "Start Date": startDate, ...allocations } = row;
+        return {
+          userName,
+          totalFunds: parseFloat(totalFunds),
+          startDate,
+          allocations: Object.fromEntries(Object.entries(allocations).map(([key, value]) => [key, parseFloat(value)]))
+        };
+      });
+      console.log('Processed Portfolios:', this.portfolios);
     },
-    getCompanyAllocations(row) {
-      const companies = [
-        { name: 'Amazon', symbol: 'AMZN', allocation: this.safeParseFloat(row['Amazon']) },
-        { name: 'Apple', symbol: 'AAPL', allocation: this.safeParseFloat(row['Apple']) },
-        { name: 'Barclays', symbol: 'BCS', allocation: this.safeParseFloat(row['Barclays']) },
-        { name: 'Boeing', symbol: 'BA', allocation: this.safeParseFloat(row['Boeing']) },
-        { name: 'BP', symbol: 'BP', allocation: this.safeParseFloat(row['BP']) },
-        { name: 'Coca-Cola', symbol: 'KO', allocation: this.safeParseFloat(row['Coca-Cola']) },
-        { name: 'Disney', symbol: 'DIS', allocation: this.safeParseFloat(row['Disney']) },
-        { name: 'Exxon Mobil', symbol: 'XOM', allocation: this.safeParseFloat(row['Exxon Mobil']) },
-        { name: 'Facebook', symbol: 'META', allocation: this.safeParseFloat(row['Facebook']) },
-        { name: 'Goldman Sachs', symbol: 'GS', allocation: this.safeParseFloat(row['Goldman Sachs']) },
-        { name: 'Google', symbol: 'GOOGL', allocation: this.safeParseFloat(row['Google']) },
-        { name: 'Microsoft', symbol: 'MSFT', allocation: this.safeParseFloat(row['Microsoft']) },
-        { name: 'Netflix', symbol: 'NFLX', allocation: this.safeParseFloat(row['Netflix']) },
-        { name: 'Nike', symbol: 'NKE', allocation: this.safeParseFloat(row['Nike']) },
-        { name: 'Pfizer', symbol: 'PFE', allocation: this.safeParseFloat(row['Pfizer']) },
-        { name: 'Spotify', symbol: 'SPOT', allocation: this.safeParseFloat(row['Spotify']) },
-        { name: 'Tesla', symbol: 'TSLA', allocation: this.safeParseFloat(row['Tesla']) },
-        { name: 'Visa', symbol: 'V', allocation: this.safeParseFloat(row['Visa']) },
-        { name: 'Walmart', symbol: 'WMT', allocation: this.safeParseFloat(row['Walmart']) },
-        // Add more companies as needed
-      ];
-      return companies.filter(company => company.allocation > 0);
-    },
-    safeParseFloat(value) {
-      return parseFloat(value?.replace(/[^0-9.-]+/g, "") || 0);
-    },
-    async submitPortfolio() {
+    async submitPortfolios() {
       const db = getFirestore();
-      const portfolioCollection = collection(db, 'Unassigned Portfolios');
-
-      try {
-        for (const portfolio of this.portfolios) {
-          await addDoc(portfolioCollection, portfolio);
+      for (const portfolio of this.portfolios) {
+        const portfolioDoc = {
+          userName: portfolio.userName,
+          companies: Object.entries(portfolio.allocations).map(([name, allocation]) => ({ name, allocation })),
+          totalAllocation: Object.values(portfolio.allocations).reduce((a, b) => a + b, 0),
+          date: new Date(portfolio.startDate),
+        };
+        try {
+          await addDoc(collection(db, 'Unassigned Portfolios'), portfolioDoc);
+        } catch (error) {
+          console.error('Error saving portfolio:', error);
+          this.modalTitle = 'Error';
+          this.modalMessage = 'Error submitting portfolios. Please try again.';
+          this.isModalVisible = true;
+          return;
         }
-        this.modalTitle = 'Success';
-        this.modalMessage = 'Portfolios Submitted Successfully!';
-        this.isModalVisible = true;
-      } catch (error) {
-        console.error('Error saving portfolios:', error);
-        this.modalTitle = 'Error';
-        this.modalMessage = 'Error submitting portfolios. Please try again.';
-        this.isModalVisible = true;
       }
+      this.modalTitle = 'Success';
+      this.modalMessage = 'Portfolios Submitted Successfully!';
+      this.isModalVisible = true;
+      this.portfolios = [];
     }
   }
 };
 </script>
 
 <style scoped>
-.portfolio-creation {
+.portfolio-upload {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -126,7 +135,6 @@ export default {
 }
 
 .header {
-  grid-column: 1 / -1;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -176,190 +184,26 @@ export default {
   padding: 1em;
 }
 
-.main-content h1 {
-  font-size: 2em;
-  color: #102454;
-  margin-bottom: 0.5em;
+input[type="file"] {
+  display: inline;
 }
 
-.main-content p {
-  font-size: 1.2em;
-  color: #333;
-  margin-bottom: 1em;
-}
-
-.file-upload {
-  margin-bottom: 1em;
-}
-
-.file-upload input {
-  display: block;
-  margin: 0 auto;
-}
-
-.funds-input,
-.user-input {
-  margin-bottom: 1em;
-}
-
-.funds-input label,
-.user-input label {
-  color: #102454;
-}
-
-.funds-input input,
-.user-input input {
-  width: 100%;
-  margin-top: 0.5em;
-  padding: 0.5em;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  box-sizing: border-box;
-}
-
-.date-picker {
-  margin-bottom: 1em;
-}
-
-.date-picker label {
-  color: #102454;
-}
-
-.view-toggle {
-  margin-bottom: 1em;
-}
-
-.view-toggle button {
-  background-color: #102454;
-  color: #fff;
-  padding: 0.5em 1em;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.view-toggle button:hover {
-  background-color: #0d1b3f;
-}
-
-.generate-random {
-  margin-bottom: 1em;
-}
-
-.generate-random button {
-  background-color: #28a745;
-  color: #fff;
-  padding: 0.5em 1em;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.generate-random button:hover {
-  background-color: #218838;
-}
-
-.portfolio-form {
-  background: #fff;
-  padding: 2em;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.company {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background-color: #e0e7ff;
-  padding: 1em;
-  border-radius: 8px;
-  margin-bottom: 1em;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.company-label {
-  flex: 1;
-  text-align: left;
-  font-weight: bold;
-  color: #102454;
-}
-
-.company-range {
-  flex: 2;
-  margin: 0 1em;
-  -webkit-appearance: none;
-  appearance: none;
-  height: 8px;
-  background: #102454;
-  border-radius: 5px;
-  outline: none;
-  transition: opacity 0.2s;
-}
-
-.company-range::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #ff9800;
-  cursor: pointer;
-}
-
-.company-range::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #ff9800;
-  cursor: pointer;
-}
-
-.company-value-input {
-  flex: 1;
-  text-align: right;
-  font-weight: bold;
-  color: #102454;
-  border: none;
-  background: none;
-  width: 80px;
-  text-align: center;
-}
-
-.spreadsheet-view-container {
-  overflow-x: auto;
-  width: 100%;
-}
-
-.spreadsheet-view table {
+.portfolios-table {
   width: 100%;
   border-collapse: collapse;
+  margin-top: 1em;
 }
 
-.spreadsheet-view th,
-.spreadsheet-view td {
+.portfolios-table th,
+.portfolios-table td {
   border: 1px solid #ddd;
   padding: 8px;
   text-align: center;
 }
 
-.spreadsheet-view th {
+.portfolios-table th {
   background-color: #f2f2f2;
   color: #102454;
-}
-
-.total-allocation {
-  margin-top: 1em;
-  font-size: 1.2em;
-  color: #333;
-}
-
-.form-buttons {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 1em;
 }
 
 button {
@@ -370,10 +214,10 @@ button {
   border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.3s;
+  margin-top: 1em;
 }
 
-button:disabled {
-  background-color: #aaa;
-  cursor: not-allowed;
+button:hover {
+  background-color: #0d1b3f;
 }
 </style>
