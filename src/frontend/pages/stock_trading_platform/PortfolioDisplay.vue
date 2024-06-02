@@ -8,6 +8,13 @@
       </nav>
     </header>
     <main class="main-content">
+      <div class="sticky-notes-container">
+        <div class="sticky-notes">
+          <li v-for="note in stickyNotes" :key="note.id" class="sticky-note" :style="{ top: note.position.y + '%', left: note.position.x + '%' }">
+            <h3>{{ note.title }}</h3>
+            <p>{{ note.content }}</p>
+          </li>
+        </div>
       <div v-if="loading">
         <p>Loading...</p>
         <progress :value="loadingProgress" max="100"></progress>
@@ -61,7 +68,8 @@
           </div>
         </div>
       </div>
-    </main>
+      </div>
+   </main>
   </div>
 </template>
 
@@ -89,6 +97,7 @@ export default {
       chartData: null,
       expandedStock: null,
       cacheKey: '',
+      stickyNotes: [],
       companies: [
         { name: 'AbbVie', symbol: 'ABBV' },
         { name: 'Activision Blizzard', symbol: 'ATVI' },
@@ -130,7 +139,7 @@ export default {
         { name: 'NIO', symbol: 'NIO' },
         { name: 'Nike', symbol: 'NKE' },
         { name: 'NVIDIA', symbol: 'NVDA' },
-        { name: 'Open AI', symbol: 'Not Listed' }, // Open AI is not a publicly traded company
+        { name: 'Open AI', symbol: 'Not Listed' },
         { name: 'Pandora', symbol: 'P' },
         { name: 'PayPal', symbol: 'PYPL' },
         { name: 'Pfizer', symbol: 'PFE' },
@@ -204,6 +213,7 @@ export default {
     } else {
       await this.fetchAndProcessData();
     }
+    await this.fetchStickyNotes();
   },
   computed: {
     originalValue() {
@@ -415,7 +425,7 @@ export default {
               console.log(`For ${company.name}, on ${formattedDate}: closePrice = ${closePrice}, currentValue = ${currentValue}`);
             } else if (stockData && stockData.data['Time Series (Daily)']) {
               console.log("else if statement called");
-              const lastAvailableDate = Object.keys(stockData.data['Time Series (Daily)']).reduce((a, b) => new Date(a) > new Date(b) ? a : b);
+              const lastAvailableDate = Object.keys(stockData.data['Time Series (Daily)']).reduce((a,  b) => new Date(a) > new Date(b) ? a : b);
               const lastClosePrice = parseFloat(stockData.data['Time Series (Daily)'][lastAvailableDate]['4. close']);
               currentValue = (company.allocation / this.portfolio.initialPrices[index]) * lastClosePrice;
               console.log(`For ${company.name}, using last available data on ${lastAvailableDate}: lastClosePrice = ${lastClosePrice}, currentValue = ${currentValue}`);
@@ -519,7 +529,6 @@ export default {
       const labels = [];
       const data = [];
       for (const date in timeSeries) {
-        console.log(`Prepare Chart Data: date = ${date}`);
         labels.push(date);
         data.push(parseFloat(timeSeries[date]['4. close']).toFixed(2));
       }
@@ -545,7 +554,38 @@ export default {
       }
       return colors;
     },
-  },
+    async fetchStickyNotes() {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (user) {
+        const db = getFirestore();
+        const notesCollection = collection(db, 'Sticky Notes');
+        const notesSnapshot = await getDocs(notesCollection);
+
+        this.stickyNotes = notesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(note => {
+          return this.shouldShowNote(note);
+        });
+      } else {
+        console.error("User is not logged in");
+      }
+    },
+    shouldShowNote(note) {
+      if (note.showForAllUsers) {
+        return true;
+      }
+      if (note.portfolioValueThreshold && this.currentValue > note.portfolioValueThreshold) {
+        return true;
+      }
+      if (note.selectedStocks && note.selectedStocks.length) {
+        const userStocks = this.portfolio ? this.portfolio.companies.map(company => company.symbol) : [];
+        const hasMatchingStock = note.selectedStocks.some(stock => userStocks.includes(stock));
+        if (hasMatchingStock) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
 };
 </script>
 
@@ -558,6 +598,7 @@ export default {
   height: 100vh;
   padding: 0;
   margin: 0;
+  position: relative; /* Added for sticky note positioning */
 }
 
 .header {
@@ -619,6 +660,7 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 2em;
+  position: relative; /* Added for sticky note positioning */
 }
 
 .portfolio-summary {
@@ -681,7 +723,7 @@ export default {
 }
 
 .portfolio-table th, .portfolio-table td {
-  border: 1px solid #ddd;
+  border: 1px solid     #ddd;
   padding: 0.75em;
   text-align: left;
 }
@@ -703,4 +745,50 @@ export default {
 .expanded-row {
   background-color: #f0f2f5;
 }
+
+.sticky-notes-container {
+  width: 100%;
+  height: 100%;
+}
+
+.sticky-notes {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* Prevent sticky notes from blocking other interactions */
+}
+
+.sticky-notes li {
+  background: #ffeb3b; /* Yellow background to resemble sticky notes */
+  padding: 1em;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  position: absolute; /* Position absolute to place at specific coordinates */
+  font-family: 'Comic Sans MS', cursive, sans-serif;
+  width: 150px; /* Adjust width to maintain square shape */
+  height: 150px; /* Adjust height to maintain square shape */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  pointer-events: auto; /* Allow interaction with sticky notes */
+}
+
+.sticky-notes li h3 {
+  margin: 0;
+  font-size: 1.2em;
+  color: #333;
+}
+
+.sticky-notes li p {
+  margin: 0.5em 0 0;
+  font-size: 1em;
+  color: #333;
+}
 </style>
+
+
+
