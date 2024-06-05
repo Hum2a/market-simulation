@@ -1,172 +1,172 @@
 <template>
-    <div class="portfolio-creation">
-      <header class="header">
-        <img src="../../assets/LifeSmartLogo.png" alt="Logo" class="logo" />
-        <nav class="header-links">
-          <router-link to="/stock-trading-select" class="nav-link">Stock Market Tool</router-link>
-          <router-link to="/" class="nav-link">Home</router-link>
-        </nav>
-      </header>
-      <main class="main-content">
-        <h1>Create New Unassigned Portfolio</h1>
-        <p>Divide your chosen amount amongst the top 30 US companies on the stock market.</p>
-        <form @submit.prevent="submitPortfolio" class="portfolio-form">
-          <div class="user-input">
-            <label for="user-name">Student Name:</label>
-            <input type="text" id="user-name" v-model="userName" required />
+  <div class="portfolio-creation">
+    <header class="header">
+      <img src="../../assets/LifeSmartLogo.png" alt="Logo" class="logo" />
+      <nav class="header-links">
+        <router-link to="/stock-trading-select" class="nav-link">Stock Market Tool</router-link>
+        <router-link to="/" class="nav-link">Home</router-link>
+      </nav>
+    </header>
+    <main class="main-content">
+      <h1>Create New Unassigned Portfolio</h1>
+      <p>Divide your chosen amount amongst the top 30 US companies on the stock market.</p>
+      <form @submit.prevent="submitPortfolio" class="portfolio-form">
+        <div class="user-input">
+          <label for="user-name">Student Name:</label>
+          <input type="text" id="user-name" v-model="userName" required />
+        </div>
+        <div class="funds-input">
+          <label for="total-funds">Total Funds (£):</label>
+          <input type="number" id="total-funds" v-model.number="totalFunds" required />
+        </div>
+        <div class="date-picker">
+          <label for="portfolio-date">Select Start Date:</label>
+          <Datepicker v-model="selectedDate" />
+        </div>
+        <div class="view-toggle">
+          <button type="button" @click="toggleView">
+            {{ viewMode === 'card' ? 'Switch to Spreadsheet View' : 'Switch to Card View' }}
+          </button>
+        </div>
+        <div class="generate-random">
+          <button type="button" @click="generateRandomPortfolio">Generate Random Portfolio</button>
+        </div>
+        <div v-if="viewMode === 'card'">
+          <div v-for="company in companies" :key="company.name" class="company">
+            <label :for="company.name" class="company-label">{{ company.name }}:</label>
+            <input
+              type="range"
+              :id="company.name"
+              v-model.number="company.allocation"
+              :max="totalFunds"
+              @input="updateTotal"
+              step="1"
+              class="company-range"
+            />
+            <input
+              type="number"
+              v-model.number="company.allocation"
+              :max="totalFunds"
+              @input="updateTotal"
+              class="company-value-input"
+            />
           </div>
-          <div class="funds-input">
-            <label for="total-funds">Total Funds (£):</label>
-            <input type="number" id="total-funds" v-model.number="totalFunds" required />
+        </div>
+        <div v-else class="spreadsheet-view-container">
+          <div class="spreadsheet-view">
+            <table>
+              <thead>
+                <tr>
+                  <th v-for="company in companies" :key="company.name">{{ company.name }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td v-for="company in companies" :key="company.name">
+                    <input
+                      type="number"
+                      v-model.number="company.allocation"
+                      :max="totalFunds"
+                      @input="updateTotal"
+                      class="company-value-input"
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-          <div class="date-picker">
-            <label for="portfolio-date">Select Start Date:</label>
-            <Datepicker v-model="selectedDate" />
-          </div>
-          <div class="view-toggle">
-            <button type="button" @click="toggleView">
-              {{ viewMode === 'card' ? 'Switch to Spreadsheet View' : 'Switch to Card View' }}
-            </button>
-          </div>
-          <div class="generate-random">
-            <button type="button" @click="generateRandomPortfolio">Generate Random Portfolio</button>
-          </div>
-          <div v-if="viewMode === 'card'">
-            <div v-for="company in companies" :key="company.name" class="company">
-              <label :for="company.name" class="company-label">{{ company.name }}:</label>
-              <input
-                type="range"
-                :id="company.name"
-                v-model.number="company.allocation"
-                :max="totalFunds"
-                @input="updateTotal"
-                step="1"
-                class="company-range"
-              />
-              <input
-                type="number"
-                v-model.number="company.allocation"
-                :max="totalFunds"
-                @input="updateTotal"
-                class="company-value-input"
-              />
-            </div>
-          </div>
-          <div v-else class="spreadsheet-view-container">
-            <div class="spreadsheet-view">
-              <table>
-                <thead>
-                  <tr>
-                    <th v-for="company in companies" :key="company.name">{{ company.name }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td v-for="company in companies" :key="company.name">
-                      <input
-                        type="number"
-                        v-model.number="company.allocation"
-                        :max="totalFunds"
-                        @input="updateTotal"
-                        class="company-value-input"
-                      />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <div class="total-allocation">
-            <strong>Total Allocation: £{{ totalAllocation }}</strong>
-          </div>
-          <div class="form-buttons">
-            <button type="submit" :disabled="totalAllocation > totalFunds || totalAllocation === 0">Submit</button>
-          </div>
-        </form>
-      </main>
-      <MessageModal
-        :isVisible="isModalVisible"
-        :title="modalTitle"
-        :message="modalMessage"
-        @close="isModalVisible = false"
-      />
-    </div>
-  </template>
-  
-  <script>
-  import { getFirestore, collection, addDoc } from 'firebase/firestore';
-  import Datepicker from '@vuepic/vue-datepicker';
-  import '@vuepic/vue-datepicker/dist/main.css';
-  import MessageModal from './components/MessageModal.vue';
-  
-  export default {
-    name: 'AdminPortfolioCreation',
-    components: {
-      Datepicker,
-      MessageModal
-    },
-    data() {
-      return {
-        userName: '',
-        totalFunds: 10000,
-        viewMode: 'card',
-        companies: [
-            { name: 'AbbVie', symbol: 'ABBV', allocation: 0 },
-            { name: 'Activision Blizzard', symbol: 'ATVI', allocation: 0 },
-            { name: 'Adobe', symbol: 'ADBE', allocation: 0 },
-            { name: 'Amazon', symbol: 'AMZN', allocation: 0 },
-            { name: 'American Tower Corporation', symbol: 'AMT', allocation: 0 },
-            { name: 'Apple', symbol: 'AAPL', allocation: 0 },
-            { name: 'Astra Zeneca', symbol: 'AZN', allocation: 0 },
-            { name: 'AT&T', symbol: 'T', allocation: 0 },
-            { name: 'Axon Enterprise', symbol: 'AXON', allocation: 0 },
-            { name: 'Barclays', symbol: 'BCS', allocation: 0 },
-            { name: 'Berkshire Hathaway', symbol: 'BRK.B', allocation: 0 },
-            { name: 'Blackrock', symbol: 'BLK', allocation: 0 },
-            { name: 'Boeing', symbol: 'BA', allocation: 0 },
-            { name: 'BP', symbol: 'BP', allocation: 0 },
-            { name: 'BYD', symbol: 'BYDDY', allocation: 0 },
-            { name: 'Cisco', symbol: 'CSCO', allocation: 0 },
-            { name: 'Coca-Cola', symbol: 'KO', allocation: 0 },
-            { name: 'Comcast', symbol: 'CMCSA', allocation: 0 },
-            { name: 'Costco', symbol: 'COST', allocation: 0 },
-            { name: 'Curries', symbol: 'DC.L', allocation: 0 },
-            { name: 'Disney', symbol: 'DIS', allocation: 0 },
-            { name: 'EA', symbol: 'EA', allocation: 0 },
-            { name: 'ExxonMobil', symbol: 'XOM', allocation: 0 },
-            { name: 'Goldman Sachs', symbol: 'GS', allocation: 0 },
-            { name: 'Google', symbol: 'GOOGL', allocation: 0 },
-            { name: 'Home Depot', symbol: 'HD', allocation: 0 },
-            { name: 'IBM', symbol: 'IBM', allocation: 0 },
-            { name: 'Intel', symbol: 'INTC', allocation: 0 },
-            { name: 'Johnson & Johnson', symbol: 'JNJ', allocation: 0 },
-            { name: 'JPMorgan Chase', symbol: 'JPM', allocation: 0 },
-            { name: 'LG', symbol: '066570.KS', allocation: 0 },
-            { name: 'Lockheed Martin', symbol: 'LMT', allocation: 0 },
-            { name: 'Man United', symbol: 'MANU', allocation: 0 },
-            { name: 'Mastercard', symbol: 'MA', allocation: 0 },
-            { name: 'Meta', symbol: 'META', allocation: 0 },
-            { name: 'Microsoft', symbol: 'MSFT', allocation: 0 },
-            { name: 'Netflix', symbol: 'NFLX', allocation: 0 },
-            { name: 'NIO', symbol: 'NIO', allocation: 0 },
-            { name: 'Nike', symbol: 'NKE', allocation: 0 },
-            { name: 'NVIDIA', symbol: 'NVDA', allocation: 0 },
-            { name: 'Open AI', symbol: 'Not Listed', allocation: 0 }, // Open AI is not a publicly traded company
-            { name: 'Pandora', symbol: 'P', allocation: 0 },
-            { name: 'PayPal', symbol: 'PYPL', allocation: 0 },
-            { name: 'Pfizer', symbol: 'PFE', allocation: 0 },
-            { name: 'PepsiCo', symbol: 'PEP', allocation: 0 },
-            { name: 'Procter & Gamble', symbol: 'PG', allocation: 0 },
-            { name: 'Roblox', symbol: 'RBLX', allocation: 0 },
-            { name: 'Rolls Royce', symbol: 'RR.L', allocation: 0 },
-            { name: 'Shell', symbol: 'SHEL', allocation: 0 },
-            { name: 'Spotify', symbol: 'SPOT', allocation: 0 },
-            { name: 'Tesla', symbol: 'TSLA', allocation: 0 },
-            { name: 'Tesco', symbol: 'TSCO.L', allocation: 0 },
-            { name: 'UnitedHealth', symbol: 'UNH', allocation: 0 },
-            { name: 'Verizon', symbol: 'VZ', allocation: 0 },
-            { name: 'Visa', symbol: 'V', allocation: 0 },
-            { name: 'Walmart', symbol: 'WMT', allocation: 0 }
+        </div>
+        <div class="total-allocation">
+          <strong>Total Allocation: £{{ totalAllocation }}</strong>
+        </div>
+        <div class="form-buttons">
+          <button type="submit" :disabled="totalAllocation > totalFunds || totalAllocation === 0">Submit</button>
+        </div>
+      </form>
+    </main>
+    <MessageModal
+      :isVisible="isModalVisible"
+      :title="modalTitle"
+      :message="modalMessage"
+      @close="isModalVisible = false"
+    />
+  </div>
+</template>
+
+<script>
+import { getFirestore, setDoc, doc } from 'firebase/firestore';
+import Datepicker from '@vuepic/vue-datepicker';
+import '@vuepic/vue-datepicker/dist/main.css';
+import MessageModal from './components/MessageModal.vue';
+
+export default {
+  name: 'AdminPortfolioCreation',
+  components: {
+    Datepicker,
+    MessageModal
+  },
+  data() {
+    return {
+      userName: '',
+      totalFunds: 10000,
+      viewMode: 'card',
+      companies: [
+          { name: 'AbbVie', symbol: 'ABBV', allocation: 0 },
+          { name: 'Activision Blizzard', symbol: 'ATVI', allocation: 0 },
+          { name: 'Adobe', symbol: 'ADBE', allocation: 0 },
+          { name: 'Amazon', symbol: 'AMZN', allocation: 0 },
+          { name: 'American Tower Corporation', symbol: 'AMT', allocation: 0 },
+          { name: 'Apple', symbol: 'AAPL', allocation: 0 },
+          { name: 'Astra Zeneca', symbol: 'AZN', allocation: 0 },
+          { name: 'AT&T', symbol: 'T', allocation: 0 },
+          { name: 'Axon Enterprise', symbol: 'AXON', allocation: 0 },
+          { name: 'Barclays', symbol: 'BCS', allocation: 0 },
+          { name: 'Berkshire Hathaway', symbol: 'BRK.B', allocation: 0 },
+          { name: 'Blackrock', symbol: 'BLK', allocation: 0 },
+          { name: 'Boeing', symbol: 'BA', allocation: 0 },
+          { name: 'BP', symbol: 'BP', allocation: 0 },
+          { name: 'BYD', symbol: 'BYDDY', allocation: 0 },
+          { name: 'Cisco', symbol: 'CSCO', allocation: 0 },
+          { name: 'Coca-Cola', symbol: 'KO', allocation: 0 },
+          { name: 'Comcast', symbol: 'CMCSA', allocation: 0 },
+          { name: 'Costco', symbol: 'COST', allocation: 0 },
+          { name: 'Curries', symbol: 'DC.L', allocation: 0 },
+          { name: 'Disney', symbol: 'DIS', allocation: 0 },
+          { name: 'EA', symbol: 'EA', allocation: 0 },
+          { name: 'ExxonMobil', symbol: 'XOM', allocation: 0 },
+          { name: 'Goldman Sachs', symbol: 'GS', allocation: 0 },
+          { name: 'Google', symbol: 'GOOGL', allocation: 0 },
+          { name: 'Home Depot', symbol: 'HD', allocation: 0 },
+          { name: 'IBM', symbol: 'IBM', allocation: 0 },
+          { name: 'Intel', symbol: 'INTC', allocation: 0 },
+          { name: 'Johnson & Johnson', symbol: 'JNJ', allocation: 0 },
+          { name: 'JPMorgan Chase', symbol: 'JPM', allocation: 0 },
+          { name: 'LG', symbol: '066570.KS', allocation: 0 },
+          { name: 'Lockheed Martin', symbol: 'LMT', allocation: 0 },
+          { name: 'Man United', symbol: 'MANU', allocation: 0 },
+          { name: 'Mastercard', symbol: 'MA', allocation: 0 },
+          { name: 'Meta', symbol: 'META', allocation: 0 },
+          { name: 'Microsoft', symbol: 'MSFT', allocation: 0 },
+          { name: 'Netflix', symbol: 'NFLX', allocation: 0 },
+          { name: 'NIO', symbol: 'NIO', allocation: 0 },
+          { name: 'Nike', symbol: 'NKE', allocation: 0 },
+          { name: 'NVIDIA', symbol: 'NVDA', allocation: 0 },
+          { name: 'Open AI', symbol: 'Not Listed', allocation: 0 },
+          { name: 'Pandora', symbol: 'P', allocation: 0 },
+          { name: 'PayPal', symbol: 'PYPL', allocation: 0 },
+          { name: 'Pfizer', symbol: 'PFE', allocation: 0 },
+          { name: 'PepsiCo', symbol: 'PEP', allocation: 0 },
+          { name: 'Procter & Gamble', symbol: 'PG', allocation: 0 },
+          { name: 'Roblox', symbol: 'RBLX', allocation: 0 },
+          { name: 'Rolls Royce', symbol: 'RR.L', allocation: 0 },
+          { name: 'Shell', symbol: 'SHEL', allocation: 0 },
+          { name: 'Spotify', symbol: 'SPOT', allocation: 0 },
+          { name: 'Tesla', symbol: 'TSLA', allocation: 0 },
+          { name: 'Tesco', symbol: 'TSCO.L', allocation: 0 },
+          { name: 'UnitedHealth', symbol: 'UNH', allocation: 0 },
+          { name: 'Verizon', symbol: 'VZ', allocation: 0 },
+          { name: 'Visa', symbol: 'V', allocation: 0 },
+          { name: 'Walmart', symbol: 'WMT', allocation: 0 }
         ],
         selectedDate: new Date(),
         isModalVisible: false,
@@ -222,7 +222,7 @@
           };
   
           try {
-            await addDoc(collection(db, 'Unassigned Portfolios'), portfolio);
+            await setDoc(doc(db, 'Unassigned Portfolios', this.userName), portfolio);
             this.modalTitle = 'Success';
             this.modalMessage = 'Portfolio Submitted Successfully!';
             this.isModalVisible = true;
@@ -496,4 +496,3 @@
     cursor: not-allowed;
   }
   </style>
-  
