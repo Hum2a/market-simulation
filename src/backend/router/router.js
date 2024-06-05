@@ -22,6 +22,7 @@ import AdminPortfolioDisplay from '../../frontend/pages/stock_trading_platform/A
 import AdminPortfolioDisplayUID from '../../frontend/pages/stock_trading_platform/AdminPortfolioDisplayUID.vue';
 import StickyNoteCreator from '../../frontend/pages/stock_trading_platform/StickyNoteCreator.vue';
 import PortfolioDelete from '../../frontend/pages/stock_trading_platform/PortfolioDelete.vue';
+import UnassignedPortfolioDisplay from '../../frontend/pages/stock_trading_platform/UnassignedPortfolioDisplay.vue';
 
 const routes = [
   {
@@ -143,6 +144,11 @@ const routes = [
     path: '/portfolio-delete',
     name: 'PortfolioDelete',
     component: PortfolioDelete
+  },
+  {
+    path: '/unassigned-portfolio-display',
+    name: 'UnassignedPortfolioDisplay',
+    component: UnassignedPortfolioDisplay
   }
 ];
 
