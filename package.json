@@ -19,6 +19,7 @@
     "express": "^4.19.2",
     "firebase": "^10.9.0",
     "firebase-admin": "^12.1.0",
+    "html2canvas": "^1.4.1",
     "mongoose": "^8.4.0",
     "papaparse": "^5.4.1",
     "vue": "^3.2.13",
