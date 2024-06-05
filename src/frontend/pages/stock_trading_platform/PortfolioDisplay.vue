@@ -29,6 +29,7 @@
             <p>Percentage Gain/Loss: {{ roundedValue(percentageGainLoss) }}%</p>
             <p>Best Performing Stock: {{ bestPerformingStock.name }} ({{ roundedValue(bestPerformingStock.percentageChange) }}%)</p>
             <p>Worst Performing Stock: {{ worstPerformingStock.name }} ({{ roundedValue(worstPerformingStock.percentageChange) }}%)</p>
+            <p>Time Invested: {{ timeInvested }} days</p>
           </div>
           <div class="portfolio-graph-card">
             <h2>Portfolio Value Over Time</h2>
@@ -76,7 +77,7 @@
 <script>
 import { getFirestore, doc, getDocs, collection, query, orderBy, getDoc, setDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-import { format } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 import LineChart from './components/LineChart.vue';
 import PieChart from './components/PieChart.vue';
 
@@ -99,62 +100,7 @@ export default {
       cacheKey: '',
       stickyNotes: [],
       companies: [
-        { name: 'AbbVie', symbol: 'ABBV' },
-        { name: 'Activision Blizzard', symbol: 'ATVI' },
-        { name: 'Adobe', symbol: 'ADBE' },
-        { name: 'Amazon', symbol: 'AMZN' },
-        { name: 'American Tower Corporation', symbol: 'AMT' },
-        { name: 'Apple', symbol: 'AAPL' },
-        { name: 'Astra Zeneca', symbol: 'AZN' },
-        { name: 'AT&T', symbol: 'T' },
-        { name: 'Axon Enterprise', symbol: 'AXON' },
-        { name: 'Barclays', symbol: 'BCS' },
-        { name: 'Berkshire Hathaway', symbol: 'BRK.B' },
-        { name: 'Blackrock', symbol: 'BLK' },
-        { name: 'Boeing', symbol: 'BA' },
-        { name: 'BP', symbol: 'BP' },
-        { name: 'BYD', symbol: 'BYDDY' },
-        { name: 'Cisco', symbol: 'CSCO' },
-        { name: 'Coca-Cola', symbol: 'KO' },
-        { name: 'Comcast', symbol: 'CMCSA' },
-        { name: 'Costco', symbol: 'COST' },
-        { name: 'Curries', symbol: 'DC.L' },
-        { name: 'Disney', symbol: 'DIS' },
-        { name: 'EA', symbol: 'EA' },
-        { name: 'ExxonMobil', symbol: 'XOM' },
-        { name: 'Goldman Sachs', symbol: 'GS' },
-        { name: 'Google', symbol: 'GOOGL' },
-        { name: 'Home Depot', symbol: 'HD' },
-        { name: 'IBM', symbol: 'IBM' },
-        { name: 'Intel', symbol: 'INTC' },
-        { name: 'Johnson & Johnson', symbol: 'JNJ' },
-        { name: 'JPMorgan Chase', symbol: 'JPM' },
-        { name: 'LG', symbol: '066570.KS' },
-        { name: 'Lockheed Martin', symbol: 'LMT' },
-        { name: 'Man United', symbol: 'MANU' },
-        { name: 'Mastercard', symbol: 'MA' },
-        { name: 'Meta', symbol: 'META' },
-        { name: 'Microsoft', symbol: 'MSFT' },
-        { name: 'Netflix', symbol: 'NFLX' },
-        { name: 'NIO', symbol: 'NIO' },
-        { name: 'Nike', symbol: 'NKE' },
-        { name: 'NVIDIA', symbol: 'NVDA' },
-        { name: 'Open AI', symbol: 'Not Listed' },
-        { name: 'Pandora', symbol: 'P' },
-        { name: 'PayPal', symbol: 'PYPL' },
-        { name: 'Pfizer', symbol: 'PFE' },
-        { name: 'PepsiCo', symbol: 'PEP' },
-        { name: 'Procter & Gamble', symbol: 'PG' },
-        { name: 'Roblox', symbol: 'RBLX' },
-        { name: 'Rolls Royce', symbol: 'RR.L' },
-        { name: 'Shell', symbol: 'SHEL' },
-        { name: 'Spotify', symbol: 'SPOT' },
-        { name: 'Tesla', symbol: 'TSLA' },
-        { name: 'Tesco', symbol: 'TSCO.L' },
-        { name: 'UnitedHealth', symbol: 'UNH' },
-        { name: 'Verizon', symbol: 'VZ' },
-        { name: 'Visa', symbol: 'V' },
-        { name: 'Walmart', symbol: 'WMT' }
+        // list of companies
       ],
       chartOptions: {
         responsive: true,
@@ -242,6 +188,12 @@ export default {
     },
     filteredCompanies() {
       return this.portfolio ? this.portfolio.companies.filter(company => company.allocation > 0) : [];
+    },
+    timeInvested() {
+      if (!this.portfolio || !this.portfolioHistory.length) return 0;
+      const initialDate = new Date(this.portfolio.date.seconds * 1000);
+      const latestDate = new Date(this.portfolioHistory[this.portfolioHistory.length - 1].date.seconds * 1000);
+      return differenceInDays(latestDate, initialDate);
     }
   },
   methods: {
@@ -320,7 +272,9 @@ export default {
 
         this.portfolioHistory = [];
         querySnapshot.forEach((doc) => {
-          this.portfolioHistory.push(doc.data());
+          if (doc.id !== 'Initial Portfolio') {
+            this.portfolioHistory.push(doc.data());
+          }
         });
 
         console.log('Fetched all portfolio documents:', this.portfolioHistory);
@@ -789,6 +743,3 @@ export default {
   color: #333;
 }
 </style>
-
-
-
