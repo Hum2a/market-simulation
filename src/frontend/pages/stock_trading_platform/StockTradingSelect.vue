@@ -25,6 +25,7 @@
           <router-link to="/admin-portfolio-assign" :class="['option', 'admin']">Assign Portfolios</router-link>
           <router-link to="/admin-portfolio-view" :class="['option', 'admin']">View all Portfolios</router-link>
           <router-link to="/admin-portfolio-display" :class="['option', 'admin',]">View Individual Portfolios</router-link>
+          <router-link to="/unassigned-portfolio-display" :class="['option', 'admin']">View Unassigned Portfolios</router-link>
           <router-link to="/sticky-note-creator" :class="['option', 'admin']">Sticky Note Creator</router-link>
           <router-link to="/portfolio-delete" :class="['option', 'delete']">Delete A Portfolio</router-link>
         </template>
