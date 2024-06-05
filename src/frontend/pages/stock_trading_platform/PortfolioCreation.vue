@@ -118,7 +118,7 @@ export default {
       viewMode: 'card',
       companies: [
         { name: 'AbbVie', symbol: 'ABBV', allocation: 0 },
-        { name: 'Activision Blizzard', symbol: ', allocation: 0ATVI' },
+        { name: 'Activision Blizzard', symbol: 'ATVI', allocation: 0 },
         { name: 'Adobe', symbol: 'ADBE', allocation: 0 },
         { name: 'Amazon', symbol: 'AMZN', allocation: 0 },
         { name: 'American Tower Corporation', symbol: 'AMT', allocation: 0 },
