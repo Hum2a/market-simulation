@@ -52,7 +52,7 @@
 </template>
 
 <script>
-import { getFirestore, collection, addDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import MessageModal from './components/MessageModal.vue';
 import Papa from 'papaparse';
 
@@ -67,6 +67,64 @@ export default {
       isModalVisible: false,
       modalTitle: '',
       modalMessage: '',
+      companies: [
+        { name: 'AbbVie', symbol: 'ABBV' },
+        { name: 'Activision Blizzard', symbol: 'ATVI' },
+        { name: 'Adobe', symbol: 'ADBE' },
+        { name: 'Amazon', symbol: 'AMZN' },
+        { name: 'American Tower Corporation', symbol: 'AMT' },
+        { name: 'Apple', symbol: 'AAPL' },
+        { name: 'Astra Zeneca', symbol: 'AZN' },
+        { name: 'AT&T', symbol: 'T' },
+        { name: 'Axon Enterprise', symbol: 'AXON' },
+        { name: 'Barclays', symbol: 'BCS' },
+        { name: 'Berkshire Hathaway', symbol: 'BRK.B' },
+        { name: 'Blackrock', symbol: 'BLK' },
+        { name: 'Boeing', symbol: 'BA' },
+        { name: 'BP', symbol: 'BP' },
+        { name: 'BYD', symbol: 'BYDDY' },
+        { name: 'Cisco', symbol: 'CSCO' },
+        { name: 'Coca-Cola', symbol: 'KO' },
+        { name: 'Comcast', symbol: 'CMCSA' },
+        { name: 'Costco', symbol: 'COST' },
+        { name: 'Curries', symbol: 'DC.L' },
+        { name: 'Disney', symbol: 'DIS' },
+        { name: 'EA', symbol: 'EA' },
+        { name: 'ExxonMobil', symbol: 'XOM' },
+        { name: 'Goldman Sachs', symbol: 'GS' },
+        { name: 'Google', symbol: 'GOOGL' },
+        { name: 'Home Depot', symbol: 'HD' },
+        { name: 'IBM', symbol: 'IBM' },
+        { name: 'Intel', symbol: 'INTC' },
+        { name: 'Johnson & Johnson', symbol: 'JNJ' },
+        { name: 'JPMorgan Chase', symbol: 'JPM' },
+        { name: 'LG', symbol: '066570.KS' },
+        { name: 'Lockheed Martin', symbol: 'LMT' },
+        { name: 'Man United', symbol: 'MANU' },
+        { name: 'Mastercard', symbol: 'MA' },
+        { name: 'Meta', symbol: 'META' },
+        { name: 'Microsoft', symbol: 'MSFT' },
+        { name: 'Netflix', symbol: 'NFLX' },
+        { name: 'NIO', symbol: 'NIO' },
+        { name: 'Nike', symbol: 'NKE' },
+        { name: 'NVIDIA', symbol: 'NVDA' },
+        { name: 'Open AI', symbol: 'Not Listed' }, // Open AI is not a publicly traded company
+        { name: 'Pandora', symbol: 'P' },
+        { name: 'PayPal', symbol: 'PYPL' },
+        { name: 'Pfizer', symbol: 'PFE' },
+        { name: 'PepsiCo', symbol: 'PEP' },
+        { name: 'Procter & Gamble', symbol: 'PG' },
+        { name: 'Roblox', symbol: 'RBLX' },
+        { name: 'Rolls Royce', symbol: 'RR.L' },
+        { name: 'Shell', symbol: 'SHEL' },
+        { name: 'Spotify', symbol: 'SPOT' },
+        { name: 'Tesla', symbol: 'TSLA' },
+        { name: 'Tesco', symbol: 'TSCO.L' },
+        { name: 'UnitedHealth', symbol: 'UNH' },
+        { name: 'Verizon', symbol: 'VZ' },
+        { name: 'Visa', symbol: 'V' },
+        { name: 'Walmart', symbol: 'WMT' }
+      ]
     };
   },
   methods: {
@@ -105,12 +163,19 @@ export default {
       for (const portfolio of this.portfolios) {
         const portfolioDoc = {
           userName: portfolio.userName,
-          companies: Object.entries(portfolio.allocations).map(([name, allocation]) => ({ name, allocation })),
+          companies: Object.entries(portfolio.allocations).map(([name, allocation]) => {
+            const company = this.companies.find(c => c.name.toLowerCase() === name.toLowerCase());
+            return {
+              name: company ? company.name : name,
+              allocation,
+              symbol: company ? company.symbol : 'N/A'
+            };
+          }),
           totalAllocation: Object.values(portfolio.allocations).reduce((a, b) => a + b, 0),
           date: new Date(portfolio.startDate),
         };
         try {
-          await addDoc(collection(db, 'Unassigned Portfolios'), portfolioDoc);
+          await setDoc(doc(db, 'Unassigned Portfolios', portfolio.userName), portfolioDoc);
         } catch (error) {
           console.error('Error saving portfolio:', error);
           this.modalTitle = 'Error';
