@@ -144,7 +144,6 @@
           { name: 'NIO', symbol: 'NIO' },
           { name: 'Nike', symbol: 'NKE' },
           { name: 'NVIDIA', symbol: 'NVDA' },
-          { name: 'Open AI', symbol: 'Not Listed' },
           { name: 'Pandora', symbol: 'P' },
           { name: 'PayPal', symbol: 'PYPL' },
           { name: 'Pfizer', symbol: 'PFE' },

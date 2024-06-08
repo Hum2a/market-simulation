@@ -87,7 +87,7 @@ export default {
         { name: 'Coca-Cola', symbol: 'KO' },
         { name: 'Comcast', symbol: 'CMCSA' },
         { name: 'Costco', symbol: 'COST' },
-        { name: 'Curries', symbol: 'DC.L' },
+        { name: 'Currys', symbol: 'DC.L' },
         { name: 'Disney', symbol: 'DIS' },
         { name: 'EA', symbol: 'EA' },
         { name: 'ExxonMobil', symbol: 'XOM' },
@@ -108,7 +108,6 @@ export default {
         { name: 'NIO', symbol: 'NIO' },
         { name: 'Nike', symbol: 'NKE' },
         { name: 'NVIDIA', symbol: 'NVDA' },
-        { name: 'Open AI', symbol: 'Not Listed' }, // Open AI is not a publicly traded company
         { name: 'Pandora', symbol: 'P' },
         { name: 'PayPal', symbol: 'PYPL' },
         { name: 'Pfizer', symbol: 'PFE' },
@@ -151,9 +150,9 @@ export default {
         const { "Student Name": userName, "Total Funds": totalFunds, "Start Date": startDate, ...allocations } = row;
         return {
           userName,
-          totalFunds: parseFloat(totalFunds),
+          totalFunds: isNaN(parseFloat(totalFunds)) ? 0 : parseFloat(totalFunds),
           startDate,
-          allocations: Object.fromEntries(Object.entries(allocations).map(([key, value]) => [key, parseFloat(value)]))
+          allocations: Object.fromEntries(Object.entries(allocations).map(([key, value]) => [key, isNaN(parseFloat(value)) ? 0 : parseFloat(value)]))
         };
       });
       console.log('Processed Portfolios:', this.portfolios);
@@ -171,7 +170,7 @@ export default {
               symbol: company ? company.symbol : 'N/A'
             };
           }),
-          totalAllocation: Object.values(portfolio.allocations).reduce((a, b) => a + b, 0),
+          totalAllocation: portfolio.totalFunds, // Update to use totalFunds from CSV
           date: new Date(portfolio.startDate),
         };
         try {

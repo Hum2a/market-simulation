@@ -24,7 +24,7 @@
           <router-link to="/portfolio-upload" :class="['option', 'admin']">Upload Portfolios</router-link>
           <router-link to="/admin-portfolio-assign" :class="['option', 'admin']">Assign Portfolios</router-link>
           <router-link to="/admin-portfolio-view" :class="['option', 'admin']">View all Portfolios</router-link>
-          <router-link to="/admin-portfolio-display" :class="['option', 'admin',]">View Individual Portfolios</router-link>
+          <router-link to="/admin-portfolio-display" :class="['option', 'admin']">View Individual Portfolios</router-link>
           <router-link to="/unassigned-portfolio-display" :class="['option', 'admin']">View Unassigned Portfolios</router-link>
           <router-link to="/sticky-note-creator" :class="['option', 'admin']">Sticky Note Creator</router-link>
           <router-link to="/portfolio-delete" :class="['option', 'delete']">Delete A Portfolio</router-link>
@@ -148,11 +148,31 @@ export default {
   },
   beforeRouteEnter(to, from, next) {
     const auth = getAuth();
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
       if (!user) {
         next('/startpage');
       } else {
-        next();
+        const db = getFirestore();
+        const profileRef = doc(db, user.uid, 'Profile');
+        const profileSnap = await getDoc(profileRef);
+
+        if (profileSnap.exists()) {
+          const profile = profileSnap.data();
+          if (profile.role === 'user') {
+            const portfolioDocRef = doc(db, user.uid, 'Stock Trading Platform', 'Portfolio', 'Initial Portfolio');
+            const portfolioDocSnap = await getDoc(portfolioDocRef);
+
+            if (portfolioDocSnap.exists()) {
+              next('/portfolio-display');
+            } else {
+              next('/portfolio-creation');
+            }
+          } else {
+            next();
+          }
+        } else {
+          next('/startpage');
+        }
       }
     });
   }

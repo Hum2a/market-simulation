@@ -134,7 +134,6 @@ export default {
         { name: 'NIO', symbol: 'NIO' },
         { name: 'Nike', symbol: 'NKE' },
         { name: 'NVIDIA', symbol: 'NVDA' },
-        { name: 'Open AI', symbol: 'Not Listed' }, // Open AI is not a publicly traded company
         { name: 'Pandora', symbol: 'P' },
         { name: 'PayPal', symbol: 'PYPL' },
         { name: 'Pfizer', symbol: 'PFE' },
