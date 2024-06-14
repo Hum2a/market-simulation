@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import GroupCreation from '../../frontend/pages/groups_simulation/GroupCreation.vue';
-import SimulationPage from '../../frontend/pages/groups_simulation/SimulationTest.vue';
+import SimulationPage from '../../frontend/pages/groups_simulation/Simulation.vue';
 import SimulationControls from '../../frontend/pages/groups_simulation/SimulationControls.vue';
 import ResultsScreen from '../../frontend/pages/groups_simulation/ResultsScreen.vue';
 import InvestmentCalculator from '../../frontend/pages/groups_simulation/InvestmentCalculator.vue';
