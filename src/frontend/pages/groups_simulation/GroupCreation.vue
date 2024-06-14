@@ -110,6 +110,7 @@
 <script>
 import { useRouter } from 'vue-router';
 import { getFirestore, doc, getDoc, collection, query, getDocs, writeBatch, setDoc } from 'firebase/firestore';
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import SimulationControls from './SimulationControls.vue';
 import LoginPage from '../LoginPage.vue';
 import SimulationHistory from './PastSimulations.vue';
@@ -384,7 +385,7 @@ export default {
       }
 
       const db = getFirestore();
-      const userDocRef = doc(db, 'users', this.userUID, 'Profile');
+      const userDocRef = doc(db, this.userUID, 'Profile');
       try {
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
@@ -399,6 +400,18 @@ export default {
         this.isLoading = false;
       }
     }
+  },
+  async created() {
+    const auth = getAuth();
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        this.userEmail = user.email;
+        this.userUID = user.uid;
+        this.checkUserRole();
+      } else {
+        this.isLoading = false;
+      }
+    });
   },
   mounted() {
     this.groups.forEach((group, index) => {
