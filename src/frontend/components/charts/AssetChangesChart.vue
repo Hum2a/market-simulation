@@ -41,7 +41,10 @@
 import { getFirestore, doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import Chart from 'chart.js/auto';
+import annotationPlugin from 'chartjs-plugin-annotation';
 import { shallowRef, nextTick } from 'vue';
+
+Chart.register(annotationPlugin);
 
 export default {
   name: 'AssetChangesChart',
@@ -159,22 +162,21 @@ export default {
 
           return {
             type: 'line',
-            mode: 'vertical',
-            scaleID: 'x',
-            value: labels[labelIndex],
+            xMin: labels[labelIndex],
+            xMax: labels[labelIndex],
             borderColor: '#DAC2C2',
-            borderWidth: 2,
+            borderWidth: 20,
             label: {
-              enabled: true,
+              display: true,
               content: event.name,
               position: position,
-              xAdjust: 40,
               backgroundColor: 'rgba(114,93,255,1)',
+              color: '#FFF',
               font: {
-                size: 16,
-                color: '#FFF'
+                size: 12
               },
-              padding: 16,
+              padding: 4,
+              yAdjust: position === "bottom" ? -10 : 10 // Adjust label position to prevent overlap with the annotation line
             }
           };
         }).filter(annotation => annotation !== null);
@@ -253,22 +255,21 @@ export default {
 
           return {
             type: 'line',
-            mode: 'vertical',
-            scaleID: 'x',
-            value: labels[labelIndex],
+            xMin: labels[labelIndex],
+            xMax: labels[labelIndex],
             borderColor: '#DAC2C2',
-            borderWidth: 2,
+            borderWidth: 20,
             label: {
-              enabled: true,
+              display: true,
               content: event.name,
               position: position,
-              xAdjust: 40,
               backgroundColor: 'rgba(114,93,255,1)',
+              color: '#FFF',
               font: {
-                size: 16,
-                color: '#FFF'
+                size: 12
               },
-              padding: 16
+              padding: 4,
+              yAdjust: position === "bottom" ? -10 : 10 // Adjust label position to prevent overlap with the annotation line
             }
           };
         }).filter(annotation => annotation !== null);
