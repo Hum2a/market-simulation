@@ -3,11 +3,17 @@
     <header class="header">
       <img src="../../assets/LifeSmartLogo.png" alt="Logo" class="logo" />
       <nav class="header-links">
-        <router-link to="/portfolio-creation" class="nav-link">Portfolio Creation</router-link>
+        <router-link to="/stock-trading-select" class="nav-link">Stock Trading Tool</router-link>
         <button @click="refreshData" class="refresh-button">Refresh Data</button>
       </nav>
     </header>
     <main class="main-content">
+      <div class="wallet-card" v-if="totalFunds !== null">
+        Wallet = £{{ totalFunds }}
+      </div>
+      <div class="request-counter-card">
+        Firestore Requests: {{ firestoreRequestCount }}
+      </div>
       <div v-if="loading">
         <p>Loading...</p>
         <progress :value="loadingProgress" max="100"></progress>
@@ -15,14 +21,17 @@
       <div v-else-if="!portfolio">No portfolio found.</div>
       <div v-else>
         <div class="portfolio-summary">
-          <div class="portfolio-summary-card">
-            <h2>Portfolio Summary</h2>
-            <p>Original Total Value: £{{ roundedValue(originalValue) }}</p>
-            <p>Current Value: £{{ roundedValue(currentValue) }}</p>
-            <p>Percentage Gain/Loss: {{ roundedValue(percentageGainLoss) }}%</p>
-            <p>Best Performing Stock: {{ bestPerformingStock.name }} ({{ roundedValue(bestPerformingStock.percentageChange) }}%)</p>
-            <p>Worst Performing Stock: {{ worstPerformingStock.name }} ({{ roundedValue(worstPerformingStock.percentageChange) }}%)</p>
-            <p>Time Invested: {{ timeInvested }} days</p>
+          <div class="summary-leaderboard">
+            <div class="portfolio-summary-card">
+              <h2>Portfolio Summary</h2>
+              <p>Original Total Value: £{{ roundedValue(originalValue) }}</p>
+              <p>Current Value: £{{ roundedValue(currentValue) }}</p>
+              <p>Percentage Gain/Loss: {{ roundedValue(percentageGainLoss) }}%</p>
+              <p>Best Performing Stock: {{ bestPerformingStock.name }} ({{ roundedValue(bestPerformingStock.percentageChange) }}%)</p>
+              <p>Worst Performing Stock: {{ worstPerformingStock.name }} ({{ roundedValue(worstPerformingStock.percentageChange) }}%)</p>
+              <p>Time Invested: {{ timeInvested }} days</p>
+            </div>
+            <portfolio-leaderboard />
           </div>
           <div class="portfolio-graph-card">
             <h2>Portfolio Value Over Time</h2>
@@ -41,7 +50,9 @@
                 <tr>
                   <th>Stock</th>
                   <th>Original Value</th>
+                  <th>Buying Stock Price</th>
                   <th>Current Value</th>
+                  <th>Current Stock Price</th>
                 </tr>
               </thead>
               <tbody>
@@ -49,11 +60,15 @@
                   <tr @click="toggleStock(company)">
                     <td>{{ company.name }}</td>
                     <td>£{{ roundedValue(company.allocation) }}</td>
+                    <td>£{{ roundedValue(company.buyingStockPrice) }}</td>
                     <td>£{{ roundedValue(company.currentValue || 0) }}</td>
+                    <td>£{{ roundedValue(company.currentStockPrice) }}</td>
                   </tr>
                   <tr v-if="expandedStock === company.symbol" class="expanded-row">
-                    <td colspan="3">
-                      <line-chart ref="lineChart" :chart-data="chartData" v-if="chartData && expandedStock === company.symbol"></line-chart>
+                    <td colspan="5">
+                      <button @click="toggleChart">Toggle Chart</button>
+                      <line-chart ref="lineChart" :chart-data="chartData" v-if="chartData && expandedStock === company.symbol && chartType === 'portfolio'"></line-chart>
+                      <line-chart ref="lineChart" :chart-data="officialChartData" v-if="officialChartData && expandedStock === company.symbol && chartType === 'official'"></line-chart>
                     </td>
                   </tr>
                 </template>
@@ -61,14 +76,25 @@
             </table>
           </div>
         </div>
-        <div class="notice-board-card">
-          <h2>Notice Board</h2>
-          <div class="sticky-notes">
-            <li v-for="note in stickyNotes" :key="note.id" class="sticky-note">
-              <h3>{{ note.title }}</h3>
-              <p>{{ note.content }}</p>
-            </li>
+        <div class="additional-info">
+          <div class="notice-board-card">
+            <h2>Notice Board</h2>
+            <div class="sticky-notes">
+              <li v-for="note in stickyNotes" :key="note.id" class="sticky-note">
+                <h3>{{ note.title }}</h3>
+                <p>{{ note.content }}</p>
+                <p v-if="note.date">Date: {{ formatDate(note.date) }}</p>
+                <a v-if="note.links" :href="note.links" target="_blank">{{ note.linkName || note.links }}</a>
+              </li>
+            </div>
           </div>
+          <router-link to="/FinancialLiteracyCourse" class="financial-courses-card">
+            <div class="card-content">
+              <h3>Basics of Financial Literacy</h3>
+              <p>15 minutes</p>
+              <p>Gain £300</p>
+            </div>
+          </router-link>
         </div>
       </div>
     </main>
@@ -81,12 +107,14 @@ import { getAuth } from "firebase/auth";
 import { format, differenceInDays } from 'date-fns';
 import LineChart from './components/LineChart.vue';
 import PieChart from './components/PieChart.vue';
+import PortfolioLeaderboard from './PortfolioLeaderboard.vue';
 
 export default {
   name: 'PortfolioDisplay',
   components: {
     LineChart,
-    PieChart
+    PieChart,
+    PortfolioLeaderboard,
   },
   data() {
     return {
@@ -97,63 +125,29 @@ export default {
       portfolioChartData: null,
       pieChartData: null,
       chartData: null,
+      officialChartData: null,
       expandedStock: null,
+      chartType: 'portfolio',
       cacheKey: '',
       stickyNotes: [],
+      totalFunds: null,
+      firestoreRequestCount: 0, // Counter for Firestore requests
       companies: [
-        { name: 'AbbVie', symbol: 'ABBV', allocation: 0 },
-        { name: 'Activision Blizzard', symbol: 'ATVI', allocation: 0 },
-        { name: 'Adobe', symbol: 'ADBE', allocation: 0 },
         { name: 'Amazon', symbol: 'AMZN', allocation: 0 },
-        { name: 'American Tower Corporation', symbol: 'AMT', allocation: 0 },
         { name: 'Apple', symbol: 'AAPL', allocation: 0 },
-        { name: 'Astra Zeneca', symbol: 'AZN', allocation: 0 },
-        { name: 'AT&T', symbol: 'T', allocation: 0 },
-        { name: 'Axon Enterprise', symbol: 'AXON', allocation: 0 },
-        { name: 'Barclays', symbol: 'BCS', allocation: 0 },
-        { name: 'Berkshire Hathaway', symbol: 'BRK.B', allocation: 0 },
-        { name: 'Blackrock', symbol: 'BLK', allocation: 0 },
         { name: 'Boeing', symbol: 'BA', allocation: 0 },
-        { name: 'BP', symbol: 'BP', allocation: 0 },
-        { name: 'BYD', symbol: 'BYDDY', allocation: 0 },
-        { name: 'Cisco', symbol: 'CSCO', allocation: 0 },
         { name: 'Coca-Cola', symbol: 'KO', allocation: 0 },
-        { name: 'Comcast', symbol: 'CMCSA', allocation: 0 },
-        { name: 'Costco', symbol: 'COST', allocation: 0 },
-        { name: 'Currys', symbol: 'DC.L', allocation: 0 },
         { name: 'Disney', symbol: 'DIS', allocation: 0 },
-        { name: 'EA', symbol: 'EA', allocation: 0 },
-        { name: 'ExxonMobil', symbol: 'XOM', allocation: 0 },
-        { name: 'Goldman Sachs', symbol: 'GS', allocation: 0 },
         { name: 'Google', symbol: 'GOOGL', allocation: 0 },
-        { name: 'Home Depot', symbol: 'HD', allocation: 0 },
-        { name: 'IBM', symbol: 'IBM', allocation: 0 },
-        { name: 'Intel', symbol: 'INTC', allocation: 0 },
-        { name: 'Johnson & Johnson', symbol: 'JNJ', allocation: 0 },
-        { name: 'JPMorgan Chase', symbol: 'JPM', allocation: 0 },
-        { name: 'LG', symbol: '066570.KS', allocation: 0 },
-        { name: 'Lockheed Martin', symbol: 'LMT', allocation: 0 },
-        { name: 'Man United', symbol: 'MANU', allocation: 0 },
-        { name: 'Mastercard', symbol: 'MA', allocation: 0 },
-        { name: 'Meta', symbol: 'META', allocation: 0 },
         { name: 'Microsoft', symbol: 'MSFT', allocation: 0 },
-        { name: 'Netflix', symbol: 'NFLX', allocation: 0 },
-        { name: 'NIO', symbol: 'NIO', allocation: 0 },
         { name: 'Nike', symbol: 'NKE', allocation: 0 },
         { name: 'NVIDIA', symbol: 'NVDA', allocation: 0 },
-        { name: 'Pandora', symbol: 'P', allocation: 0 },
         { name: 'PayPal', symbol: 'PYPL', allocation: 0 },
         { name: 'Pfizer', symbol: 'PFE', allocation: 0 },
-        { name: 'PepsiCo', symbol: 'PEP', allocation: 0 },
-        { name: 'Procter & Gamble', symbol: 'PG', allocation: 0 },
         { name: 'Roblox', symbol: 'RBLX', allocation: 0 },
-        { name: 'Rolls Royce', symbol: 'RR.L', allocation: 0 },
         { name: 'Shell', symbol: 'SHEL', allocation: 0 },
         { name: 'Spotify', symbol: 'SPOT', allocation: 0 },
         { name: 'Tesla', symbol: 'TSLA', allocation: 0 },
-        { name: 'Tesco', symbol: 'TSCO.L', allocation: 0 },
-        { name: 'UnitedHealth', symbol: 'UNH', allocation: 0 },
-        { name: 'Verizon', symbol: 'VZ', allocation: 0 },
         { name: 'Visa', symbol: 'V', allocation: 0 },
         { name: 'Walmart', symbol: 'WMT', allocation: 0 }
       ],
@@ -214,7 +208,10 @@ export default {
     } else {
       await this.fetchAndProcessData();
     }
+    await this.updateStockPrices();
     await this.fetchStickyNotes();
+    await this.fetchTotalFunds();
+    this.adjustStickyNotesHeight();
   },
   computed: {
     originalValue() {
@@ -255,6 +252,9 @@ export default {
     }
   },
   methods: {
+    incrementRequestCount() {
+      this.firestoreRequestCount++;
+    },
     roundedValue(value) {
       return isNaN(value) ? '0.00' : parseFloat(value).toFixed(2);
     },
@@ -301,6 +301,7 @@ export default {
     async refreshData() {
       localStorage.removeItem(this.cacheKey);
       await this.fetchAndProcessData();
+      await this.updateStockPrices();
     },
     async fetchPortfolio() {
       const auth = getAuth();
@@ -308,6 +309,7 @@ export default {
       if (user) {
         const db = getFirestore();
         const docRef = doc(db, user.uid, 'Stock Trading Platform', 'Portfolio', 'Initial Portfolio');
+        this.incrementRequestCount();
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
@@ -326,6 +328,7 @@ export default {
         const db = getFirestore();
         const portfolioCollection = collection(db, user.uid, 'Stock Trading Platform', 'Portfolio');
         const portfolioQuery = query(portfolioCollection, orderBy('date', 'asc'));
+        this.incrementRequestCount();
         const querySnapshot = await getDocs(portfolioQuery);
 
         this.portfolioHistory = [];
@@ -343,13 +346,80 @@ export default {
     async fetchStockData(symbol) {
       const db = getFirestore();
       const docRef = doc(db, 'Stock Market Data', symbol);
+      this.incrementRequestCount();
       const docSnap = await getDoc(docRef);
       return docSnap.exists() ? docSnap.data() : null;
     },
     async initializeInitialPrices() {
-      if (!this.portfolio.initialPrices) {
-        const initialPrices = [];
+      const initialPrices = [];
 
+      const stockDataPromises = this.portfolio.companies.map(company => {
+        const companyInfo = this.companies.find(c => c.name === company.name);
+        console.log(`Fetching stock data for ${companyInfo.symbol}`);
+        return this.fetchStockData(companyInfo.symbol);
+      });
+
+      const stockDataArray = await Promise.all(stockDataPromises);
+
+      stockDataArray.forEach((stockData, index) => {
+        const companyName = this.portfolio.companies[index].name;
+        console.log(`Processing stock data for ${companyName}`);
+        if (stockData && stockData.data['Time Series (Daily)']) {
+          let initialDate = new Date(this.portfolio.date.seconds * 1000);
+          let formattedDate = format(initialDate, 'yyyy-MM-dd');
+          let dailyData = stockData.data['Time Series (Daily)'][formattedDate];
+
+          console.log(`Initial investment date for ${companyName}: ${formattedDate}`);
+          console.log(`Initial daily data for ${formattedDate}:`, dailyData);
+
+          // If no data for formattedDate, go back until data is found
+          while (!dailyData && initialDate >= new Date(stockData.data['Meta Data']['3. Last Refreshed'])) {
+            console.log(`No data for ${formattedDate}, checking previous day...`);
+            initialDate.setDate(initialDate.getDate() - 1);
+            formattedDate = format(initialDate, 'yyyy-MM-dd');
+            dailyData = stockData.data['Time Series (Daily)'][formattedDate];
+            console.log(`Checking data for ${formattedDate}:`, dailyData);
+          }
+
+          if (dailyData && dailyData['1. open']) {
+            initialPrices[index] = parseFloat(dailyData['1. open']);
+            console.log(`Found data for ${formattedDate}, setting initial price: ${initialPrices[index]}`);
+          } else {
+            // If no valid data found, search backward to find the last available close price
+            let previousDate = new Date(initialDate);
+            let previousFormattedDate = format(previousDate, 'yyyy-MM-dd');
+            let previousCloseData = null;
+
+            while (!previousCloseData && previousDate >= new Date(stockData.data['Meta Data']['3. Last Refreshed'])) {
+              previousCloseData = stockData.data['Time Series (Daily)'][previousFormattedDate];
+              previousDate.setDate(previousDate.getDate() - 1);
+              previousFormattedDate = format(previousDate, 'yyyy-MM-dd');
+            }
+
+            if (previousCloseData && previousCloseData['4. close']) {
+              initialPrices[index] = parseFloat(previousCloseData['4. close']);
+              console.log(`Using previous close price as initial price: ${initialPrices[index]}`);
+            } else {
+              initialPrices[index] = 0; // Set to 0 if no valid data is found
+              console.log(`No valid data found, setting initial price to 0`);
+            }
+          }
+        } else {
+          initialPrices[index] = 0; // Set to 0 if no stock data found
+          console.log(`No stock data found for ${companyName}, setting initial price to 0`);
+        }
+      });
+
+      this.portfolio.companies = this.portfolio.companies.map((company) => ({
+        ...company,
+        currentValue: company.allocation,
+        buyingStockPrice: initialPrices[this.portfolio.companies.indexOf(company)]
+      }));
+
+      console.log('Portfolio companies updated with initial prices and current values:', this.portfolio.companies);
+    },
+    async updateStockPrices() {
+      if (this.portfolio) {
         const stockDataPromises = this.portfolio.companies.map(company => {
           const companyInfo = this.companies.find(c => c.name === company.name);
           return this.fetchStockData(companyInfo.symbol);
@@ -357,42 +427,36 @@ export default {
 
         const stockDataArray = await Promise.all(stockDataPromises);
 
-        stockDataArray.forEach((stockData, index) => {
+        this.portfolio.companies = this.portfolio.companies.map((company, index) => {
+          const stockData = stockDataArray[index];
           if (stockData && stockData.data['Time Series (Daily)']) {
-            const initialDate = format(new Date(this.portfolio.date.seconds * 1000), 'yyyy-MM-dd');
-            const dailyData = stockData.data['Time Series (Daily)'][initialDate];
-            if (dailyData && dailyData['4. close']) {
-              initialPrices[index] = parseFloat(dailyData['4. close']);
+            const today = new Date();
+            let formattedDate = format(today, 'yyyy-MM-dd');
+            let dailyData = stockData.data['Time Series (Daily)'][formattedDate];
+
+            // If no data for formattedDate, go back until data is found
+            while (!dailyData && today >= new Date(stockData.data['Meta Data']['3. Last Refreshed'])) {
+              today.setDate(today.getDate() - 1);
+              formattedDate = format(today, 'yyyy-MM-dd');
+              dailyData = stockData.data['Time Series (Daily)'][formattedDate];
+            }
+
+            if (dailyData) {
+              company.currentStockPrice = parseFloat(dailyData['1. open']);
             } else {
-              initialPrices[index] = this.portfolio.companies[index].allocation;
+              company.currentStockPrice = company.currentValue / company.allocation;
             }
           } else {
-            initialPrices[index] = this.portfolio.companies[index].allocation;
+            company.currentStockPrice = company.currentValue / company.allocation;
           }
+          return company;
         });
-
-        this.portfolio.initialPrices = initialPrices;
-
-        // Initialize currentValue to allocation for the initial portfolio
-        this.portfolio.companies = this.portfolio.companies.map((company) => ({
-          ...company,
-          currentValue: company.allocation
-        }));
-
-        const auth = getAuth();
-        const user = auth.currentUser;
-        if (user) {
-          const db = getFirestore();
-          const docRef = doc(db, user.uid, 'Stock Trading Platform', 'Portfolio', 'Initial Portfolio');
-          await setDoc(docRef, this.portfolio);
-        }
       }
     },
-
     async fillMissingDates() {
       console.log("Fill Missing Dates Called");
-      if (!this.portfolio || !this.portfolio.initialPrices) {
-        console.error("Initial prices not found in the portfolio");
+      if (!this.portfolio) {
+        console.error("Portfolio not found");
         return;
       }
 
@@ -409,9 +473,10 @@ export default {
       let previousDayValues = this.portfolio.companies.map(company => company.allocation); // Start with initial allocation
 
       while (currentDate <= today) {
-        const formattedDate = format(currentDate, 'yyyy-MM-dd');
+        let formattedDate = format(currentDate, 'yyyy-MM-dd');
         console.log(`Processing date: ${formattedDate}`);
         const docRef = doc(db, user.uid, 'Stock Trading Platform', 'Portfolio', `${formattedDate} Portfolio`);
+        this.incrementRequestCount();
         const docSnap = await getDoc(docRef);
 
         if (!docSnap.exists()) {
@@ -445,17 +510,29 @@ export default {
 
             console.log(`Previous Close Price for ${company.name} on ${formattedPreviousDate}: ${previousClosePrice}`);
 
+            let effectiveFormattedDate = formattedDate;
+            let closePrice = stockData?.data['Time Series (Daily)']?.[formattedDate]?.['4. close'];
+            // If no close price for the current date, use the closest previous date with data
+            if (!closePrice) {
+              let closestPreviousDate = new Date(currentDate);
+              effectiveFormattedDate = formattedDate;
+              while (!closePrice && closestPreviousDate >= initialDate) {
+                closestPreviousDate.setDate(closestPreviousDate.getDate() - 1);
+                effectiveFormattedDate = format(closestPreviousDate, 'yyyy-MM-dd');
+                closePrice = stockData?.data['Time Series (Daily)']?.[effectiveFormattedDate]?.['4. close'];
+              }
+            }
+
             if (previousClosePrice) {
-              const closePrice = stockData?.data['Time Series (Daily)']?.[formattedDate]?.['4. close'];
               if (closePrice) {
-                console.log(`Close Price for ${company.name} on ${formattedDate}: ${closePrice}`);
+                console.log(`Close Price for ${company.name} on ${effectiveFormattedDate}: ${closePrice}`);
                 const percentageChange = (parseFloat(closePrice) - parseFloat(previousClosePrice)) / parseFloat(previousClosePrice);
-                console.log(`Percentage Change for ${company.name} on ${formattedDate}: ${percentageChange}`);
+                console.log(`Percentage Change for ${company.name} on ${effectiveFormattedDate}: ${percentageChange}`);
                 currentValue = previousDayValues[index] * (1 + percentageChange);
-                console.log(`New Current Value for ${company.name} on ${formattedDate}: ${currentValue}`);
+                console.log(`New Current Value for ${company.name} on ${effectiveFormattedDate}: ${currentValue}`);
               } else {
                 // If there's no close price for the current date, use the previous day's currentValue
-                console.log(`No close price available for ${company.name} on ${formattedDate}, using previous currentValue.`);
+                console.log(`No close price available for ${company.name} on ${effectiveFormattedDate}, using previous currentValue.`);
               }
             } else {
               console.log(`No previous close price available for ${company.name}, using previous currentValue.`);
@@ -464,6 +541,7 @@ export default {
             return {
               ...company,
               currentValue: isNaN(currentValue) ? 0 : currentValue, // Ensure currentValue is a number
+              currentStockPrice: stockData?.data['Time Series (Daily)']?.[effectiveFormattedDate]?.['1. open'] || previousClosePrice // Use previous close price if current is unavailable
             };
           });
 
@@ -477,6 +555,7 @@ export default {
           };
 
           console.log('Updated portfolio for', formattedDate, updatedPortfolio);
+          this.incrementRequestCount();
           await setDoc(docRef, updatedPortfolio);
         }
 
@@ -485,6 +564,7 @@ export default {
         currentDate.setDate(currentDate.getDate() + 1);
       }
     },
+
 
     preparePortfolioChartData() {
       if (!this.portfolioHistory) return;
@@ -543,9 +623,11 @@ export default {
       if (this.expandedStock === symbol) {
         this.expandedStock = null;
         this.chartData = null;
+        this.officialChartData = null;
       } else {
         this.expandedStock = symbol;
         this.chartData = this.prepareStockChartData(symbol);
+        this.officialChartData = await this.prepareOfficialStockChartData(symbol);
       }
     },
     prepareStockChartData(symbol) {
@@ -564,7 +646,7 @@ export default {
         labels,
         datasets: [
           {
-            label: 'Stock Value',
+            label: 'User Portfolio Value',
             data,
             fill: true,
             borderColor: 'rgba(75, 192, 192, 1)',
@@ -573,6 +655,54 @@ export default {
           }
         ]
       };
+    },
+    async prepareOfficialStockChartData(symbol) {
+      const stockData = await this.fetchStockData(symbol);
+      const initialDate = format(new Date(this.portfolio.date.seconds * 1000), 'yyyy-MM-dd');
+      const today = format(new Date(), 'yyyy-MM-dd');
+
+      if (stockData && stockData.data['Time Series (Daily)']) {
+        const dates = [];
+        const values = [];
+
+        let currentDate = new Date(initialDate);
+        while (currentDate <= new Date(today)) {
+          let formattedDate = format(currentDate, 'yyyy-MM-dd');
+          let dailyData = stockData.data['Time Series (Daily)'][formattedDate];
+          
+          // If no data for formattedDate, go back until data is found
+          while (!dailyData && new Date(formattedDate) >= new Date(stockData.data['Meta Data']['3. Last Refreshed'])) {
+            let date = new Date(formattedDate);
+            date.setDate(date.getDate() - 1);
+            formattedDate = format(date, 'yyyy-MM-dd');
+            dailyData = stockData.data['Time Series (Daily)'][formattedDate];
+          }
+
+          if (dailyData && dailyData['1. open']) {
+            dates.push(formattedDate);
+            values.push(parseFloat(dailyData['1. open']).toFixed(2));
+          }
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        return {
+          labels: dates,
+          datasets: [
+            {
+              label: 'Official Stock Value',
+              data: values,
+              fill: true,
+              borderColor: 'rgba(255, 99, 132, 1)',
+              backgroundColor: 'rgba(255, 99, 132, 0.2)',
+              tension: 0.1
+            }
+          ]
+        };
+      }
+      return null;
+    },
+    toggleChart() {
+      this.chartType = this.chartType === 'portfolio' ? 'official' : 'portfolio';
     },
     getRandomColors(numColors) {
       const colors = [];
@@ -587,14 +717,30 @@ export default {
       if (user) {
         const db = getFirestore();
         const notesCollection = collection(db, 'Sticky Notes');
+        this.incrementRequestCount();
         const notesSnapshot = await getDocs(notesCollection);
 
-        this.stickyNotes = notesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(note => {
+        this.stickyNotes = notesSnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            title: data.title,
+            content: data.content,
+            date: data.date || null,
+            links: data.links || null,
+            linkName: data.linkName || null, // Added link name
+            showForAllUsers: data.showForAllUsers,
+            selectedUsers: data.selectedUsers || [],
+            selectedStocks: data.selectedStocks || [],
+            portfolioValueThreshold: data.portfolioValueThreshold || null,
+          };
+        }).filter(note => {
           return this.shouldShowNote(note);
         });
       } else {
         console.error("User is not logged in");
       }
+      this.adjustStickyNotesHeight(); // Ensure the heights are adjusted after fetching notes
     },
     shouldShowNote(note) {
       if (note.showForAllUsers) {
@@ -611,6 +757,35 @@ export default {
         }
       }
       return false;
+    },
+    adjustStickyNotesHeight() {
+      this.$nextTick(() => {
+        const stickyNotes = this.$el.querySelectorAll('.sticky-note');
+        stickyNotes.forEach(note => {
+          const contentHeight = note.scrollHeight;
+          note.style.height = `${contentHeight + 20}px`; // Add some padding
+        });
+      });
+    },
+    formatDate(date) {
+      return date ? format(new Date(date.seconds * 1000), 'PP') : '';
+    },
+    async fetchTotalFunds() {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (user) {
+        const db = getFirestore();
+        const docRef = doc(db, user.uid, 'Total Funds');
+        this.incrementRequestCount();
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          this.totalFunds = docSnap.data().totalFunds;
+        } else {
+          console.error("No such document for Total Funds!");
+        }
+      } else {
+        console.error("User is not logged in");
+      }
     }
   }
 };
@@ -689,6 +864,29 @@ export default {
   gap: 2em;
 }
 
+.wallet-card {
+  top: 1em;
+  left: 1em;
+  background: #ffffff;
+  padding: 0.5em 1em;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-weight: bold;
+  color: #102454;
+}
+
+.request-counter-card {
+  top: 2em;
+  left: 1em;
+  background: #ffffff;
+  padding: 0.5em 1em;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-weight: bold;
+  color: #102454;
+  position: fixed;
+}
+
 .portfolio-summary {
   display: flex;
   gap: 2em;
@@ -697,7 +895,12 @@ export default {
   margin-bottom: 10px;
 }
 
-.portfolio-summary-card, .portfolio-graph-card, .portfolio-pie-card, .portfolio-table-card, .notice-board-card {
+.portfolio-summary-card,
+.portfolio-graph-card,
+.portfolio-pie-card,
+.portfolio-table-card,
+.notice-board-card,
+.financial-courses-card {
   background: #fff;
   padding: 1em;
   border-radius: 10px;
@@ -705,12 +908,17 @@ export default {
   text-align: left;
 }
 
-.portfolio-summary-card h2, .portfolio-graph-card h2, .portfolio-pie-card h2, .portfolio-table-card h2, .notice-board-card h2 {
+.portfolio-summary-card h2,
+.portfolio-graph-card h2,
+.portfolio-pie-card h2,
+.portfolio-table-card h2,
+.notice-board-card h2 {
   color: #102454;
   margin-bottom: 1em;
 }
 
-.portfolio-summary-card p, .notice-board-card p {
+.portfolio-summary-card p,
+.notice-board-card p {
   color: #333;
   margin-bottom: 0.5em;
 }
@@ -726,7 +934,8 @@ export default {
   gap: 2em;
 }
 
-.portfolio-pie-card, .portfolio-table-card {
+.portfolio-pie-card,
+.portfolio-table-card {
   flex: 1;
 }
 
@@ -748,7 +957,8 @@ export default {
   border-collapse: collapse;
 }
 
-.portfolio-table th, .portfolio-table td {
+.portfolio-table th,
+.portfolio-table td {
   border: 1px solid #ddd;
   padding: 0.75em;
   text-align: left;
@@ -772,6 +982,14 @@ export default {
   background-color: #f0f2f5;
 }
 
+.additional-info {
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 2em;
+  margin-top: 20px;
+}
+
 .notice-board-card {
   width: 45%;
   background-color: #e17858;
@@ -779,14 +997,15 @@ export default {
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   text-align: left;
-  margin-top: 20px;
+  overflow: hidden; /* Add this to ensure content is contained */
 }
 
 .sticky-notes {
   display: flex;
-  flex-direction: row;
+  flex-direction: column; /* Change to column layout */
   gap: 1em;
-  justify-content: center;
+  justify-content: flex-start; /* Align items at the top */
+  align-items: center;
 }
 
 .sticky-notes li {
@@ -795,13 +1014,15 @@ export default {
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   font-family: 'Comic Sans MS', cursive, sans-serif;
-  width: 150px;
-  height: 150px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   text-align: center;
+  white-space: normal;
+  overflow-wrap: break-word;
+  width: auto; /* Changed to auto to fit content */
+  height: auto; /* Changed to auto to fit content */
 }
 
 .sticky-notes li h3 {
@@ -810,9 +1031,30 @@ export default {
   color: #333;
 }
 
-.sticky-notes li p {
+.sticky-notes li p,
+.sticky-notes li a {
   margin: 0.5em 0 0;
   font-size: 1em;
   color: #333;
+}
+
+.financial-courses-card {
+  text-align: center;
+  color: #333;
+  transition: transform 0.2s;
+}
+
+.financial-courses-card:hover {
+  transform: scale(1.05);
+}
+
+.card-content h3 {
+  margin: 0;
+  font-size: 1.2em;
+}
+
+.card-content p {
+  margin: 0.5em 0;
+  font-size: 1em;
 }
 </style>
