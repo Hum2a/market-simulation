@@ -23,6 +23,7 @@ import AdminPortfolioDisplayUID from '../../frontend/pages/stock_trading_platfor
 import StickyNoteCreator from '../../frontend/pages/stock_trading_platform/StickyNoteCreator.vue';
 import PortfolioDelete from '../../frontend/pages/stock_trading_platform/PortfolioDelete.vue';
 import UnassignedPortfolioDisplay from '../../frontend/pages/stock_trading_platform/UnassignedPortfolioDisplay.vue';
+import UserManager from '../../frontend/pages/UserManager.vue';
 
 const routes = [
   {
@@ -48,6 +49,11 @@ const routes = [
     path: '/login',
     name: 'LoginPage',
     component: LoginPage
+  },
+  {
+    path: '/user-manager',
+    name: 'UserManager',
+    component: UserManager,
   },
   {
     path: '/groupcreation',
