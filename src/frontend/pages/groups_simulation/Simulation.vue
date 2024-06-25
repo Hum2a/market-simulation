@@ -55,6 +55,7 @@ export default {
       simulationInterval: null,
       isUpdating: false, // Flag to prevent multiple clicks
       updateQueue: [], // Queue to handle multiple update requests
+      fixedColors: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'],
     };
   },
   computed: {
@@ -305,22 +306,24 @@ export default {
       }
 
       const ctx = canvasElement.getContext('2d');
-      if (!ctx) {
-        console.error("initializeChart: Unable to get canvas context");
-        return;
-      }
+        if (!ctx) {
+          console.error("initializeChart: Unable to get canvas context");
+          return;
+        }
 
       const labels = ['Initial Value'];
-      for (let i = 1; i <= this.simulationYears * 4; i++) {
-        labels.push(`Q${i}`);
-      }
-      console.log("initializeChart: labels", labels);
+        for (let i = 1; i <= this.simulationYears * 4; i++) {
+          labels.push(`Q${i}`);
+        }
+        console.log("initializeChart: labels", labels);
 
-      const datasets = this.groups.map(group => ({
+      const datasets = this.groups.map((group, index) => ({
         label: group.name,
         data: [...group.totalPortfolioValues.quarters], // Clone the data to avoid reactivity issues
-        borderColor: this.getRandomColor(),
+        borderColor: this.fixedColors[index % this.fixedColors.length], // Use fixed colors
         fill: false,
+        cubicInterpolationMode: 'monotone', // Add this line
+        tension: 0.4, // Add this line to make the lines more curved
       }));
 
       this.portfolioChart.value = new Chart(ctx, {
@@ -352,9 +355,6 @@ export default {
               grid: {
                 display: false,
               },
-            },
-            y: {
-              beginAtZero: true,
             },
           },
           maintainAspectRatio: true,
@@ -394,15 +394,17 @@ export default {
       console.log("updateChart: labels", labels);
 
       // Clone the data to avoid reactivity issues
-      const datasets = this.groups.map(group => ({
+      const datasets = this.groups.map((group, index) => ({
         label: group.name,
         data: [...group.totalPortfolioValues.quarters],
-        borderColor: this.getRandomColor(),
+        borderColor: this.fixedColors[index % this.fixedColors.length], // Use fixed colors
         fill: false,
+        cubicInterpolationMode: 'monotone', // Add this line
+        tension: 0.4, // Add this line to make the lines more curved
       }));
 
       if (this.portfolioChart.value) {
-        this.portfolioChart.value.data.labels = labels;
+      this.portfolioChart.value.data.labels = labels;
         this.portfolioChart.value.data.datasets = datasets;
         this.portfolioChart.value.options.animation = false; // Disable animation
         this.portfolioChart.value.update();
