@@ -51,7 +51,6 @@
   </div>
 </template>
 
-
 <script>
 import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
@@ -69,61 +68,22 @@ export default {
       userFunds: 0,
       totalFunds: 0,
       companies: [
-        { name: 'AbbVie', symbol: 'ABBV', allocation: 0 },
-        { name: 'Activision Blizzard', symbol: 'ATVI', allocation: 0 },
-        { name: 'Adobe', symbol: 'ADBE', allocation: 0 },
-        { name: 'Amazon', symbol: 'AMZN', allocation: 0 },
-        { name: 'American Tower Corporation', symbol: 'AMT', allocation: 0 },
-        { name: 'Apple', symbol: 'AAPL', allocation: 0 },
-        { name: 'Astra Zeneca', symbol: 'AZN', allocation: 0 },
-        { name: 'AT&T', symbol: 'T', allocation: 0 },
-        { name: 'Axon Enterprise', symbol: 'AXON', allocation: 0 },
-        { name: 'Barclays', symbol: 'BCS', allocation: 0 },
-        { name: 'Berkshire Hathaway', symbol: 'BRK.B', allocation: 0 },
-        { name: 'Blackrock', symbol: 'BLK', allocation: 0 },
-        { name: 'Boeing', symbol: 'BA', allocation: 0 },
-        { name: 'BP', symbol: 'BP', allocation: 0 },
-        { name: 'BYD', symbol: 'BYDDY', allocation: 0 },
-        { name: 'Cisco', symbol: 'CSCO', allocation: 0 },
-        { name: 'Coca-Cola', symbol: 'KO', allocation: 0 },
-        { name: 'Comcast', symbol: 'CMCSA', allocation: 0 },
-        { name: 'Costco', symbol: 'COST', allocation: 0 },
-        { name: 'Currys', symbol: 'DC.L', allocation: 0 },
-        { name: 'Disney', symbol: 'DIS', allocation: 0 },
-        { name: 'EA', symbol: 'EA', allocation: 0 },
-        { name: 'ExxonMobil', symbol: 'XOM', allocation: 0 },
-        { name: 'Goldman Sachs', symbol: 'GS', allocation: 0 },
-        { name: 'Google', symbol: 'GOOGL', allocation: 0 },
-        { name: 'Home Depot', symbol: 'HD', allocation: 0 },
-        { name: 'IBM', symbol: 'IBM', allocation: 0 },
-        { name: 'Intel', symbol: 'INTC', allocation: 0 },
-        { name: 'Johnson & Johnson', symbol: 'JNJ', allocation: 0 },
-        { name: 'JPMorgan Chase', symbol: 'JPM', allocation: 0 },
-        { name: 'LG', symbol: '066570.KS', allocation: 0 },
-        { name: 'Lockheed Martin', symbol: 'LMT', allocation: 0 },
-        { name: 'Man United', symbol: 'MANU', allocation: 0 },
-        { name: 'Mastercard', symbol: 'MA', allocation: 0 },
-        { name: 'Meta', symbol: 'META', allocation: 0 },
-        { name: 'Microsoft', symbol: 'MSFT', allocation: 0 },
-        { name: 'Netflix', symbol: 'NFLX', allocation: 0 },
-        { name: 'NIO', symbol: 'NIO', allocation: 0 },
-        { name: 'Nike', symbol: 'NKE', allocation: 0 },
-        { name: 'NVIDIA', symbol: 'NVDA', allocation: 0 },
-        { name: 'Pandora', symbol: 'P', allocation: 0 },
-        { name: 'PayPal', symbol: 'PYPL', allocation: 0 },
-        { name: 'Pfizer', symbol: 'PFE', allocation: 0 },
-        { name: 'PepsiCo', symbol: 'PEP', allocation: 0 },
-        { name: 'Procter & Gamble', symbol: 'PG', allocation: 0 },
-        { name: 'Roblox', symbol: 'RBLX', allocation: 0 },
-        { name: 'Rolls Royce', symbol: 'RR.L', allocation: 0 },
-        { name: 'Shell', symbol: 'SHEL', allocation: 0 },
-        { name: 'Spotify', symbol: 'SPOT', allocation: 0 },
-        { name: 'Tesla', symbol: 'TSLA', allocation: 0 },
-        { name: 'Tesco', symbol: 'TSCO.L', allocation: 0 },
-        { name: 'UnitedHealth', symbol: 'UNH', allocation: 0 },
-        { name: 'Verizon', symbol: 'VZ', allocation: 0 },
-        { name: 'Visa', symbol: 'V', allocation: 0 },
-        { name: 'Walmart', symbol: 'WMT', allocation: 0 }
+        { name: 'Amazon', symbol: 'AMZN', allocation: 0, invested: false },
+        { name: 'Apple', symbol: 'AAPL', allocation: 0, invested: false },
+        { name: 'Boeing', symbol: 'BA', allocation: 0, invested: false },
+        { name: 'Coca-Cola', symbol: 'KO', allocation: 0, invested: false },
+        { name: 'Disney', symbol: 'DIS', allocation: 0, invested: false },
+        { name: 'Microsoft', symbol: 'MSFT', allocation: 0, invested: false },
+        { name: 'Nike', symbol: 'NKE', allocation: 0, invested: false },
+        { name: 'NVIDIA', symbol: 'NVDA', allocation: 0, invested: false },
+        { name: 'PayPal', symbol: 'PYPL', allocation: 0, invested: false },
+        { name: 'Pfizer', symbol: 'PFE', allocation: 0, invested: false },
+        { name: 'Roblox', symbol: 'RBLX', allocation: 0, invested: false },
+        { name: 'Shell', symbol: 'SHEL', allocation: 0, invested: false },
+        { name: 'Spotify', symbol: 'SPOT', allocation: 0, invested: false },
+        { name: 'Tesla', symbol: 'TSLA', allocation: 0, invested: false },
+        { name: 'Visa', symbol: 'V', allocation: 0, invested: false },
+        { name: 'Walmart', symbol: 'WMT', allocation: 0, invested: false }
       ],
       showLogin: false,
       isModalVisible: false,
@@ -183,12 +143,16 @@ export default {
         if (user) {
           try {
             const portfolioDocRef = doc(db, userUID, 'Stock Trading Platform', 'Portfolio', 'Initial Portfolio');
+            const platformDocRef = doc(db, userUID, 'Stock Trading Platform');
+
             const portfolioDocSnap = await getDoc(portfolioDocRef);
+            const platformDocSnap = await getDoc(platformDocRef);
 
             let updatedCompanies = this.companies.map(company => ({
               name: company.name,
               symbol: company.symbol,
-              allocation: company.allocation
+              allocation: company.allocation,
+              invested: company.allocation > 0 // Set invested to true if allocation is greater than 0
             }));
 
             if (portfolioDocSnap.exists()) {
@@ -196,7 +160,7 @@ export default {
               updatedCompanies = existingPortfolio.companies.map(existingCompany => {
                 const newCompany = this.companies.find(company => company.name === existingCompany.name);
                 if (newCompany) {
-                  return { ...existingCompany, allocation: existingCompany.allocation + newCompany.allocation };
+                  return { ...existingCompany, allocation: existingCompany.allocation + newCompany.allocation, invested: true };
                 }
                 return existingCompany;
               });
@@ -208,6 +172,11 @@ export default {
               totalAllocation: this.totalAllocation,
               date: serverTimestamp(),
             });
+
+            // Ensure the "Stock Trading Platform" document has the "exists" field set to true
+            if (!platformDocSnap.exists()) {
+              await setDoc(platformDocRef, { exists: true });
+            }
 
             await setDoc(doc(db, userUID, 'Total Funds'), {
               totalFunds: this.totalFunds - this.totalAllocation,
@@ -231,6 +200,7 @@ export default {
         this.isModalVisible = true;
       }
     },
+
     navigateToPortfolioDisplay() {
       this.$router.push('/portfolio-display');
     },
