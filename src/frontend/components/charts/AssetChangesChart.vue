@@ -165,15 +165,17 @@ export default {
             xMin: labels[labelIndex],
             xMax: labels[labelIndex],
             borderColor: '#DAC2C2',
-            borderWidth: 20,
+            borderWidth: 20, // Adjust border width
             label: {
               display: true,
               content: event.name,
               position: position,
               backgroundColor: 'rgba(114,93,255,1)',
-              color: '#FFF',
+              color: '#HHH',
               font: {
-                size: 12
+                size: 12,
+                color: '#000'
+
               },
               padding: 4,
               yAdjust: position === "bottom" ? -10 : 10 // Adjust label position to prevent overlap with the annotation line
@@ -201,11 +203,16 @@ export default {
                   display: false
                 },
               },
-              y: {
-                beginAtZero: true,
-              },
             },
             plugins: {
+              legend: {
+                display: true,
+                labels: {
+                  font: {
+                    size: 12,
+                  },
+                },
+              },
               annotation: {
                 annotations: annotations.filter(a => a !== null),
                 drawTime: 'afterDatasetsDraw',
@@ -258,15 +265,16 @@ export default {
             xMin: labels[labelIndex],
             xMax: labels[labelIndex],
             borderColor: '#DAC2C2',
-            borderWidth: 20,
+            borderWidth: 20, // Adjust border width
             label: {
               display: true,
               content: event.name,
               position: position,
               backgroundColor: 'rgba(114,93,255,1)',
-              color: '#FFF',
+              color: '#HHH',
               font: {
-                size: 12
+                size: 12,
+                color: '#000'
               },
               padding: 4,
               yAdjust: position === "bottom" ? -10 : 10 // Adjust label position to prevent overlap with the annotation line
@@ -279,6 +287,7 @@ export default {
 
       this.assetChangesChart.value.options.plugins.annotation.annotations = annotations;
     },
+
 
     toggleAssetVisibility(assetType) {
       const dataset = this.assetChangesChart.value.data.datasets.find(d => d.label === assetType);
