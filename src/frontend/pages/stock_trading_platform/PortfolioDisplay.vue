@@ -50,7 +50,7 @@
                 <tr>
                   <th>Stock</th>
                   <th>Original Value</th>
-                  <th>Buying Stock Price</th>
+                  <th>Initial Stock Price</th>
                   <th>Current Value</th>
                   <th>Current Stock Price</th>
                 </tr>
@@ -60,15 +60,13 @@
                   <tr @click="toggleStock(company)">
                     <td>{{ company.name }}</td>
                     <td>£{{ roundedValue(company.allocation) }}</td>
-                    <td>£{{ roundedValue(company.buyingStockPrice) }}</td>
+                    <td>${{ company.initialStockPrice }}</td>
                     <td>£{{ roundedValue(company.currentValue || 0) }}</td>
-                    <td>£{{ roundedValue(company.currentStockPrice) }}</td>
+                    <td>${{ roundedValue(company.currentStockPrice) }}</td>
                   </tr>
                   <tr v-if="expandedStock === company.symbol" class="expanded-row">
                     <td colspan="5">
-                      <button @click="toggleChart">Toggle Chart</button>
-                      <line-chart ref="lineChart" :chart-data="chartData" v-if="chartData && expandedStock === company.symbol && chartType === 'portfolio'"></line-chart>
-                      <line-chart ref="lineChart" :chart-data="officialChartData" v-if="officialChartData && expandedStock === company.symbol && chartType === 'official'"></line-chart>
+                      <line-chart ref="lineChart" :chart-data="officialChartData" v-if="officialChartData && expandedStock === company.symbol"></line-chart>
                     </td>
                   </tr>
                 </template>
@@ -127,29 +125,28 @@ export default {
       chartData: null,
       officialChartData: null,
       expandedStock: null,
-      chartType: 'portfolio',
       cacheKey: '',
       stickyNotes: [],
       totalFunds: null,
       firestoreRequestCount: 0, // Counter for Firestore requests
       companies: [
-        { name: 'Amazon', symbol: 'AMZN', allocation: 0 },
-        { name: 'Apple', symbol: 'AAPL', allocation: 0 },
-        { name: 'Boeing', symbol: 'BA', allocation: 0 },
-        { name: 'Coca-Cola', symbol: 'KO', allocation: 0 },
-        { name: 'Disney', symbol: 'DIS', allocation: 0 },
-        { name: 'Google', symbol: 'GOOGL', allocation: 0 },
-        { name: 'Microsoft', symbol: 'MSFT', allocation: 0 },
-        { name: 'Nike', symbol: 'NKE', allocation: 0 },
-        { name: 'NVIDIA', symbol: 'NVDA', allocation: 0 },
-        { name: 'PayPal', symbol: 'PYPL', allocation: 0 },
-        { name: 'Pfizer', symbol: 'PFE', allocation: 0 },
-        { name: 'Roblox', symbol: 'RBLX', allocation: 0 },
-        { name: 'Shell', symbol: 'SHEL', allocation: 0 },
-        { name: 'Spotify', symbol: 'SPOT', allocation: 0 },
-        { name: 'Tesla', symbol: 'TSLA', allocation: 0 },
-        { name: 'Visa', symbol: 'V', allocation: 0 },
-        { name: 'Walmart', symbol: 'WMT', allocation: 0 }
+        { name: 'Amazon', symbol: 'AMZN', allocation: 0, initialStockPrice: 0 },
+        { name: 'Apple', symbol: 'AAPL', allocation: 0, initialStockPrice: 0 },
+        { name: 'Boeing', symbol: 'BA', allocation: 0, initialStockPrice: 0 },
+        { name: 'Coca-Cola', symbol: 'KO', allocation: 0, initialStockPrice: 0 },
+        { name: 'Disney', symbol: 'DIS', allocation: 0, initialStockPrice: 0 },
+        { name: 'Google', symbol: 'GOOGL', allocation: 0, initialStockPrice: 0 },
+        { name: 'Microsoft', symbol: 'MSFT', allocation: 0, initialStockPrice: 0 },
+        { name: 'Nike', symbol: 'NKE', allocation: 0, initialStockPrice: 0 },
+        { name: 'NVIDIA', symbol: 'NVDA', allocation: 0, initialStockPrice: 0 },
+        { name: 'PayPal', symbol: 'PYPL', allocation: 0, initialStockPrice: 0 },
+        { name: 'Pfizer', symbol: 'PFE', allocation: 0, initialStockPrice: 0 },
+        { name: 'Roblox', symbol: 'RBLX', allocation: 0, initialStockPrice: 0 },
+        { name: 'Shell', symbol: 'SHEL', allocation: 0, initialStockPrice: 0 },
+        { name: 'Spotify', symbol: 'SPOT', allocation: 0, initialStockPrice: 0 },
+        { name: 'Tesla', symbol: 'TSLA', allocation: 0, initialStockPrice: 0 },
+        { name: 'Visa', symbol: 'V', allocation: 0, initialStockPrice: 0 },
+        { name: 'Walmart', symbol: 'WMT', allocation: 0, initialStockPrice: 0 }
       ],
       chartOptions: {
         responsive: true,
@@ -215,18 +212,20 @@ export default {
   },
   computed: {
     originalValue() {
-      return this.portfolio ? this.portfolio.companies.reduce((sum, company) => sum + company.allocation, 0) : 0;
+      return this.portfolio ? this.portfolio.companies.filter(c => c.invested).reduce((sum, company) => sum + company.allocation, 0) : 0;
     },
     currentValue() {
-      return this.portfolioHistory.length ? this.portfolioHistory[this.portfolioHistory.length - 1].totalAllocation : 0;
+      return this.portfolioHistory.length ? this.portfolioHistory[this.portfolioHistory.length - 1].companies.filter(c => c.invested).reduce((sum, company) => sum + (company.currentValue || 0), 0) : 0;
     },
     percentageGainLoss() {
       if (!this.portfolio) return 0;
-      return ((this.currentValue - this.originalValue) / this.originalValue * 100).toFixed(2);
+      const original = this.originalValue;
+      const current = this.currentValue;
+      return original ? ((current - original) / original * 100).toFixed(2) : 0;
     },
     bestPerformingStock() {
       if (!this.portfolio) return { name: 'N/A', percentageChange: 0 };
-      return this.portfolio.companies.reduce((best, company) => {
+      return this.portfolio.companies.filter(c => c.invested).reduce((best, company) => {
         const allocation = company.allocation || 1; // Avoid division by zero
         const change = ((company.currentValue || 0) - allocation) / allocation * 100;
         return change > best.percentageChange ? { name: company.name, percentageChange: change.toFixed(2) } : best;
@@ -234,7 +233,7 @@ export default {
     },
     worstPerformingStock() {
       if (!this.portfolio) return { name: 'N/A', percentageChange: 0 };
-      return this.portfolio.companies.reduce((worst, company) => {
+      return this.portfolio.companies.filter(c => c.invested).reduce((worst, company) => {
         if (company.allocation === 0) return worst; // Skip companies with zero initial allocation
         const allocation = company.allocation || 1; // Avoid division by zero
         const change = ((company.currentValue || 0) - allocation) / allocation * 100;
@@ -242,7 +241,7 @@ export default {
       }, { name: 'N/A', percentageChange: Infinity });
     },
     filteredCompanies() {
-      return this.portfolio ? this.portfolio.companies.filter(company => company.allocation > 0) : [];
+      return this.portfolio ? this.portfolio.companies.filter(company => company.allocation > 0 && company.invested) : [];
     },
     timeInvested() {
       if (!this.portfolio || !this.portfolioHistory.length) return 0;
@@ -283,7 +282,7 @@ export default {
       this.loading = true;
       await this.fetchPortfolio();
       if (this.portfolio) {
-        await this.initializeInitialPrices();
+        await this.initializeData();
         await this.fillMissingDates();
         await this.fetchAllPortfolioDocs();
         this.preparePortfolioChartData();
@@ -316,9 +315,47 @@ export default {
           console.log('Fetched initial portfolio:', docSnap.data());
           this.portfolio = docSnap.data();
         }
-
       } else {
         console.error("User is not logged in");
+      }
+    },
+    async initializeData() {
+      if (this.portfolio && this.portfolio.companies) {
+        const stockDataPromises = this.portfolio.companies.map(company => {
+          const companyInfo = this.companies.find(c => c.name === company.name);
+          if (company.invested) {
+            return this.fetchStockData(companyInfo.symbol);
+          }
+          return null;
+        });
+
+        const stockDataArray = await Promise.all(stockDataPromises);
+
+        this.portfolio.companies = this.portfolio.companies.map((company, index) => {
+          const stockData = stockDataArray[index];
+          if (stockData && stockData.data['Time Series (Daily)']) {
+            const buyDate = new Date(this.portfolio.date.seconds * 1000);
+            let formattedBuyDate = format(buyDate, 'yyyy-MM-dd');
+            let buyDailyData = stockData.data['Time Series (Daily)'][formattedBuyDate];
+
+            // If no data for formattedBuyDate, go back until data is found
+            while (!buyDailyData && buyDate >= new Date(stockData.data['Meta Data']['3. Last Refreshed'])) {
+              buyDate.setDate(buyDate.getDate() - 1);
+              formattedBuyDate = format(buyDate, 'yyyy-MM-dd');
+              buyDailyData = stockData.data['Time Series (Daily)'][formattedBuyDate];
+            }
+
+            if (buyDailyData) {
+              company.initialStockPrice = parseFloat(buyDailyData['4. close']);
+            } else {
+              company.initialStockPrice = 0;
+            }
+
+          } else {
+            company.initialStockPrice = 0;
+          }
+          return company;
+        });
       }
     },
     async fetchAllPortfolioDocs() {
@@ -350,79 +387,14 @@ export default {
       const docSnap = await getDoc(docRef);
       return docSnap.exists() ? docSnap.data() : null;
     },
-    async initializeInitialPrices() {
-      const initialPrices = [];
-
-      const stockDataPromises = this.portfolio.companies.map(company => {
-        const companyInfo = this.companies.find(c => c.name === company.name);
-        console.log(`Fetching stock data for ${companyInfo.symbol}`);
-        return this.fetchStockData(companyInfo.symbol);
-      });
-
-      const stockDataArray = await Promise.all(stockDataPromises);
-
-      stockDataArray.forEach((stockData, index) => {
-        const companyName = this.portfolio.companies[index].name;
-        console.log(`Processing stock data for ${companyName}`);
-        if (stockData && stockData.data['Time Series (Daily)']) {
-          let initialDate = new Date(this.portfolio.date.seconds * 1000);
-          let formattedDate = format(initialDate, 'yyyy-MM-dd');
-          let dailyData = stockData.data['Time Series (Daily)'][formattedDate];
-
-          console.log(`Initial investment date for ${companyName}: ${formattedDate}`);
-          console.log(`Initial daily data for ${formattedDate}:`, dailyData);
-
-          // If no data for formattedDate, go back until data is found
-          while (!dailyData && initialDate >= new Date(stockData.data['Meta Data']['3. Last Refreshed'])) {
-            console.log(`No data for ${formattedDate}, checking previous day...`);
-            initialDate.setDate(initialDate.getDate() - 1);
-            formattedDate = format(initialDate, 'yyyy-MM-dd');
-            dailyData = stockData.data['Time Series (Daily)'][formattedDate];
-            console.log(`Checking data for ${formattedDate}:`, dailyData);
-          }
-
-          if (dailyData && dailyData['1. open']) {
-            initialPrices[index] = parseFloat(dailyData['1. open']);
-            console.log(`Found data for ${formattedDate}, setting initial price: ${initialPrices[index]}`);
-          } else {
-            // If no valid data found, search backward to find the last available close price
-            let previousDate = new Date(initialDate);
-            let previousFormattedDate = format(previousDate, 'yyyy-MM-dd');
-            let previousCloseData = null;
-
-            while (!previousCloseData && previousDate >= new Date(stockData.data['Meta Data']['3. Last Refreshed'])) {
-              previousCloseData = stockData.data['Time Series (Daily)'][previousFormattedDate];
-              previousDate.setDate(previousDate.getDate() - 1);
-              previousFormattedDate = format(previousDate, 'yyyy-MM-dd');
-            }
-
-            if (previousCloseData && previousCloseData['4. close']) {
-              initialPrices[index] = parseFloat(previousCloseData['4. close']);
-              console.log(`Using previous close price as initial price: ${initialPrices[index]}`);
-            } else {
-              initialPrices[index] = 0; // Set to 0 if no valid data is found
-              console.log(`No valid data found, setting initial price to 0`);
-            }
-          }
-        } else {
-          initialPrices[index] = 0; // Set to 0 if no stock data found
-          console.log(`No stock data found for ${companyName}, setting initial price to 0`);
-        }
-      });
-
-      this.portfolio.companies = this.portfolio.companies.map((company) => ({
-        ...company,
-        currentValue: company.allocation,
-        buyingStockPrice: initialPrices[this.portfolio.companies.indexOf(company)]
-      }));
-
-      console.log('Portfolio companies updated with initial prices and current values:', this.portfolio.companies);
-    },
     async updateStockPrices() {
       if (this.portfolio) {
         const stockDataPromises = this.portfolio.companies.map(company => {
-          const companyInfo = this.companies.find(c => c.name === company.name);
-          return this.fetchStockData(companyInfo.symbol);
+          if (company.invested) {
+            const companyInfo = this.companies.find(c => c.name === company.name);
+            return this.fetchStockData(companyInfo.symbol);
+          }
+          return null;
         });
 
         const stockDataArray = await Promise.all(stockDataPromises);
@@ -442,10 +414,11 @@ export default {
             }
 
             if (dailyData) {
-              company.currentStockPrice = parseFloat(dailyData['1. open']);
+              company.currentStockPrice = parseFloat(dailyData['4. close']);
             } else {
               company.currentStockPrice = company.currentValue / company.allocation;
             }
+
           } else {
             company.currentStockPrice = company.currentValue / company.allocation;
           }
@@ -482,13 +455,19 @@ export default {
         if (!docSnap.exists()) {
           console.log(`No portfolio data for ${formattedDate}, creating new entry.`);
           const stockDataPromises = this.portfolio.companies.map(company => {
-            const companyInfo = this.companies.find(c => c.name === company.name);
-            return this.fetchStockData(companyInfo.symbol);
+            if (company.invested) {
+              const companyInfo = this.companies.find(c => c.name === company.name);
+              return this.fetchStockData(companyInfo.symbol);
+            }
+            return null;
           });
           const stockDataArray = await Promise.all(stockDataPromises);
           console.log(`Stock Data Array: ${JSON.stringify(stockDataArray)}`);
 
           const updatedCompanies = this.portfolio.companies.map((company, index) => {
+            if (!company.invested) {
+              return company;
+            }
             const stockData = stockDataArray[index];
             console.log(`Stock Data for ${company.name}: ${JSON.stringify(stockData)}`);
             let currentValue = previousDayValues[index]; // Use the previous day's value as the starting point
@@ -551,7 +530,7 @@ export default {
             ...this.portfolio,
             date: currentDate,
             companies: updatedCompanies,
-            totalAllocation: updatedCompanies.reduce((sum, company) => sum + company.currentValue, 0),
+            totalAllocation: updatedCompanies.filter(c => c.invested).reduce((sum, company) => sum + company.currentValue, 0),
           };
 
           console.log('Updated portfolio for', formattedDate, updatedPortfolio);
@@ -564,8 +543,6 @@ export default {
         currentDate.setDate(currentDate.getDate() + 1);
       }
     },
-
-
     preparePortfolioChartData() {
       if (!this.portfolioHistory) return;
 
@@ -575,7 +552,7 @@ export default {
       this.portfolioHistory.forEach(portfolio => {
         const formattedDate = format(new Date(portfolio.date.seconds * 1000), 'yyyy-MM-dd');
         dates.push(formattedDate);
-        values.push(parseFloat(portfolio.totalAllocation).toFixed(2));
+        values.push(parseFloat(portfolio.companies.filter(c => c.invested).reduce((sum, company) => sum + company.currentValue, 0)).toFixed(2));
       });
 
       this.portfolioChartData = {
@@ -596,9 +573,9 @@ export default {
       console.log('Prepare Pie Chart Data Called');
       if (!this.portfolio) return;
 
-      const labels = this.portfolio.companies.map(company => company.name);
+      const labels = this.portfolio.companies.filter(c => c.invested).map(company => company.name);
       console.log(`Pie Chart Labels Made: ${labels}`);
-      const data = this.portfolio.companies.map(company => parseFloat(company.currentValue || company.allocation).toFixed(2));
+      const data = this.portfolio.companies.filter(c => c.invested).map(company => parseFloat(company.currentValue || company.allocation).toFixed(2));
       console.log(`Pie Chart Data Made: ${data}`);
 
       this.pieChartData = {
@@ -626,35 +603,8 @@ export default {
         this.officialChartData = null;
       } else {
         this.expandedStock = symbol;
-        this.chartData = this.prepareStockChartData(symbol);
         this.officialChartData = await this.prepareOfficialStockChartData(symbol);
       }
-    },
-    prepareStockChartData(symbol) {
-      const history = this.portfolioHistory.map(entry => {
-        const company = entry.companies.find(c => c.symbol === symbol);
-        return {
-          date: new Date(entry.date.seconds * 1000),
-          value: company ? company.currentValue : 0
-        };
-      });
-
-      const labels = history.map(entry => format(entry.date, 'yyyy-MM-dd'));
-      const data = history.map(entry => parseFloat(entry.value).toFixed(2));
-
-      return {
-        labels,
-        datasets: [
-          {
-            label: 'User Portfolio Value',
-            data,
-            fill: true,
-            borderColor: 'rgba(75, 192, 192, 1)',
-            backgroundColor: 'rgba(75, 192, 192, 0.2)',
-            tension: 0.1
-          }
-        ]
-      };
     },
     async prepareOfficialStockChartData(symbol) {
       const stockData = await this.fetchStockData(symbol);
@@ -700,9 +650,6 @@ export default {
         };
       }
       return null;
-    },
-    toggleChart() {
-      this.chartType = this.chartType === 'portfolio' ? 'official' : 'portfolio';
     },
     getRandomColors(numColors) {
       const colors = [];
@@ -750,7 +697,7 @@ export default {
         return true;
       }
       if (note.selectedStocks && note.selectedStocks.length) {
-        const userStocks = this.portfolio ? this.portfolio.companies.map(company => company.symbol) : [];
+        const userStocks = this.portfolio ? this.portfolio.companies.filter(c => c.invested).map(company => company.symbol) : [];
         const hasMatchingStock = note.selectedStocks.some(stock => userStocks.includes(stock));
         if (hasMatchingStock) {
           return true;
