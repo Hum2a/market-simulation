@@ -14,7 +14,7 @@
         <button @click="toggleSimulationHistory" class="simulation-history-toggle">
           <img src="../../assets/calendar 1.png" alt="Calendar">
         </button>
-        <button @click="toggleLogin" class ="simulation-login-toggle">
+        <button @click="toggleLogin" class="simulation-login-toggle">
           <img src="../../assets/login.png" alt="Login">
         </button>
       </div>
@@ -52,27 +52,28 @@
             <div class="inputs">
               <div class="input-row">
                 <label for="equity">Equity:</label>
-                <input type="number" v-model="group.equity" @input="updatePieChart(index)" id="equity" class="modern-input">
+                <input type="number" v-model="group.equityTemp" id="equity" class="modern-input">
               </div>
               <div class="input-row">
                 <label for="bonds">Bonds:</label>
-                <input type="number" v-model="group.bonds" @input="updatePieChart(index)" id="bonds" class="modern-input">
+                <input type="number" v-model="group.bondsTemp" id="bonds" class="modern-input">
               </div>
               <div class="input-row">
                 <label for="realestate">Real Estate:</label>
-                <input type="number" v-model="group.realestate" @input="updatePieChart(index)" id="realestate" class="modern-input">
+                <input type="number" v-model="group.realestateTemp" id="realestate" class="modern-input">
               </div>
               <div class="input-row">
                 <label for="commodities">Commodities:</label>
-                <input type="number" v-model="group.commodities" @input="updatePieChart(index)" id="commodities" class="modern-input">
+                <input type="number" v-model="group.commoditiesTemp" id="commodities" class="modern-input">
               </div>
               <div class="input-row">
                 <label for="other">Other:</label>
-                <input type="number" v-model="group.other" @input="updatePieChart(index)" id="other" class="modern-input">
+                <input type="number" v-model="group.otherTemp" id="other" class="modern-input">
               </div>
               <div class="total-value">
                 Total Portfolio Value: ${{ getTotalValue(group).toFixed(2) }}
               </div>
+              <button @click="updateAllGroupValues(index)" class="modern-button enter-all-btn">Enter All</button>
             </div>
             <button @click="generateRandomValues(index)" class="modern-button">Generate Random Values</button>
             <div class="pie-chart-container">
@@ -137,10 +138,10 @@ export default {
   data() {
     return {
       groups: [
-        { name: 'Group 1', equity: '', bonds: '', realestate: '', commodities: '', other: '' },
-        { name: 'Group 2', equity: '', bonds: '', realestate: '', commodities: '', other: '' },
-        { name: 'Group 3', equity: '', bonds: '', realestate: '', commodities: '', other: '' },
-        { name: 'Group 4', equity: '', bonds: '', realestate: '', commodities: '', other: '' }
+        { name: 'Group 1', equity: '', bonds: '', realestate: '', commodities: '', other: '', equityTemp: '', bondsTemp: '', realestateTemp: '', commoditiesTemp: '', otherTemp: '' },
+        { name: 'Group 2', equity: '', bonds: '', realestate: '', commodities: '', other: '', equityTemp: '', bondsTemp: '', realestateTemp: '', commoditiesTemp: '', otherTemp: '' },
+        { name: 'Group 3', equity: '', bonds: '', realestate: '', commodities: '', other: '', equityTemp: '', bondsTemp: '', realestateTemp: '', commoditiesTemp: '', otherTemp: '' },
+        { name: 'Group 4', equity: '', bonds: '', realestate: '', commodities: '', other: '', equityTemp: '', bondsTemp: '', realestateTemp: '', commoditiesTemp: '', otherTemp: '' }
       ],
       showCalculator: false,
       showSimulationControls: false,
@@ -166,7 +167,7 @@ export default {
     confirmAddGroup() {
       if (this.newGroupName.trim()) {
         this.groups.push({
-          name: this.newGroupName.trim(), equity: '', bonds: '', realestate: '', commodities: '', other: ''
+          name: this.newGroupName.trim(), equity: '', bonds: '', realestate: '', commodities: '', other: '', equityTemp: '', bondsTemp: '', realestateTemp: '', commoditiesTemp: '', otherTemp: ''
         });
         this.newGroupName = ''; 
         this.toggleModal();
@@ -328,7 +329,7 @@ export default {
                     size: 10,
                     family: 'Helvetica'
                   },
-                  boxWidth: 2,
+                  boxWidth: 20,
                   usePointStyle: true
                 }
               }
@@ -344,12 +345,24 @@ export default {
         console.log(`Chart instance created for index: ${index}`);
       });
     },
+    updateGroupValue(index, field) {
+      this.groups[index][field] = this.groups[index][`${field}Temp`];
+      this.updatePieChart(index);
+    },
+    updateAllGroupValues(index) {
+      const group = this.groups[index];
+      const fields = ['equity', 'bonds', 'realestate', 'commodities', 'other'];
+      fields.forEach(field => {
+        group[field] = group[`${field}Temp`];
+      });
+      this.updatePieChart(index);
+    },
     updatePieChart(index) {
       this.renderPieChart(index);
     },
     getTotalValue(group) {
       return Object.keys(group).reduce((total, key) => {
-        if (key !== 'name') {
+        if (key !== 'name' && !key.endsWith('Temp')) {
           total += parseFloat(group[key]) || 0;
         }
         return total;
@@ -423,4 +436,7 @@ export default {
 
 <style scoped>
 @import url('../../styles/GroupCreationStyles.css');
+.enter-all-btn {
+  margin-top: 10px;
+}
 </style>
