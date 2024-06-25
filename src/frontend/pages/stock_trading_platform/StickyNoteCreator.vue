@@ -1,199 +1,186 @@
 <template>
-    <div class="sticky-note-creator">
-      <header class="header">
-        <img src="../../assets/LifeSmartLogo.png" alt="Logo" class="logo" />
-        <nav class="header-links">
-          <router-link to="/admin-dashboard" class="nav-link">Admin Dashboard</router-link>
-          <router-link to="/" class="nav-link">Home</router-link>
-        </nav>
-      </header>
-      <main class="main-content">
-        <h1>{{ editingNoteId ? 'Edit Sticky Note' : 'Create Sticky Note' }}</h1>
-        <div class="form-container">
-          <div class="note-content-card">
-            <h2>Note Content</h2>
-            <form @submit.prevent="createOrUpdateStickyNote">
-              <div class="form-group">
-                <label for="note-title">Note Title:</label>
-                <input type="text" id="note-title" v-model="noteTitle" required />
-              </div>
-              <div class="form-group">
-                <label for="note-content">Note Content:</label>
-                <textarea id="note-content" v-model="noteContent" required></textarea>
-              </div>
-              <button type="submit">{{ editingNoteId ? 'Update Note' : 'Create Note' }}</button>
-            </form>
-          </div>
-          <div class="options-card">
-            <h2>Options</h2>
-            <form>
-              <div class="form-group">
-                <label for="show-for-all">Show for All Users:</label>
-                <input type="checkbox" id="show-for-all" v-model="showForAllUsers" />
-              </div>
-              <div class="form-group">
-                <label for="users">Show for Specific Users:</label>
-                <div class="user-buttons">
-                  <button
-                    v-for="user in users"
-                    :key="user.uid"
-                    :class="{'selected': selectedUsers.includes(user.uid)}"
-                    @click.prevent="toggleUserSelection(user.uid)"
-                  >
-                    {{ user.firstName|| user.email }}
-                  </button>
-                </div>
-              </div>
-              <div class="form-group">
-                <label for="stocks">Show for Specific Stocks:</label>
-                <div class="stock-buttons">
-                  <button
-                    v-for="stock in stocks"
-                    :key="stock.symbol"
-                    :class="{'selected': selectedStocks.includes(stock.symbol)}"
-                    @click.prevent="toggleStockSelection(stock.symbol)"
-                  >
-                    {{ stock.name }}
-                  </button>
-                </div>
-              </div>
-              <div class="form-group">
-                <label for="portfolio-value">Show if Portfolio Value is Above:</label>
-                <input type="number" id="portfolio-value" v-model.number="portfolioValueThreshold" />
-              </div>
-            </form>
-          </div>
+  <div class="sticky-note-creator">
+    <header class="header">
+      <img src="../../assets/LifeSmartLogo.png" alt="Logo" class="logo" />
+      <nav class="header-links">
+        <router-link to="/stock-trading-select" class="nav-link">Admin Dashboard</router-link>
+        <router-link to="/" class="nav-link">Home</router-link>
+      </nav>
+    </header>
+    <main class="main-content">
+      <h1>{{ editingNoteId ? 'Edit Sticky Note' : 'Create Sticky Note' }}</h1>
+      <div class="form-container">
+        <div class="note-content-card">
+          <h2>Note Content</h2>
+          <form @submit.prevent="createOrUpdateStickyNote">
+            <div class="form-group">
+              <label for="note-title">Note Title:</label>
+              <input type="text" id="note-title" v-model="noteTitle" required />
+            </div>
+            <div class="form-group">
+              <label for="note-content">Note Content:</label>
+              <textarea id="note-content" v-model="noteContent" required></textarea>
+            </div>
+            <div class="form-group">
+              <label for="note-date">Date:</label>
+              <vue-datepicker v-model="noteDate" required></vue-datepicker>
+            </div>
+            <div class="form-group">
+              <label for="note-link-name">Link Name:</label>
+              <input type="text" id="note-link-name" v-model="noteLinkName" placeholder="Link Name" />
+            </div>
+            <div class="form-group">
+              <label for="note-links">Links:</label>
+              <input type="url" id="note-links" v-model="noteLinks" placeholder="https://example.com" />
+            </div>
+            <button type="submit">{{ editingNoteId ? 'Update Note' : 'Create Note' }}</button>
+          </form>
         </div>
-        <div class="position-selector-card">
-          <h2>Sticky Note Position</h2>
-          <div class="position-selector" ref="positionSelector">
-            <div
-              class="sticky-note-box"
-              :style="{ left: `${stickyNotePosition.x}%`, top: `${stickyNotePosition.y}%` }"
-              @mousedown="startDrag"
-            ></div>
-          </div>
+        <div class="options-card">
+          <h2>Options</h2>
+          <form>
+            <div class="form-group">
+              <label for="show-for-all">Show for All Users:</label>
+              <input type="checkbox" id="show-for-all" v-model="showForAllUsers" />
+            </div>
+            <div class="form-group">
+              <label for="users">Show for Specific Users:</label>
+              <div class="user-buttons">
+                <button
+                  v-for="user in users"
+                  :key="user.uid"
+                  :class="{'selected': selectedUsers.includes(user.uid)}"
+                  @click.prevent="toggleUserSelection(user.uid)"
+                >
+                  {{ user.firstName || user.email }}
+                </button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="stocks">Show for Specific Stocks:</label>
+              <div class="stock-buttons">
+                <button
+                  v-for="stock in stocks"
+                  :key="stock.symbol"
+                  :class="{'selected': selectedStocks.includes(stock.symbol)}"
+                  @click.prevent="toggleStockSelection(stock.symbol)"
+                >
+                  {{ stock.name }}
+                </button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="portfolio-value">Show if Portfolio Value is Above:</label>
+              <input type="number" id="portfolio-value" v-model.number="portfolioValueThreshold" />
+            </div>
+          </form>
         </div>
-        <div class="existing-notes">
-          <h2>Existing Notes</h2>
-          <ul>
-            <li v-for="note in existingNotes" :key="note.id">
-              <span @click="selectNoteForEditing(note)">{{ note.title }}</span>
-              <button @click="deleteNote(note.id)">Delete</button>
-            </li>
-          </ul>
+      </div>
+      <div class="position-selector-card">
+        <h2>Sticky Note Position</h2>
+        <div class="position-selector" ref="positionSelector">
+          <div
+            class="sticky-note-box"
+            :style="{ left: `${stickyNotePosition.x}%`, top: `${stickyNotePosition.y}%` }"
+            @mousedown="startDrag"
+          ></div>
         </div>
-      </main>
-    </div>
-  </template>
-  
-  <script>
-  import { getFirestore, doc, setDoc, getDocs, collection, deleteDoc, serverTimestamp } from 'firebase/firestore';
-  
-  export default {
-    name: 'StickyNoteCreator',
-    data() {
-      return {
-        noteTitle: '',
-        noteContent: '',
-        showForAllUsers: false,
-        selectedUsers: [],
-        selectedStocks: [],
-        portfolioValueThreshold: null,
-        editingNoteId: null,
-        existingNotes: [],
-        users: [],
-        stocks: [
-          { name: 'AbbVie', symbol: 'ABBV' },
-          { name: 'Activision Blizzard', symbol: 'ATVI' },
-          { name: 'Adobe', symbol: 'ADBE' },
-          { name: 'Amazon', symbol: 'AMZN' },
-          { name: 'American Tower Corporation', symbol: 'AMT' },
-          { name: 'Apple', symbol: 'AAPL' },
-          { name: 'Astra Zeneca', symbol: 'AZN' },
-          { name: 'AT&T', symbol: 'T' },
-          { name: 'Axon Enterprise', symbol: 'AXON' },
-          { name: 'Barclays', symbol: 'BCS' },
-          { name: 'Berkshire Hathaway', symbol: 'BRK.B' },
-          { name: 'Blackrock', symbol: 'BLK' },
-          { name: 'Boeing', symbol: 'BA' },
-          { name: 'BP', symbol: 'BP' },
-          { name: 'BYD', symbol: 'BYDDY' },
-          { name: 'Cisco', symbol: 'CSCO' },
-          { name: 'Coca-Cola', symbol: 'KO' },
-          { name: 'Comcast', symbol: 'CMCSA' },
-          { name: 'Costco', symbol: 'COST' },
-          { name: 'Curries', symbol: 'DC.L' },
-          { name: 'Disney', symbol: 'DIS' },
-          { name: 'EA', symbol: 'EA' },
-          { name: 'ExxonMobil', symbol: 'XOM' },
-          { name: 'Goldman Sachs', symbol: 'GS' },
-          { name: 'Google', symbol: 'GOOGL' },
-          { name: 'Home Depot', symbol: 'HD' },
-          { name: 'IBM', symbol: 'IBM' },
-          { name: 'Intel', symbol: 'INTC' },
-          { name: 'Johnson & Johnson', symbol: 'JNJ' },
-          { name: 'JPMorgan Chase', symbol: 'JPM' },
-          { name: 'LG', symbol: '066570.KS' },
-          { name: 'Lockheed Martin', symbol: 'LMT' },
-          { name: 'Man United', symbol: 'MANU' },
-          { name: 'Mastercard', symbol: 'MA' },
-          { name: 'Meta', symbol: 'META' },
-          { name: 'Microsoft', symbol: 'MSFT' },
-          { name: 'Netflix', symbol: 'NFLX' },
-          { name: 'NIO', symbol: 'NIO' },
-          { name: 'Nike', symbol: 'NKE' },
-          { name: 'NVIDIA', symbol: 'NVDA' },
-          { name: 'Pandora', symbol: 'P' },
-          { name: 'PayPal', symbol: 'PYPL' },
-          { name: 'Pfizer', symbol: 'PFE' },
-          { name: 'PepsiCo', symbol: 'PEP' },
-          { name: 'Procter & Gamble', symbol: 'PG' },
-          { name: 'Roblox', symbol: 'RBLX' },
-          { name: 'Rolls Royce', symbol: 'RR.L' },
-          { name: 'Shell', symbol: 'SHEL' },
-          { name: 'Spotify', symbol: 'SPOT' },
-          { name: 'Tesla', symbol: 'TSLA' },
-          { name: 'Tesco', symbol: 'TSCO.L' },
-          { name: 'UnitedHealth', symbol: 'UNH' },
-          { name: 'Verizon', symbol: 'VZ' },
-          { name: 'Visa', symbol: 'V' },
-          { name: 'Walmart', symbol: 'WMT' }
-        ],
-        stickyNotePosition: { x: 0, y: 0 },
-        isDragging: false,
+      </div>
+      <div class="existing-notes">
+        <h2>Existing Notes</h2>
+        <ul>
+          <li v-for="note in existingNotes" :key="note.id">
+            <span @click="selectNoteForEditing(note)">{{ note.title }}</span>
+            <button @click="deleteNote(note.id)">Delete</button>
+          </li>
+        </ul>
+      </div>
+    </main>
+  </div>
+</template>
+
+<script>
+import { getFirestore, doc, setDoc, getDocs, collection, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import Datepicker from '@vuepic/vue-datepicker';
+import '@vuepic/vue-datepicker/dist/main.css';
+
+export default {
+  name: 'StickyNoteCreator',
+  components: {
+    'vue-datepicker': Datepicker
+  },
+  data() {
+    return {
+      noteTitle: '',
+      noteContent: '',
+      noteDate: null,
+      noteLinkName: '', // Added link name field
+      noteLinks: '',
+      showForAllUsers: false,
+      selectedUsers: [],
+      selectedStocks: [],
+      portfolioValueThreshold: null,
+      editingNoteId: null,
+      existingNotes: [],
+      users: [],
+      stocks: [
+        { name: 'Amazon', symbol: 'AMZN'},
+        { name: 'Apple', symbol: 'AAPL'},
+        { name: 'Boeing', symbol: 'BA'},
+        { name: 'Coca-Cola', symbol: 'KO'},
+        { name: 'Disney', symbol: 'DIS'},
+        { name: 'Google', symbol: 'GOOGL'},
+        { name: 'Mastercard', symbol: 'MA'},
+        { name: 'Microsoft', symbol: 'MSFT'},
+        { name: 'Nike', symbol: 'NKE'},
+        { name: 'NVIDIA', symbol: 'NVDA'},
+        { name: 'PayPal', symbol: 'PYPL'},
+        { name: 'Pfizer', symbol: 'PFE'},
+        { name: 'Roblox', symbol: 'RBLX'},
+        { name: 'Shell', symbol: 'SHEL'},
+        { name: 'Spotify', symbol: 'SPOT'},
+        { name: 'Tesla', symbol: 'TSLA'},
+        { name: 'Visa', symbol: 'V'},
+        { name: 'Walmart', symbol: 'WMT'}
+      ],
+      stickyNotePosition: { x: 0, y: 0 },
+      isDragging: false,
+    };
+  },
+  async created() {
+    await this.fetchExistingNotes();
+    await this.fetchUsers();
+  },
+  methods: {
+    async fetchExistingNotes() {
+      const db = getFirestore();
+      const querySnapshot = await getDocs(collection(db, 'Sticky Notes'));
+      this.existingNotes = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      this.existingNotes.sort((a, b) => b.createdAt - a.createdAt); // Sort notes by creation date
+    },
+    async fetchUsers() {
+      const db = getFirestore();
+      const querySnapshot = await getDocs(collection(db, 'Users'));
+      this.users = querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
+    },
+    async createOrUpdateStickyNote() {
+      const db = getFirestore();
+      const note = {
+        title: this.noteTitle,
+        content: this.noteContent,
+        date: this.noteDate,
+        linkName: this.noteLinkName, // Added link name to note data
+        links: this.noteLinks,
+        showForAllUsers: this.showForAllUsers,
+        selectedUsers: this.selectedUsers,
+        selectedStocks: this.selectedStocks,
+        portfolioValueThreshold: this.portfolioValueThreshold,
+        position: this.stickyNotePosition,
+        createdAt: serverTimestamp(),
       };
-    },
-    async created() {
-      await this.fetchExistingNotes();
-      await this.fetchUsers();
-    },
-    methods: {
-      async fetchExistingNotes() {
-        const db = getFirestore();
-        const querySnapshot = await getDocs(collection(db, 'Sticky Notes'));
-        this.existingNotes = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      },
-      async fetchUsers() {
-        const db = getFirestore();
-        const querySnapshot = await getDocs(collection(db, 'Users'));
-        this.users = querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
-      },
-      async createOrUpdateStickyNote() {
-        const db = getFirestore();
-        const note = {
-          title: this.noteTitle,
-          content: this.noteContent,
-          showForAllUsers: this.showForAllUsers,
-          selectedUsers: this.selectedUsers,
-          selectedStocks: this.selectedStocks,
-          portfolioValueThreshold: this.portfolioValueThreshold,
-          position: this.stickyNotePosition,
-          createdAt: serverTimestamp(),
-        };
-        try {
-          await setDoc(doc(db, 'Sticky Notes', this.noteTitle), note);
-          await this.fetchExistingNotes(); // Refresh the list of existing         notes
+      try {
+        await setDoc(doc(db, 'Sticky Notes', this.noteTitle), note);
+        await this.fetchExistingNotes(); // Refresh the list of existing notes
         this.resetForm();
       } catch (error) {
         console.error('Error creating or updating sticky note:', error);
@@ -202,6 +189,9 @@
     selectNoteForEditing(note) {
       this.noteTitle = note.title;
       this.noteContent = note.content;
+      this.noteDate = note.date;
+      this.noteLinkName = note.linkName || ''; // Set link name for editing
+      this.noteLinks = note.links;
       this.showForAllUsers = note.showForAllUsers;
       this.selectedUsers = note.selectedUsers || [];
       this.selectedStocks = note.selectedStocks;
@@ -237,6 +227,9 @@
     resetForm() {
       this.noteTitle = '';
       this.noteContent = '';
+      this.noteDate = null;
+      this.noteLinkName = ''; // Reset link name
+      this.noteLinks = '';
       this.showForAllUsers = false;
       this.selectedUsers = [];
       this.selectedStocks = [];
@@ -469,5 +462,3 @@ button:hover {
   background-color: #c0392b;
 }
 </style>
-
-  
