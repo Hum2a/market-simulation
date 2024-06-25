@@ -61,6 +61,7 @@ export default {
       expandedGroups: {},
       charts: [],
       dataReady: false, // Flag to check if data is ready
+      fixedColors: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'],
     };
   },
   mounted() {
@@ -159,8 +160,8 @@ export default {
       }
     },
     processResults() {
+      const numberOfQuarters = this.quarterResults[0].bonds.length;
       this.finalResults = this.finalResults.map((result, index) => {
-        const numberOfYears = this.calculateNumberOfYears();
         const initialTotalWorth = this.getInitialTotalWorth(index);
         const finalTotalWorth = [
           result.equity,
@@ -171,7 +172,7 @@ export default {
         ].reduce((acc, value) => acc + Number(value), 0);
         const totalGains = finalTotalWorth - initialTotalWorth;
         const roi = ((finalTotalWorth - initialTotalWorth) / initialTotalWorth) * 100;
-        const annualizedReturn = (Math.pow((finalTotalWorth / initialTotalWorth), 1 / numberOfYears) - 1) * 100;
+        const annualizedReturn = (Math.pow((finalTotalWorth / initialTotalWorth), 4 / numberOfQuarters) - 1) * 100;
 
         const mostGainsAsset = this.calculateMostGainsAsset(index);
 
@@ -237,7 +238,7 @@ export default {
       };
     },
     calculateNumberOfYears() {
-      const totalQuarters = this.quarterResults.length;
+      const totalQuarters = this.quarterResults[0].bonds.length;
       return totalQuarters / 4;
     },
     toggleGroup(index) {
@@ -273,7 +274,8 @@ export default {
           console.error("Quarterly results data not ready or empty");
           return;
         }
-        const labels = this.quarterResults.map((_, i) => `Q${i + 1}`);
+        const numberOfQuarters = this.quarterResults[0].bonds.length;
+        const labels = Array.from({ length: numberOfQuarters }, (_, i) => `Q${i}`); // Start from Q0
         const datasets = [];
         const assetTypes = ['equity', 'bonds', 'realestate', 'commodities', 'other'];
 
@@ -285,17 +287,18 @@ export default {
           return;
         }
 
-        assetTypes.forEach(assetType => {
+        assetTypes.forEach((assetType, assetIndex) => {
           const assetData = groupData[assetType];
-
-          datasets.push({
-            label: assetType,
-            data: assetData,
-            fill: false,
-            borderColor: this.getRandomColor(),
-            borderWidth: 1,
-            tension: 0.4
-          });
+          if (assetData) {
+            datasets.push({
+              label: assetType,
+              data: assetData,
+              fill: false,
+              borderColor: this.fixedColors[assetIndex % this.fixedColors.length], // Use fixed colors
+              borderWidth: 1,
+              tension: 0.4
+            });
+          }
         });
 
         this.charts[index] = new Chart(ctx, {
@@ -313,6 +316,7 @@ export default {
         });
       });
     },
+
     getRandomColor() {
       const letters = '0123456789ABCDEF';
       let color = '#';
