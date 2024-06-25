@@ -1,16 +1,16 @@
 <template>
-    <div class="portfolio-display">
-      <header class="header">
-        <img src="../../assets/LifeSmartLogo.png" alt="Logo" class="logo" />
-        <nav class="header-links">
-          <router-link to="/portfolio-creation" class="nav-link">Portfolio Creation</router-link>
-          <button @click="refreshData" class="refresh-button">Refresh Data</button>
-        </nav>
-      </header>
-      <main class="main-content">
-        <div v-if="loading">
-          <p>Loading...</p>
-          <progress :value="loadingProgress" max="100"></progress>
+  <div class="portfolio-display">
+    <header class="header">
+      <img src="../../assets/LifeSmartLogo.png" alt="Logo" class="logo" />
+      <nav class="header-links">
+        <router-link to="/portfolio-creation" class="nav-link">Portfolio Creation</router-link>
+        <button @click="refreshData" class="refresh-button">Refresh Data</button>
+      </nav>
+    </header>
+    <main class="main-content">
+      <div v-if="loading">
+        <p>Loading...</p>
+        <progress :value="loadingProgress" max="100"></progress>
       </div>
       <div v-else-if="!portfolio">No portfolio found.</div>
       <div v-else>
@@ -91,62 +91,24 @@ export default {
       selectedUser: null,
       users: [],
       companies: [
-        { name: 'AbbVie', symbol: 'ABBV' },
-        { name: 'Activision Blizzard', symbol: 'ATVI' },
-        { name: 'Adobe', symbol: 'ADBE' },
-        { name: 'Amazon', symbol: 'AMZN' },
-        { name: 'American Tower Corporation', symbol: 'AMT' },
-        { name: 'Apple', symbol: 'AAPL' },
-        { name: 'Astra Zeneca', symbol: 'AZN' },
-        { name: 'AT&T', symbol: 'T' },
-        { name: 'Axon Enterprise', symbol: 'AXON' },
-        { name: 'Barclays', symbol: 'BCS' },
-        { name: 'Berkshire Hathaway', symbol: 'BRK.B' },
-        { name: 'Blackrock', symbol: 'BLK' },
-        { name: 'Boeing', symbol: 'BA' },
-        { name: 'BP', symbol: 'BP' },
-        { name: 'BYD', symbol: 'BYDDY' },
-        { name: 'Cisco', symbol: 'CSCO' },
-        { name: 'Coca-Cola', symbol: 'KO' },
-        { name: 'Comcast', symbol: 'CMCSA' },
-        { name: 'Costco', symbol: 'COST' },
-        { name: 'Curries', symbol: 'DC.L' },
-        { name: 'Disney', symbol: 'DIS' },
-        { name: 'EA', symbol: 'EA' },
-        { name: 'ExxonMobil', symbol: 'XOM' },
-        { name: 'Goldman Sachs', symbol: 'GS' },
-        { name: 'Google', symbol: 'GOOGL' },
-        { name: 'Home Depot', symbol: 'HD' },
-        { name: 'IBM', symbol: 'IBM' },
-        { name: 'Intel', symbol: 'INTC' },
-        { name: 'Johnson & Johnson', symbol: 'JNJ' },
-        { name: 'JPMorgan Chase', symbol: 'JPM' },
-        { name: 'LG', symbol: '066570.KS' },
-        { name: 'Lockheed Martin', symbol: 'LMT' },
-        { name: 'Man United', symbol: 'MANU' },
-        { name: 'Mastercard', symbol: 'MA' },
-        { name: 'Meta', symbol: 'META' },
-        { name: 'Microsoft', symbol: 'MSFT' },
-        { name: 'Netflix', symbol: 'NFLX' },
-        { name: 'NIO', symbol: 'NIO' },
-        { name: 'Nike', symbol: 'NKE' },
-        { name: 'NVIDIA', symbol: 'NVDA' },
-        { name: 'Open AI', symbol: 'Not Listed' }, // Open AI is not a publicly traded company
-        { name: 'Pandora', symbol: 'P' },
-        { name: 'PayPal', symbol: 'PYPL' },
-        { name: 'Pfizer', symbol: 'PFE' },
-        { name: 'PepsiCo', symbol: 'PEP' },
-        { name: 'Procter & Gamble', symbol: 'PG' },
-        { name: 'Roblox', symbol: 'RBLX' },
-        { name: 'Rolls Royce', symbol: 'RR.L' },
-        { name: 'Shell', symbol: 'SHEL' },
-        { name: 'Spotify', symbol: 'SPOT' },
-        { name: 'Tesla', symbol: 'TSLA' },
-        { name: 'Tesco', symbol: 'TSCO.L' },
-        { name: 'UnitedHealth', symbol: 'UNH' },
-        { name: 'Verizon', symbol: 'VZ' },
-        { name: 'Visa', symbol: 'V' },
-        { name: 'Walmart', symbol: 'WMT' }
+        { name: 'Amazon', symbol: 'AMZN', allocation: 0 },
+        { name: 'Apple', symbol: 'AAPL', allocation: 0 },
+        { name: 'Boeing', symbol: 'BA', allocation: 0 },
+        { name: 'Coca-Cola', symbol: 'KO', allocation: 0 },
+        { name: 'Disney', symbol: 'DIS', allocation: 0 },
+        { name: 'Google', symbol: 'GOOGL', allocation: 0 },
+        { name: 'Mastercard', symbol: 'MA', allocation: 0 },
+        { name: 'Microsoft', symbol: 'MSFT', allocation: 0 },
+        { name: 'Nike', symbol: 'NKE', allocation: 0 },
+        { name: 'NVIDIA', symbol: 'NVDA', allocation: 0 },
+        { name: 'PayPal', symbol: 'PYPL', allocation: 0 },
+        { name: 'Pfizer', symbol: 'PFE', allocation: 0 },
+        { name: 'Roblox', symbol: 'RBLX', allocation: 0 },
+        { name: 'Shell', symbol: 'SHEL', allocation: 0 },
+        { name: 'Spotify', symbol: 'SPOT', allocation: 0 },
+        { name: 'Tesla', symbol: 'TSLA', allocation: 0 },
+        { name: 'Visa', symbol: 'V', allocation: 0 },
+        { name: 'Walmart', symbol: 'WMT', allocation: 0 }
       ],
       chartOptions: {
         responsive: true,
@@ -686,7 +648,3 @@ export default {
   background-color: #f0f2f5;
 }
 </style>
-
-
-
-  

@@ -18,6 +18,7 @@
         <p>Loading...</p>
         <progress :value="loadingProgress" max="100"></progress>
       </div>
+      <div v-else-if="errorMessage">{{ errorMessage }}</div>
       <div v-else-if="!portfolio">No portfolio found.</div>
       <div v-else>
         <div class="portfolio-summary">
@@ -95,63 +96,26 @@ export default {
       expandedStock: null,
       selectedUser: null,
       users: [],
+      errorMessage: '', // Add errorMessage to data
       companies: [
-        { name: 'AbbVie', symbol: 'ABBV' },
-        { name: 'Activision Blizzard', symbol: 'ATVI' },
-        { name: 'Adobe', symbol: 'ADBE' },
-        { name: 'Amazon', symbol: 'AMZN' },
-        { name: 'American Tower Corporation', symbol: 'AMT' },
-        { name: 'Apple', symbol: 'AAPL' },
-        { name: 'Astra Zeneca', symbol: 'AZN' },
-        { name: 'AT&T', symbol: 'T' },
-        { name: 'Axon Enterprise', symbol: 'AXON' },
-        { name: 'Barclays', symbol: 'BCS' },
-        { name: 'Berkshire Hathaway', symbol: 'BRK.B' },
-        { name: 'Blackrock', symbol: 'BLK' },
-        { name: 'Boeing', symbol: 'BA' },
-        { name: 'BP', symbol: 'BP' },
-        { name: 'BYD', symbol: 'BYDDY' },
-        { name: 'Cisco', symbol: 'CSCO' },
-        { name: 'Coca-Cola', symbol: 'KO' },
-        { name: 'Comcast', symbol: 'CMCSA' },
-        { name: 'Costco', symbol: 'COST' },
-        { name: 'Curries', symbol: 'DC.L' },
-        { name: 'Disney', symbol: 'DIS' },
-        { name: 'EA', symbol: 'EA' },
-        { name: 'ExxonMobil', symbol: 'XOM' },
-        { name: 'Goldman Sachs', symbol: 'GS' },
-        { name: 'Google', symbol: 'GOOGL' },
-        { name: 'Home Depot', symbol: 'HD' },
-        { name: 'IBM', symbol: 'IBM' },
-        { name: 'Intel', symbol: 'INTC' },
-        { name: 'Johnson & Johnson', symbol: 'JNJ' },
-        { name: 'JPMorgan Chase', symbol: 'JPM' },
-        { name: 'LG', symbol: '066570.KS' },
-        { name: 'Lockheed Martin', symbol: 'LMT' },
-        { name: 'Man United', symbol: 'MANU' },
-        { name: 'Mastercard', symbol: 'MA' },
-        { name: 'Meta', symbol: 'META' },
-        { name: 'Microsoft', symbol: 'MSFT' },
-        { name: 'Netflix', symbol: 'NFLX' },
-        { name: 'NIO', symbol: 'NIO' },
-        { name: 'Nike', symbol: 'NKE' },
-        { name: 'NVIDIA', symbol: 'NVDA' },
-        { name: 'Open AI', symbol: 'Not Listed' }, // Open AI is not a publicly traded company
-        { name: 'Pandora', symbol: 'P' },
-        { name: 'PayPal', symbol: 'PYPL' },
-        { name: 'Pfizer', symbol: 'PFE' },
-        { name: 'PepsiCo', symbol: 'PEP' },
-        { name: 'Procter & Gamble', symbol: 'PG' },
-        { name: 'Roblox', symbol: 'RBLX' },
-        { name: 'Rolls Royce', symbol: 'RR.L' },
-        { name: 'Shell', symbol: 'SHEL' },
-        { name: 'Spotify', symbol: 'SPOT' },
-        { name: 'Tesla', symbol: 'TSLA' },
-        { name: 'Tesco', symbol: 'TSCO.L' },
-        { name: 'UnitedHealth', symbol: 'UNH' },
-        { name: 'Verizon', symbol: 'VZ' },
-        { name: 'Visa', symbol: 'V' },
-        { name: 'Walmart', symbol: 'WMT' }
+        { name: 'Amazon', symbol: 'AMZN'},
+        { name: 'Apple', symbol: 'AAPL'},
+        { name: 'Boeing', symbol: 'BA'},
+        { name: 'Coca-Cola', symbol: 'KO'},
+        { name: 'Disney', symbol: 'DIS'},
+        { name: 'Google', symbol: 'GOOGL'},
+        { name: 'Mastercard', symbol: 'MA'},
+        { name: 'Microsoft', symbol: 'MSFT'},
+        { name: 'Nike', symbol: 'NKE'},
+        { name: 'NVIDIA', symbol: 'NVDA'},
+        { name: 'PayPal', symbol: 'PYPL'},
+        { name: 'Pfizer', symbol: 'PFE'},
+        { name: 'Roblox', symbol: 'RBLX'},
+        { name: 'Shell', symbol: 'SHEL'},
+        { name: 'Spotify', symbol: 'SPOT'},
+        { name: 'Tesla', symbol: 'TSLA'},
+        { name: 'Visa', symbol: 'V'},
+        { name: 'Walmart', symbol: 'WMT'}
       ],
       chartOptions: {
         responsive: true,
@@ -240,6 +204,7 @@ export default {
     },
     async loadUserPortfolio() {
       if (this.selectedUser) {
+        this.errorMessage = ''; // Clear error message when loading a new user
         await this.setupCacheKey(this.selectedUser.id);
         const cachedData = this.getCachedData();
         if (cachedData) {
@@ -268,20 +233,27 @@ export default {
     },
     async fetchAndProcessData(userId) {
       this.loading = true;
-      await this.fetchPortfolio(userId);
-      if (this.portfolio) {
-        await this.initializeInitialPrices(userId);
-        await this.fillMissingDates(userId);
-        await this.fetchAllPortfolioDocs(userId);
-        this.preparePortfolioChartData();
-        this.preparePieChartData();
-        this.updatePortfolioValues();
-        this.setCachedData({
-          portfolio: this.portfolio,
-          portfolioHistory: this.portfolioHistory,
-          portfolioChartData: this.portfolioChartData,
-          pieChartData: this.pieChartData,
-        });
+      this.errorMessage = ''; // Clear error message before fetching data
+      try {
+        await this.fetchPortfolio(userId);
+        if (this.portfolio) {
+          await this.initializeInitialPrices(userId);
+          await this.fillMissingDates(userId);
+          await this.fetchAllPortfolioDocs(userId);
+          this.preparePortfolioChartData();
+          this.preparePieChartData();
+          this.updatePortfolioValues();
+          this.setCachedData({
+            portfolio: this.portfolio,
+            portfolioHistory: this.portfolioHistory,
+            portfolioChartData: this.portfolioChartData,
+            pieChartData: this.pieChartData,
+          });
+        } else {
+          this.errorMessage = "User's portfolio cannot be found.";
+        }
+      } catch (error) {
+        this.errorMessage = "Error loading user's portfolio.";
       }
       this.loading = false;
     },
@@ -299,6 +271,8 @@ export default {
       if (docSnap.exists()) {
         console.log('Fetched initial portfolio:', docSnap.data());
         this.portfolio = docSnap.data();
+      } else {
+        this.portfolio = null;
       }
     },
     async fetchAllPortfolioDocs(userId) {
@@ -441,7 +415,7 @@ export default {
                 currentValue = previousDayValues[index] * (1 + percentageChange);
                 console.log(`New Current Value for ${company.name} on ${formattedDate}: ${currentValue}`);
               } else {
-                // If there's no close price for the current date, use the previous day's currentValue
+                // If there's no close price for the current date, use the previous day's currentValue.
                 console.log(`No close price available for ${company.name} on ${formattedDate}, using previous currentValue.`);
               }
             } else {
