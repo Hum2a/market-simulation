@@ -21,19 +21,24 @@
       <div class="options">
         <template v-if="profile && profile.role === 'admin'">
           <router-link to="/admin-portfolio-creation" :class="['option', 'admin']">Admin Portfolio Creation</router-link>
-          <router-link to="/portfolio-upload" :class="['option', 'admin']">Upload Portfolios</router-link>
+          <!-- <router-link to="/portfolio-upload" :class="['option', 'admin']">Upload Portfolios</router-link> -->
           <router-link to="/admin-portfolio-assign" :class="['option', 'admin']">Assign Portfolios</router-link>
-          <router-link to="/admin-portfolio-view" :class="['option', 'admin']">View all Portfolios</router-link>
-          <router-link to="/admin-portfolio-display" :class="['option', 'admin']">View Individual Portfolios</router-link>
-          <router-link to="/unassigned-portfolio-display" :class="['option', 'admin']">View Unassigned Portfolios</router-link>
+          <!-- <router-link to="/admin-portfolio-view" :class="['option', 'admin']">View all Portfolios</router-link> -->
+          <!-- <router-link to="/admin-portfolio-display" :class="['option', 'admin']">View Individual Portfolios</router-link> -->
+          <!-- <router-link to="/unassigned-portfolio-display" :class="['option', 'admin']">View Unassigned Portfolios</router-link> -->
           <router-link to="/sticky-note-creator" :class="['option', 'admin']">Sticky Note Creator</router-link>
-          <router-link to="/portfolio-delete" :class="['option', 'delete']">Delete A Portfolio</router-link>
         </template>
       </div>
       <div class="options">
         <template v-if="profile && profile.role === 'admin'">
-          <router-link to="/stock-market-today" :class="['option', 'stockmarket']">Stock Market Today</router-link>
-          <router-link to="/portfolio-simulation" :class="['option', 'stockmarket']">Simulation</router-link>
+          <!-- <router-link to="/stock-market-today" :class="['option', 'stockmarket']">Stock Market Today</router-link> -->
+          <!-- <router-link to="/portfolio-simulation" :class="['option', 'stockmarket']">Simulation</router-link> -->
+        </template>
+      </div>
+      <div class="options">
+        <template v-if="profile && profile.role === 'admin'">
+          <router-link to="/portfolio-delete" :class="['option', 'delete']">Delete A Portfolio</router-link>
+          <router-link to="/user-manager" :class="['option', 'delete']">Delete A User</router-link>
         </template>
       </div>
       <button v-if="profile && profile.role === 'admin'" @click="deletePortfolio" class="delete-button">Delete Your Portfolio</button>
