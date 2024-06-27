@@ -8,9 +8,8 @@ import SimulationDetails from '../../frontend/pages/groups_simulation/Simulation
 import HomePage from '../../frontend/pages/HomePage.vue';
 import PortfolioCreation from '../../frontend/pages/stock_trading_platform/PortfolioCreation';
 import PortfolioDisplay from '../../frontend/pages/stock_trading_platform/PortfolioDisplay';
-import PortfolioSimulation from '../../frontend/pages/stock_trading_platform/PortfolioSimulation';
+import PortfolioAppend from '../../frontend/pages/stock_trading_platform/PortfolioAppend';
 import StockTradingSelect from '../../frontend/pages/stock_trading_platform/StockTradingSelect.vue';
-import StockMarketToday from '../../frontend/pages/stock_trading_platform/StockMarketToday.vue';
 import CreateAccount from '../../frontend/pages/CreateAccount.vue';
 import LoginPage from '../../frontend/pages/LoginPage.vue';
 import StartPage from '../../frontend/pages/StartPage.vue';
@@ -24,6 +23,9 @@ import StickyNoteCreator from '../../frontend/pages/stock_trading_platform/Stick
 import PortfolioDelete from '../../frontend/pages/stock_trading_platform/PortfolioDelete.vue';
 import UnassignedPortfolioDisplay from '../../frontend/pages/stock_trading_platform/UnassignedPortfolioDisplay.vue';
 import UserManager from '../../frontend/pages/UserManager.vue';
+import CodeManager from '../../frontend/pages/CodeManager.vue';
+import BasicOfFinancialLiteracy from '../../frontend/pages/financial_literacy_learning_platform/BasicOfFinancialLiteracy.vue';
+import StockMarketToday from '../../frontend/pages/stock_trading_platform/StockMarketToday.vue';
 
 const routes = [
   {
@@ -54,6 +56,11 @@ const routes = [
     path: '/user-manager',
     name: 'UserManager',
     component: UserManager,
+  },
+  {
+    path: '/code-manager',
+    name: 'CodeManager',
+    component: CodeManager,
   },
   {
     path: '/groupcreation',
@@ -101,19 +108,14 @@ const routes = [
     component: PortfolioDisplay,
   },
   {
-    path: '/portfolio-simulation',
-    name: "PortfolioSimulation",
-    component: PortfolioSimulation
+    path: '/portfolio-append',
+    name: "PortfolioAppend",
+    component: PortfolioAppend
   },
   {
     path: '/stock-trading-select',
     name: 'StockTradingSelect',
     component: StockTradingSelect,
-  },
-  {
-    path: '/stock-market-today',
-    name: 'StockMarketToday',
-    component: StockMarketToday,
   },
   {
     path: '/portfolio-upload',
@@ -155,7 +157,17 @@ const routes = [
     path: '/unassigned-portfolio-display',
     name: 'UnassignedPortfolioDisplay',
     component: UnassignedPortfolioDisplay
-  }
+  },
+  {
+    path: '/basics-of-financial-literacy',
+    name: 'BasicsOfFinancialLiteracy',
+    component: BasicOfFinancialLiteracy
+  },
+  {
+    path: '/stock-market-today',
+    name: 'StockMarketToday',
+    component: StockMarketToday
+  },
 ];
 
 // Create a router instance using createRouter and createWebHistory
