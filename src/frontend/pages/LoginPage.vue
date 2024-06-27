@@ -29,42 +29,79 @@
 
 <script>
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
+import { format, differenceInCalendarDays } from "date-fns";
+import { trackUserLogin } from '../../backend/utils/loginTracker';
 
 export default {
   name: "LoginPage",
   data() {
     return {
-      username: "",  // Now 'username' can be either a username or an email
+      username: "",
       password: "",
       errorMessage: "",
       loginSuccess: false
     };
   },
   methods: {
-    handleLogin() {
+    async handleLogin() {
       const auth = getAuth();
-      const identifier = this.username;  // This could be an email or username
+      const identifier = this.username;
       const password = this.password;
-      signInWithEmailAndPassword(auth, identifier, password)
-        .then((userCredential) => {
-          // Here the user is successfully logged in
-          this.$emit('login-success', userCredential.user);
-          this.loginSuccess = true;
-          this.$router.push({ name: 'StockTradingSelect' });
-        })
-        .catch(error => {
-          this.errorMessage = error.message; // Handle login errors
-          this.loginSuccess = false;
-        });
+      
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, identifier, password);
+        this.$emit('login-success', userCredential.user);
+        await this.updateLoginStreak(userCredential.user.uid);
+        await trackUserLogin(userCredential.user.uid);  // Track user login
+        this.loginSuccess = true;
+        this.$router.push({ name: 'StockTradingSelect' });
+      } catch (error) {
+        this.errorMessage = error.message;
+        this.loginSuccess = false;
+      }
     },
-    handleRegister() {
-      const auth = getAuth();
-      const identifier = this.username;  // Consider validation if username should not be an email
-      const password = this.password;
-      createUserWithEmailAndPassword(auth, identifier, password)
-        .catch(error => {
-          this.errorMessage = error.message; // Handle registration errors
+    async updateLoginStreak(userId) {
+      const db = getFirestore();
+      const streakRef = doc(db, userId, 'Login Streak');
+      const streakSnap = await getDoc(streakRef);
+      const today = new Date();
+      const formattedToday = format(today, 'yyyy-MM-dd');
+      
+      if (streakSnap.exists()) {
+        const streakData = streakSnap.data();
+        const lastLoginDate = new Date(streakData.lastLogin);
+        const daysDifference = differenceInCalendarDays(today, lastLoginDate);
+
+        if (daysDifference === 1) {
+          await setDoc(streakRef, {
+            streak: streakData.streak + 1,
+            lastLogin: formattedToday
+          });
+        } else if (daysDifference > 1) {
+          await setDoc(streakRef, {
+            streak: 1,
+            lastLogin: formattedToday
+          });
+        }
+      } else {
+        await setDoc(streakRef, {
+          streak: 1,
+          lastLogin: formattedToday
         });
+      }
+    },
+    async handleRegister() {
+      const auth = getAuth();
+      const identifier = this.username;
+      const password = this.password;
+      
+      try {
+        await createUserWithEmailAndPassword(auth, identifier, password);
+        this.errorMessage = "";
+      } catch (error) {
+        this.errorMessage = error.message;
+      }
     }
   }
 };
@@ -193,3 +230,5 @@ p {
   }
 }
 </style>
+
+../../backend/utils/loginTracker
