@@ -1,106 +1,136 @@
 <template>
-    <div class="create-account">
-      <header class="header">
-        <img src="../assets/LifeSmartLogo.png" alt="Logo" class="logo" />
-        <nav class="header-links">
-          <router-link to="/homepage" class="nav-link">Home</router-link>
-          <router-link to="/create-account" class="nav-link">Create Account</router-link>
-        </nav>
-      </header>
-      <main class="main-content">
-        <h1>Create Account</h1>
-        <form @submit.prevent="createAccount">
-          <div class="form-group-inline">
-            <div class="form-group">
-              <label for="first-name">First Name:</label>
-              <input type="text" id="first-name" v-model="firstName" required />
-            </div>
-            <div class="form-group">
-              <label for="last-name">Last Name:</label>
-              <input type="text" id="last-name" v-model="lastName" required />
-            </div>
+  <div class="create-account">
+    <header class="header">
+      <img src="../assets/LifeSmartLogo.png" alt="Logo" class="logo" />
+      <nav class="header-links">
+        <router-link to="/homepage" class="nav-link">Home</router-link>
+        <router-link to="/create-account" class="nav-link">Create Account</router-link>
+      </nav>
+    </header>
+    <main class="main-content">
+      <h1>Create Account</h1>
+      <form @submit.prevent="createAccount">
+        <div class="form-group-inline">
+          <div class="form-group">
+            <label for="first-name">First Name:</label>
+            <input type="text" id="first-name" v-model="firstName" required />
           </div>
           <div class="form-group">
-            <label for="email">Email:</label>
-            <input type="email" id="email" v-model="email" required />
+            <label for="last-name">Last Name:</label>
+            <input type="text" id="last-name" v-model="lastName" required />
           </div>
-          <div class="form-group">
-            <label for="class">Class:</label>
-            <input type="text" id="class" v-model="classValue" required />
-          </div>
-          <div class="form-group">
-            <label for="school">School:</label>
-            <input type="text" id="school" v-model="school" required />
-          </div>
-          <div class="form-group">
-            <label for="password">Password:</label>
-            <input type="password" id="password" v-model="password" required />
-          </div>
-          <button type="submit">Create Account</button>
-        </form>
-      </main>
-    </div>
-  </template>
-  
-  <script>
-  import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-  import { getFirestore, doc, setDoc } from "firebase/firestore";
-  
-  export default {
-    name: 'CreateAccount',
-    data() {
-      return {
-        firstName: '',
-        lastName: '',
-        email: '',
-        classValue: '',
-        school: '',
-        password: ''
-      };
-    },
-    methods: {
-      async createAccount() {
-        const auth = getAuth();
-        const db = getFirestore();
-        
-        try {
-          const userCredential = await createUserWithEmailAndPassword(auth, this.email, this.password);
-          const user = userCredential.user;
-          
-          await setDoc(doc(db, "Users", user.uid), {
-            firstName: this.firstName,
-            lastName: this.lastName,
-            email: this.email,
-            class: this.classValue,
-            school: this.school,
-            role: 'user',
-            userUID: user.uid
-          });
+        </div>
+        <div class="form-group">
+          <label for="email">Email:</label>
+          <input type="email" id="email" v-model="email" required />
+        </div>
+        <div class="form-group">
+          <label for="class">Class:</label>
+          <input type="text" id="class" v-model="classValue" required />
+        </div>
+        <div class="form-group">
+          <label for="school">School:</label>
+          <input type="text" id="school" v-model="school" required />
+        </div>
+        <div class="form-group">
+          <label for="code">Code:</label>
+          <input type="text" id="code" v-model="code" required />
+        </div>
+        <div class="form-group">
+          <label for="password">Password:</label>
+          <input type="password" id="password" v-model="password" required />
+        </div>
+        <button type="submit">Create Account</button>
+      </form>
+      <MessageModal
+        v-if="showModal"
+        :isVisible="showModal"
+        :title="modalTitle"
+        :message="modalMessage"
+        @close="showModal = false"
+      />
+    </main>
+  </div>
+</template>
 
-          await setDoc(doc(db, user.uid, "Profile"), {
-            firstName: this.firstName,
-            lastName: this.lastName,
-            email: this.email,
-            class: this.classValue,
-            school: this.school,
-            role: 'user',
-            userUID: user.uid
-          });
+<script>
+import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
+import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
+import MessageModal from './stock_trading_platform/components/MessageModal.vue'; // Import the MessageModal component
 
-          await setDoc(doc(db, user.uid, "Total Funds"), {
-            totalFunds: 10000,
-          })
-          
-          alert('Account created successfully!');
-          this.$router.push('/stock-trading-select');
-        } catch (error) {
-          console.error("Error creating account:", error);
-          alert('Error creating account. Please try again.');
+export default {
+  name: 'CreateAccount',
+  components: {
+    MessageModal // Register the MessageModal component
+  },
+  data() {
+    return {
+      firstName: '',
+      lastName: '',
+      email: '',
+      classValue: '',
+      school: '',
+      code: '', // Added code field
+      password: '',
+      showModal: false,
+      modalTitle: '',
+      modalMessage: ''
+    };
+  },
+  methods: {
+    async createAccount() {
+      const auth = getAuth();
+      const db = getFirestore();
+      try {
+        const codeRef = doc(db, 'Login Codes', this.code);
+        const codeSnap = await getDoc(codeRef);
+
+        if (!codeSnap.exists() || !codeSnap.data().active) {
+          this.modalTitle = 'Error';
+          this.modalMessage = 'The code you entered is inactive or does not exist. Please try again with a valid code.';
+          this.showModal = true;
+          return;
         }
+
+        const userCredential = await createUserWithEmailAndPassword(auth, this.email, this.password);
+        const user = userCredential.user;
+
+        await setDoc(doc(db, "Users", user.uid), {
+          firstName: this.firstName,
+          lastName: this.lastName,
+          email: this.email,
+          class: this.classValue,
+          school: this.school,
+          role: 'user',
+          userUID: user.uid
+        });
+
+        await setDoc(doc(db, user.uid, "Profile"), {
+          firstName: this.firstName,
+          lastName: this.lastName,
+          email: this.email,
+          class: this.classValue,
+          school: this.school,
+          role: 'user',
+          userUID: user.uid
+        });
+
+        await setDoc(doc(db, user.uid, "Total Funds"), {
+          totalFunds: 10000,
+        });
+
+        alert('Account created successfully!');
+        this.$router.push('/stock-trading-select');
+      } catch (error) {
+        console.error("Error creating account:", error);
+        this.modalTitle = 'Error';
+        this.modalMessage = 'Error creating account. Please try again.';
+        this.showModal = true;
       }
     }
-  };
-  </script>
+  }
+};
+</script>
   
   <style scoped>
   .create-account {
