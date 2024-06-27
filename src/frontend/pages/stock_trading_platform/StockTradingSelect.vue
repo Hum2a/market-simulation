@@ -3,7 +3,7 @@
     <header class="header">
       <img src="../../assets/LifeSmartLogo.png" alt="Logo" class="logo" />
       <nav class="header-links">
-        <router-link to="startpage" class="nav-link">Log Out</router-link>
+        <a @click="logout" class="nav-link">Log Out</a>
         <template v-if="profile && profile.role === 'admin'">
           <router-link to="/groupcreation" class="nav-link">Group Creation</router-link>
         </template>
@@ -14,33 +14,36 @@
       <div v-if="profile" class="welcome-message">
         Welcome back, {{ profile.firstName }}!
       </div>
+      <div class="streak-div">
+        <div v-if="streak !== null" class="streak-card">
+          <h2>Login Streak</h2>
+          <p>{{ streak }} days</p>
+        </div>
+      </div>
       <div class="options">
         <router-link to="/portfolio-creation" :class="['option', 'user']">Create Your Portfolio</router-link>
+        <router-link to="/portfolio-append" :class="['option', 'user']"> Append Portfolio</router-link>
         <router-link to="/portfolio-display" :class="['option', 'user']">View Your Portfolio</router-link>
       </div>
       <div class="options">
         <template v-if="profile && profile.role === 'admin'">
           <router-link to="/admin-portfolio-creation" :class="['option', 'admin']">Admin Portfolio Creation</router-link>
-          <!-- <router-link to="/portfolio-upload" :class="['option', 'admin']">Upload Portfolios</router-link> -->
           <router-link to="/admin-portfolio-assign" :class="['option', 'admin']">Assign Portfolios</router-link>
-          <!-- <router-link to="/admin-portfolio-view" :class="['option', 'admin']">View all Portfolios</router-link> -->
-          <!-- <router-link to="/admin-portfolio-display" :class="['option', 'admin']">View Individual Portfolios</router-link> -->
-          <!-- <router-link to="/unassigned-portfolio-display" :class="['option', 'admin']">View Unassigned Portfolios</router-link> -->
           <router-link to="/sticky-note-creator" :class="['option', 'admin']">Sticky Note Creator</router-link>
+          <router-link to="/stock-market-today" :class="['option', 'admin']">Stock Market Today</router-link>
         </template>
       </div>
       <div class="options">
         <template v-if="profile && profile.role === 'admin'">
-          <!-- <router-link to="/stock-market-today" :class="['option', 'stockmarket']">Stock Market Today</router-link> -->
-          <!-- <router-link to="/portfolio-simulation" :class="['option', 'stockmarket']">Simulation</router-link> -->
+          <router-link to="/code-manager" :class="['option', 'settings']">Code Manager</router-link>
+          <router-link to="/user-manager" :class="['option', 'settings']">User Manager</router-link>
         </template>
       </div>
-      <div class="options">
+      <!-- <div class="options">
         <template v-if="profile && profile.role === 'admin'">
           <router-link to="/portfolio-delete" :class="['option', 'delete']">Delete A Portfolio</router-link>
-          <router-link to="/user-manager" :class="['option', 'delete']">Delete A User</router-link>
         </template>
-      </div>
+      </div> -->
       <button v-if="profile && profile.role === 'admin'" @click="deletePortfolio" class="delete-button">Delete Your Portfolio</button>
     </main>
     <div v-if="userFunds !== null" class="total-funds">
@@ -58,8 +61,10 @@
 
 <script>
 import MessageModal from './components/MessageModal.vue'; // Import the MessageModal component
-import { getFirestore, collection, query, getDocs, deleteDoc, doc, updateDoc, getDoc } from "firebase/firestore";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { getFirestore, collection, query, getDocs, deleteDoc, doc, updateDoc, getDoc, setDoc } from "firebase/firestore";
+import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
+import { addDays, isSameDay } from 'date-fns';
+import { trackUserLogout } from '../../../backend/utils/logoutTracker';
 
 export default {
   name: 'StockTradingSelect',
@@ -73,12 +78,14 @@ export default {
       showModal: false,
       modalTitle: '',
       modalMessage: '',
-      profile: null
+      profile: null,
+      streak: null
     };
   },
   async created() {
     await this.fetchUserProfile();
     await this.fetchUserFunds();
+    await this.fetchLoginStreak();
   },
   methods: {
     async fetchUserProfile() {
@@ -104,6 +111,33 @@ export default {
 
         if (totalFundsSnap.exists()) {
           this.userFunds = totalFundsSnap.data().totalFunds;
+        }
+      }
+    },
+    async fetchLoginStreak() {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (user) {
+        const db = getFirestore();
+        const streakRef = doc(db, 'Login Streak', user.uid);
+        const streakSnap = await getDoc(streakRef);
+
+        if (streakSnap.exists()) {
+          const streakData = streakSnap.data();
+          const today = new Date();
+          const lastLoginDate = streakData.lastLogin.toDate();
+          if (isSameDay(today, lastLoginDate)) {
+            this.streak = streakData.streak;
+          } else if (isSameDay(today, addDays(lastLoginDate, 1))) {
+            this.streak = streakData.streak + 1;
+            await setDoc(streakRef, { streak: this.streak, lastLogin: today }, { merge: true });
+          } else {
+            this.streak = 1;
+            await setDoc(streakRef, { streak: this.streak, lastLogin: today }, { merge: true });
+          }
+        } else {
+          this.streak = 1;
+          await setDoc(streakRef, { streak: this.streak, lastLogin: new Date() });
         }
       }
     },
@@ -149,7 +183,17 @@ export default {
         this.modalMessage = 'You need to be logged in to delete a portfolio.';
         this.showModal = true;
       }
+    },
+    async logout() {
+    const auth = getAuth();
+    const user = auth.currentUser;
+
+    if (user) {
+      await trackUserLogout(user.uid);
+      await signOut(auth);
+      this.$router.push('/startpage');
     }
+  },
   },
   beforeRouteEnter(to, from, next) {
     const auth = getAuth();
@@ -196,26 +240,22 @@ export default {
 }
 
 .header {
-  grid-column: 1 / -1; /* Full width */
   display: flex;
   justify-content: space-between;
-  align-items: center; /* Vertically center the content */
+  align-items: center;
   padding: 0.2em;
   background-color: #102454;
-  border-top-left-radius: 0;      /* Top left corner */
-  border-top-right-radius: 0;     /* Top right corner */
-  border-bottom-right-radius: 25px;  /* Bottom right corner */
-  border-bottom-left-radius: 25px;   /* Bottom left corner */
-  position: relative;
+  border-bottom-right-radius: 25px;
+  border-bottom-left-radius: 25px;
   width: 100%;
   margin: 0 auto;
 }
 
 .logo {
-  height: auto; /* Maintain aspect ratio */
-  width: 150px; /* Example width; adjust as needed */
-  display: block; /* To prevent inline default behavior */
-  margin-left: 0; /* Align the logo to the left */
+  height: auto;
+  width: 150px;
+  display: block;
+  margin-left: 0;
   clip-path: polygon(0 0, 60% 0, 60% 100%, 0% 100%);
 }
 
@@ -258,6 +298,34 @@ export default {
   margin-bottom: 1em;
 }
 
+.streak-div {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.streak-card {
+  background-color: #ff903b;
+  border-radius: 10px;
+  width: 20%;
+  padding: 1em;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  margin-bottom: 1em;
+}
+
+.streak-card h2 {
+  margin: 0;
+  color: #333;
+  font-size: 1.2em;
+}
+
+.streak-card p {
+  margin: 0.5em 0 0;
+  font-size: 1.5em;
+  color: #333;
+}
+
 .options {
   display: flex;
   justify-content: center;
@@ -289,12 +357,12 @@ export default {
   background-color: rgb(45, 118, 40);
 }
 
-.delete {
-  background-color: #dc3545;
+.settings {
+  background-color: #727272;
 }
 
-.stockmarket {
-  background-color: #333;
+.delete {
+  background-color: #dc3545;
 }
 
 .option:hover {
