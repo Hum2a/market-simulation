@@ -141,7 +141,9 @@ export default {
           data,
           fill: false,
           borderColor: lineColors[index],
-          hidden: !this.assetVisibility[type], // Set the initial visibility based on assetVisibility
+          hidden: this.assetVisibility[type], // Set the initial visibility based on assetVisibility
+          cubicInterpolationMode: 'monotone', // Add this line
+          tension: 0.4, // Add this line to make the lines more curved
         };
       });
 
