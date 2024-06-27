@@ -11,14 +11,10 @@
     </header>
     <main class="main-content">
       <h1>Stock Market Today</h1>
-      <button @click="showDatePicker = !showDatePicker">
-        Pick a Date
-      </button>
-      <Datepicker v-if="showDatePicker" v-model="selectedDate" @change="fetchStockDataForDate" />
       <button @click="retrieveMostRecentData">Retrieve Most Recent Stock Market Data</button>
       <div v-if="loading">Loading...</div>
       <div v-else>
-        <p class="display-date">Displaying data for: {{ formattedSelectedDate }}</p>
+        <p class="display-date">Displaying most recent data</p>
         <table class="stock-table">
           <thead>
             <tr>
@@ -27,6 +23,7 @@
               <th>Price</th>
               <th>Change</th>
               <th>Change (%)</th>
+              <th>Time</th>
             </tr>
           </thead>
           <tbody>
@@ -44,9 +41,10 @@
                   {{ stock.changePercent.toFixed(2) }}%
                 </td>
                 <td v-else>N/A</td>
+                <td>{{ stock.time }}</td>
               </tr>
               <tr v-if="expandedStock === stock.symbol" class="expanded-row">
-                <td colspan="5">
+                <td colspan="6">
                   <line-chart :chart-data="chartData" v-if="chartData && expandedStock === stock.symbol"></line-chart>
                 </td>
               </tr>
@@ -59,38 +57,20 @@
 </template>
 
 <script>
-import { fetchStockDataFromFirestore, saveStockDataToFirestore, isDataFetchedForToday } from '../../../backend/firebase/initFirebase';
-import Datepicker from '@vuepic/vue-datepicker';
-import '@vuepic/vue-datepicker/dist/main.css';
+import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { Line } from 'vue-chartjs';
 import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement } from 'chart.js';
 ChartJS.register(Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement);
 
-const API_KEY = 'Z2G35L67NYNFFXHT';
-
-const getStockData = async (symbol) => {
-  try {
-    const response = await fetch(`https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&apikey=${API_KEY}`);
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error fetching stock data', error);
-    throw error;
-  }
-};
-
 export default {
   name: 'StockMarketToday',
   components: {
-    Datepicker,
     LineChart: Line
   },
   data() {
     return {
       stocks: [],
       loading: true,
-      showDatePicker: false,
-      selectedDate: new Date(),
       expandedStock: null,
       chartData: null,
       companies: [
@@ -99,8 +79,6 @@ export default {
         { name: 'Boeing', symbol: 'BA'},
         { name: 'Coca-Cola', symbol: 'KO'},
         { name: 'Disney', symbol: 'DIS'},
-        { name: 'Google', symbol: 'GOOGL'},
-        { name: 'Mastercard', symbol: 'MA'},
         { name: 'Microsoft', symbol: 'MSFT'},
         { name: 'Nike', symbol: 'NKE'},
         { name: 'NVIDIA', symbol: 'NVDA'},
@@ -115,31 +93,16 @@ export default {
       ],
     };
   },
-  computed: {
-    formattedSelectedDate() {
-      return this.selectedDate.toDateString();
-    }
-  },
   async created() {
-    await this.fetchStockData();
+    await this.retrieveMostRecentData();
   },
   methods: {
-    async fetchStockData() {
+    async retrieveMostRecentData() {
+      this.loading = true;
       const stockDataPromises = this.companies.map(async company => {
         try {
-          const dataFetchedForToday = await isDataFetchedForToday(company.symbol);
-          if (!dataFetchedForToday) {
-            let data = await getStockData(company.symbol);
-            await saveStockDataToFirestore(company.symbol, data);
-            return this.processStockData(company, data);
-          } else {
-            const data = await fetchStockDataFromFirestore(company.symbol);
-            const missingDates = this.getMissingDates(data.data["Time Series (Daily)"]);
-            if (missingDates.length > 0) {
-              await this.fetchMissingDates(company.symbol, missingDates);
-            }
-            return this.processStockData(company, data.data);
-          }
+          const mostRecentData = await this.fetchMostRecentStockData(company.symbol);
+          return this.processStockData(company, mostRecentData);
         } catch (error) {
           console.error(`Error fetching data for ${company.symbol}:`, error);
           return {
@@ -148,6 +111,7 @@ export default {
             price: null,
             change: null,
             changePercent: null,
+            time: null,
           };
         }
       });
@@ -155,90 +119,25 @@ export default {
       this.stocks = await Promise.all(stockDataPromises);
       this.loading = false;
     },
-    async fetchStockDataForDate() {
-      if (!this.selectedDate) return;
-      this.loading = true;
-      const date = this.selectedDate.toISOString().split('T')[0];
+    async fetchMostRecentStockData(symbol) {
+      const db = getFirestore();
+      const docRef = doc(db, 'Real Time Stock Market Data', symbol);
+      const docSnap = await getDoc(docRef);
 
-      const stockDataPromises = this.companies.map(async company => {
-        try {
-          const data = await fetchStockDataFromFirestore(company.symbol);
-          return this.processStockData(company, data.data, date);
-        } catch (error) {
-          console.error(`Error fetching data for ${company.symbol} on ${date}:`, error);
-          return {
-            name: company.name,
-            symbol: company.symbol,
-            price: null,
-            change: null,
-            changePercent: null,
-          };
-        }
-      });
-
-      this.stocks = await Promise.all(stockDataPromises);
-      this.loading = false;
-    },
-    async fetchMissingDates(symbol, missingDates) {
-      for (const date of missingDates) {
-        const response = await fetch(`https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&apikey=${API_KEY}`);
-        const data = await response.json();
-        if (data && data["Time Series (Daily)"]) {
-          const dateData = data["Time Series (Daily)"][date];
-          if (dateData) {
-            console.log(`Saving data for ${symbol} on ${date}`);  // Log the date being saved
-            await saveStockDataToFirestore(symbol, { [date]: dateData });
-          }
-        }
-      }
-    },
-    getMissingDates(timeSeries) {
-      const dates = Object.keys(timeSeries);
-      const currentDate = new Date();
-      const missingDates = [];
-      while (currentDate > new Date(dates[dates.length - 1])) {
-        const dateString = currentDate.toISOString().split('T')[0];
-        if (!dates.includes(dateString) && currentDate.getDay() !== 0 && currentDate.getDay() !== 6) {
-          missingDates.push(dateString);
-        }
-        currentDate.setDate(currentDate.getDate() - 1);
-      }
-      console.log(`Missing dates for symbol: ${missingDates}`);  // Log the missing dates
-      return missingDates;
-    },
-    async toggleStock(symbol) {
-      if (this.expandedStock === symbol) {
-        this.expandedStock = null;
-        this.chartData = null;
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const days = data.days;
+        const mostRecentDay = Object.keys(days).sort().pop();
+        const mostRecentTime = Object.keys(days[mostRecentDay]).sort().pop();
+        const time = `${mostRecentDay} ${mostRecentTime}`;
+        return { ...days[mostRecentDay][mostRecentTime], time };
       } else {
-        this.expandedStock = symbol;
-        const stockData = await fetchStockDataFromFirestore(symbol);
-        this.chartData = this.prepareChartData(stockData.data["Time Series (Daily)"]);
+        throw new Error(`No data found for ${symbol}`);
       }
     },
-    async retrieveMostRecentData() {
-      this.loading = true;
-      for (const company of this.companies) {
-        const data = await fetchStockDataFromFirestore(company.symbol);
-        const missingDates = this.getMissingDates(data.data["Time Series (Daily)"]);
-        if (missingDates.length > 0) {
-          await this.fetchMissingDates(company.symbol, missingDates);
-        }
-      }
-      await this.fetchStockData();
-    },
-    processStockData(company, data, date = null) {
-      const timeSeries = data['Time Series (Daily)'];
-      if (!timeSeries) {
-        throw new Error('Time series data not available');
-      }
-      const targetDate = date || Object.keys(timeSeries)[0];
-      const latestData = timeSeries[targetDate];
-      const previousDate = Object.keys(timeSeries)[1];
-      const previousData = timeSeries[previousDate];
-
-      const price = parseFloat(latestData['4. close']);
-      const previousClose = parseFloat(previousData['4. close']);
+    processStockData(company, data) {
+      const price = parseFloat(data.currentPrice);
+      const previousClose = parseFloat(data.previousClosePrice);
       const change = price - previousClose;
       const changePercent = (change / previousClose) * 100;
 
@@ -248,7 +147,18 @@ export default {
         price,
         change,
         changePercent,
+        time: data.time,
       };
+    },
+    async toggleStock(symbol) {
+      if (this.expandedStock === symbol) {
+        this.expandedStock = null;
+        this.chartData = null;
+      } else {
+        this.expandedStock = symbol;
+        const stockData = await this.fetchMostRecentStockData(symbol);
+        this.chartData = this.prepareChartData(stockData);
+      }
     },
     prepareChartData(timeSeries) {
       const labels = [];
