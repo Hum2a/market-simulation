@@ -11,6 +11,12 @@
       <div class="wallet-card" v-if="totalFunds !== null">
         Wallet = £{{ totalFunds }}
       </div>
+      <div class="streak-div">
+        <div class="streak-card" v-if="loginStreak !== null">
+          <h2>Login Streak</h2>
+          <p>{{ loginStreak }} {{ loginStreak === 1 ? 'day' : 'days' }}</p>
+        </div>
+      </div>
       <div class="request-counter-card">
         Firestore Requests: {{ firestoreRequestCount }}
       </div>
@@ -24,7 +30,7 @@
           <div class="summary-leaderboard">
             <div class="portfolio-summary-card">
               <h2>Portfolio Summary</h2>
-              <p>Original Total Value: £{{ roundedValue(originalValue) }}</p>
+              <p>Amount Invested: £{{ roundedValue(originalValue) }}</p>
               <p>Current Value: £{{ roundedValue(currentValue) }}</p>
               <p>Percentage Gain/Loss: {{ roundedValue(percentageGainLoss) }}%</p>
               <p>Best Performing Stock: {{ bestPerformingStock.name }} ({{ roundedValue(bestPerformingStock.percentageChange) }}%)</p>
@@ -52,7 +58,7 @@
                   <th>Original Value</th>
                   <th>Initial Stock Price</th>
                   <th>Current Value</th>
-                  <th>Current Stock Price</th>
+                  <th>Current Stock Price (Real Time)</th>
                 </tr>
               </thead>
               <tbody>
@@ -86,7 +92,7 @@
               </li>
             </div>
           </div>
-          <router-link to="/FinancialLiteracyCourse" class="financial-courses-card">
+          <router-link to="/basics-of-financial-literacy" class="financial-courses-card">
             <div class="card-content">
               <h3>Basics of Financial Literacy</h3>
               <p>15 minutes</p>
@@ -129,6 +135,7 @@ export default {
       stickyNotes: [],
       totalFunds: null,
       firestoreRequestCount: 0, // Counter for Firestore requests
+      loginStreak: null, // Added data property for login streak
       companies: [
         { name: 'Amazon', symbol: 'AMZN', allocation: 0, initialStockPrice: 0 },
         { name: 'Apple', symbol: 'AAPL', allocation: 0, initialStockPrice: 0 },
@@ -208,6 +215,7 @@ export default {
     await this.updateStockPrices();
     await this.fetchStickyNotes();
     await this.fetchTotalFunds();
+    await this.fetchLoginStreak(); // Fetch login streak
     this.adjustStickyNotesHeight();
   },
   computed: {
@@ -251,6 +259,30 @@ export default {
     }
   },
   methods: {
+    async fetchExchangeRate() {
+      const db = getFirestore();
+      const docRef = doc(db, 'Currency Rates', 'USD-GBP');
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        return docSnap.data().rate;
+      }
+      return 1; // Default to 1 if the rate is not found
+    },
+    async fetchLoginStreak() {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (user) {
+        const db = getFirestore();
+        const streakRef = doc(db, user.uid, 'Login Streak');
+        const streakSnap = await getDoc(streakRef);
+        if (streakSnap.exists()) {
+          const streakData = streakSnap.data();
+          this.loginStreak = streakData.streak || 0;
+        } else {
+          this.loginStreak = 0;
+        }
+      }
+    },
     incrementRequestCount() {
       this.firestoreRequestCount++;
     },
@@ -330,6 +362,7 @@ export default {
         });
 
         const stockDataArray = await Promise.all(stockDataPromises);
+        const exchangeRate = await this.fetchExchangeRate();
 
         this.portfolio.companies = this.portfolio.companies.map((company, index) => {
           const stockData = stockDataArray[index];
@@ -339,14 +372,14 @@ export default {
             let buyDailyData = stockData.data['Time Series (Daily)'][formattedBuyDate];
 
             // If no data for formattedBuyDate, go back until data is found
-            while (!buyDailyData && buyDate >= new Date(stockData.data['Meta Data']['3. Last Refreshed'])) {
+            while (!buyDailyData && buyDate <= new Date(stockData.data['Meta Data']['3. Last Refreshed'])) {
               buyDate.setDate(buyDate.getDate() - 1);
               formattedBuyDate = format(buyDate, 'yyyy-MM-dd');
               buyDailyData = stockData.data['Time Series (Daily)'][formattedBuyDate];
             }
 
             if (buyDailyData) {
-              company.initialStockPrice = parseFloat(buyDailyData['4. close']);
+              company.initialStockPrice = parseFloat(buyDailyData['4. close']) * exchangeRate;
             } else {
               company.initialStockPrice = 0;
             }
@@ -387,12 +420,24 @@ export default {
       const docSnap = await getDoc(docRef);
       return docSnap.exists() ? docSnap.data() : null;
     },
+    async fetchRealTimeStockData(symbol) {
+      const db = getFirestore();
+      const docRef = doc(db, 'Real Time Stock Market Data', symbol);
+      this.incrementRequestCount();
+      const docSnap = await getDoc(docRef);
+      return docSnap.exists() ? docSnap.data() : null;
+    },
     async updateStockPrices() {
+      const exchangeRate = await this.fetchExchangeRate();
+      const today = format(new Date(), 'yyyy-MM-dd');
+      
       if (this.portfolio) {
-        const stockDataPromises = this.portfolio.companies.map(company => {
+        const stockDataPromises = this.portfolio.companies.map(async company => {
           if (company.invested) {
             const companyInfo = this.companies.find(c => c.name === company.name);
-            return this.fetchStockData(companyInfo.symbol);
+            const stockData = await this.fetchStockData(companyInfo.symbol); // Fetch data from Stock Market Data
+            const realTimeData = await this.fetchRealTimeStockData(companyInfo.symbol); // Fetch data from Real Time Stock Market Data
+            return { stockData, realTimeData };
           }
           return null;
         });
@@ -400,32 +445,38 @@ export default {
         const stockDataArray = await Promise.all(stockDataPromises);
 
         this.portfolio.companies = this.portfolio.companies.map((company, index) => {
-          const stockData = stockDataArray[index];
-          if (stockData && stockData.data['Time Series (Daily)']) {
-            const today = new Date();
-            let formattedDate = format(today, 'yyyy-MM-dd');
-            let dailyData = stockData.data['Time Series (Daily)'][formattedDate];
-
-            // If no data for formattedDate, go back until data is found
-            while (!dailyData && today >= new Date(stockData.data['Meta Data']['3. Last Refreshed'])) {
-              today.setDate(today.getDate() - 1);
-              formattedDate = format(today, 'yyyy-MM-dd');
-              dailyData = stockData.data['Time Series (Daily)'][formattedDate];
-            }
-
-            if (dailyData) {
-              company.currentStockPrice = parseFloat(dailyData['4. close']);
-            } else {
-              company.currentStockPrice = company.currentValue / company.allocation;
-            }
-
-          } else {
-            company.currentStockPrice = company.currentValue / company.allocation;
+          const data = stockDataArray[index];
+          if (!data) {
+            return company; // Skip if no data available
           }
+          const { stockData, realTimeData } = data;
+          let currentStockPrice = null;
+
+          if (stockData && stockData.data['Time Series (Daily)']) {
+            const dailyData = stockData.data['Time Series (Daily)'][today];
+            if (dailyData) {
+              currentStockPrice = parseFloat(dailyData['4. close']) * exchangeRate;
+            }
+          }
+
+          if (!currentStockPrice && realTimeData && realTimeData.days) {
+            const mostRecentDay = Object.keys(realTimeData.days).sort().pop();
+            const mostRecentTime = Object.keys(realTimeData.days[mostRecentDay]).sort().pop();
+            if (mostRecentDay === today) {
+              currentStockPrice = realTimeData.days[mostRecentDay][mostRecentTime].currentPrice;
+            }
+          }
+
+          if (!currentStockPrice) {
+            currentStockPrice = (company.currentValue / company.allocation) * exchangeRate;
+          }
+
+          company.currentStockPrice = currentStockPrice;
           return company;
         });
       }
     },
+
     async fillMissingDates() {
       console.log("Fill Missing Dates Called");
       if (!this.portfolio) {
@@ -454,31 +505,36 @@ export default {
 
         if (!docSnap.exists()) {
           console.log(`No portfolio data for ${formattedDate}, creating new entry.`);
-          const stockDataPromises = this.portfolio.companies.map(company => {
+          const stockDataPromises = this.portfolio.companies.map(async company => {
             if (company.invested) {
               const companyInfo = this.companies.find(c => c.name === company.name);
-              return this.fetchStockData(companyInfo.symbol);
+              const stockData = await this.fetchStockData(companyInfo.symbol);
+              const realTimeData = await this.fetchRealTimeStockData(companyInfo.symbol);
+              return { stockData, realTimeData };
             }
             return null;
           });
           const stockDataArray = await Promise.all(stockDataPromises);
           console.log(`Stock Data Array: ${JSON.stringify(stockDataArray)}`);
+          const exchangeRate = await this.fetchExchangeRate();
 
           const updatedCompanies = this.portfolio.companies.map((company, index) => {
             if (!company.invested) {
               return company;
             }
-            const stockData = stockDataArray[index];
+            const data = stockDataArray[index];
+            if (!data) {
+              return company;
+            }
+            const { stockData, realTimeData } = data;
             console.log(`Stock Data for ${company.name}: ${JSON.stringify(stockData)}`);
             let currentValue = previousDayValues[index]; // Use the previous day's value as the starting point
 
-            // Calculate the previous date
             let previousDate = new Date(currentDate);
             previousDate.setDate(previousDate.getDate() - 1);
             let formattedPreviousDate = format(previousDate, 'yyyy-MM-dd');
             let previousClosePrice = null;
 
-            // Keep going back day by day until a previous close price is found
             while (!previousClosePrice && previousDate >= initialDate) {
               previousClosePrice = stockData?.data['Time Series (Daily)']?.[formattedPreviousDate]?.['4. close'];
               if (!previousClosePrice) {
@@ -491,7 +547,15 @@ export default {
 
             let effectiveFormattedDate = formattedDate;
             let closePrice = stockData?.data['Time Series (Daily)']?.[formattedDate]?.['4. close'];
-            // If no close price for the current date, use the closest previous date with data
+
+            if (!closePrice && realTimeData && realTimeData.days) {
+              const mostRecentDay = Object.keys(realTimeData.days).sort().pop();
+              const mostRecentTime = Object.keys(realTimeData.days[mostRecentDay]).sort().pop();
+              if (mostRecentDay === formattedDate) {
+                closePrice = realTimeData.days[mostRecentDay][mostRecentTime].currentPrice;
+              }
+            }
+
             if (!closePrice) {
               let closestPreviousDate = new Date(currentDate);
               effectiveFormattedDate = formattedDate;
@@ -510,7 +574,6 @@ export default {
                 currentValue = previousDayValues[index] * (1 + percentageChange);
                 console.log(`New Current Value for ${company.name} on ${effectiveFormattedDate}: ${currentValue}`);
               } else {
-                // If there's no close price for the current date, use the previous day's currentValue
                 console.log(`No close price available for ${company.name} on ${effectiveFormattedDate}, using previous currentValue.`);
               }
             } else {
@@ -519,12 +582,12 @@ export default {
 
             return {
               ...company,
-              currentValue: isNaN(currentValue) ? 0 : currentValue, // Ensure currentValue is a number
-              currentStockPrice: stockData?.data['Time Series (Daily)']?.[effectiveFormattedDate]?.['1. open'] || previousClosePrice // Use previous close price if current is unavailable
+              currentValue: isNaN(currentValue) ? 0 : currentValue,
+              currentStockPrice: (stockData?.data['Time Series (Daily)']?.[effectiveFormattedDate]?.['1. open'] || previousClosePrice) * exchangeRate
             };
           });
 
-          previousDayValues = updatedCompanies.map(company => company.currentValue); // Update the previous day values
+          previousDayValues = updatedCompanies.map(company => company.currentValue);
 
           const updatedPortfolio = {
             ...this.portfolio,
@@ -543,6 +606,8 @@ export default {
         currentDate.setDate(currentDate.getDate() + 1);
       }
     },
+
+
     preparePortfolioChartData() {
       if (!this.portfolioHistory) return;
 
@@ -608,18 +673,21 @@ export default {
     },
     async prepareOfficialStockChartData(symbol) {
       const stockData = await this.fetchStockData(symbol);
+      const realTimeData = await this.fetchRealTimeStockData(symbol); // Fetch real-time data
       const initialDate = format(new Date(this.portfolio.date.seconds * 1000), 'yyyy-MM-dd');
       const today = format(new Date(), 'yyyy-MM-dd');
+      const exchangeRate = await this.fetchExchangeRate();
 
       if (stockData && stockData.data['Time Series (Daily)']) {
         const dates = [];
         const values = [];
 
+        // Historical Data Handling
         let currentDate = new Date(initialDate);
-        while (currentDate <= new Date(today)) {
+        while (currentDate < new Date(today)) {
           let formattedDate = format(currentDate, 'yyyy-MM-dd');
           let dailyData = stockData.data['Time Series (Daily)'][formattedDate];
-          
+
           // If no data for formattedDate, go back until data is found
           while (!dailyData && new Date(formattedDate) >= new Date(stockData.data['Meta Data']['3. Last Refreshed'])) {
             let date = new Date(formattedDate);
@@ -630,17 +698,41 @@ export default {
 
           if (dailyData && dailyData['1. open']) {
             dates.push(formattedDate);
-            values.push(parseFloat(dailyData['1. open']).toFixed(2));
+            values.push((parseFloat(dailyData['1. open']) * exchangeRate).toFixed(2));
           }
+
           currentDate.setDate(currentDate.getDate() + 1);
         }
 
+        // Real-Time Data Handling for Today
+        if (realTimeData && realTimeData.days) {
+          const mostRecentDay = Object.keys(realTimeData.days).sort().pop();
+          const mostRecentTime = Object.keys(realTimeData.days[mostRecentDay]).sort().pop();
+          if (mostRecentDay === today) {
+            const openPrice = realTimeData.days[mostRecentDay][mostRecentTime].openPrice;
+            if (openPrice) {
+              dates.push(today);
+              values.push((openPrice * exchangeRate).toFixed(2));
+            }
+          }
+        }
+
+        // Remove duplicate dates if any
+        const uniqueDates = [];
+        const uniqueValues = [];
+        dates.forEach((date, index) => {
+          if (!uniqueDates.includes(date)) {
+            uniqueDates.push(date);
+            uniqueValues.push(values[index]);
+          }
+        });
+
         return {
-          labels: dates,
+          labels: uniqueDates,
           datasets: [
             {
               label: 'Official Stock Value',
-              data: values,
+              data: uniqueValues,
               fill: true,
               borderColor: 'rgba(255, 99, 132, 1)',
               backgroundColor: 'rgba(255, 99, 132, 0.2)',
@@ -651,6 +743,9 @@ export default {
       }
       return null;
     },
+
+
+
     getRandomColors(numColors) {
       const colors = [];
       for (let i = 0; i < numColors; i++) {
@@ -737,6 +832,7 @@ export default {
   }
 };
 </script>
+
 
 <style scoped>
 .portfolio-display {
@@ -1004,4 +1100,20 @@ export default {
   margin: 0.5em 0;
   font-size: 1em;
 }
+
+.streak-div {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.streak-card {
+  background-color: #ff903b;
+  border-radius: 10px;
+  padding: 1em;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  margin-bottom: 1em;
+}
+
 </style>
