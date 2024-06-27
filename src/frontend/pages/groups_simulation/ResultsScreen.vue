@@ -301,6 +301,18 @@ export default {
           }
         });
 
+        const backgroundColorPlugin = {
+          id: 'backgroundColorPlugin',
+          beforeDraw: (chart) => {
+            const ctx = chart.canvas.getContext('2d');
+            ctx.save();
+            ctx.globalCompositeOperation = 'destination-over';
+            ctx.fillStyle = '#f6f2ef'; // Background color
+            ctx.fillRect(0, 0, chart.width, chart.height);
+            ctx.restore();
+          }
+        };
+
         this.charts[index] = new Chart(ctx, {
           type: 'line',
           data: { labels, datasets },
@@ -312,10 +324,12 @@ export default {
             },
             responsive: true,
             maintainAspectRatio: false
-          }
+          },
+          plugins: [backgroundColorPlugin]
         });
       });
     },
+
 
     getRandomColor() {
       const letters = '0123456789ABCDEF';
