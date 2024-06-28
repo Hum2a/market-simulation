@@ -1,29 +1,34 @@
 <template>
   <div class="login-container">
-    <h1 class="login-or-register">Login or Register</h1>
-    <form @submit.prevent="handleLogin">
-      <div class="form-group">
-        <label for="username">Username or Email:</label>
-        <input type="text" id="username" v-model="username" required placeholder="Username or Email">
-      </div>
-      <div class="form-group">
-        <label for="password">Password:</label>
-        <input type="password" id="password" v-model="password" required placeholder="Password">
-      </div>
-      <button type="submit" class="login-btn">Login</button>
-      <button type="button" @click="handleRegister" class="register-btn">Register</button>
-
-      <!-- Success animation -->
-      <transition name="fade">
-        <div class="success-animation" v-if="loginSuccess">
-          <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
-            <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/>
-            <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
-          </svg>
+    <header class="header">
+      <img src="../assets/LifeSmartLogo.png" alt="Logo" class="logo" />
+    </header>
+    <main class="main-content">
+      <h1 class="login-or-register">Login or Register</h1>
+      <form @submit.prevent="handleLogin">
+        <div class="form-group">
+          <label for="username">Username or Email:</label>
+          <input type="text" id="username" v-model="username" required placeholder="Username or Email">
         </div>
-      </transition>
-    </form>
-    <p v-if="errorMessage">{{ errorMessage }}</p>
+        <div class="form-group">
+          <label for="password">Password:</label>
+          <input type="password" id="password" v-model="password" required placeholder="Password">
+        </div>
+        <button type="submit" class="login-btn">Login</button>
+        <button type="button" @click="handleRegister" class="register-btn">Register</button>
+
+        <!-- Success animation -->
+        <transition name="fade">
+          <div class="success-animation" v-if="loginSuccess">
+            <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+              <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/>
+              <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+            </svg>
+          </div>
+        </transition>
+      </form>
+      <p v-if="errorMessage">{{ errorMessage }}</p>
+    </main>
   </div>
 </template>
 
@@ -53,7 +58,7 @@ export default {
         const userCredential = await signInWithEmailAndPassword(auth, identifier, password);
         this.$emit('login-success', userCredential.user);
         await this.updateLoginStreak(userCredential.user.uid);
-        await trackUserLogin(userCredential.user.uid);  // Track user login
+        await trackUserLogin(userCredential.user.uid);
         this.loginSuccess = true;
         this.$router.push({ name: 'StockTradingSelect' });
       } catch (error) {
@@ -103,68 +108,136 @@ export default {
         this.errorMessage = error.message;
       }
     }
+  },
+  mounted() {
+    document.body.style.backgroundColor = '#1e3c72';
+  },
+  beforeUnmount() {
+    document.body.style.backgroundColor = '';
   }
 };
 </script>
 
 <style scoped>
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
 .login-container {
-  width: 360px;
-  margin: 40px auto;
-  padding: 40px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  padding: 0;
+  margin: 0;
+}
+
+.header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 1em 0;
+  background-color: transparent;
+}
+
+.logo {
+  width: 200px;
+  margin: 0;
+}
+
+.main-content {
+  width: 100%;
+  max-width: 400px;
+  margin: 2em auto;
+  text-align: center;
+  padding: 2em;
+  background: #fff;
   border-radius: 10px;
-  background-color: #f7f9fc;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
 }
 
 .login-or-register {
-  text-align: center;
-  margin-bottom: 30px;
-  font-size: 1.5em;
-  color: #333;
+  font-size: 2em;
+  color: #2c3e50;
+  margin-bottom: 1.5em;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 1em;
+  text-align: left;
 }
 
 label {
   display: block;
-  margin-bottom: 8px;
-  color: #555;
-  font-weight: 500;
+  margin-bottom: 0.5em;
+  color: #333;
+  font-weight: bold;
 }
 
 input[type="text"],
 input[type="password"] {
   width: 100%;
-  padding: 12px;
-  margin-top: 6px;
+  padding: 0.75em;
   border: 1px solid #ddd;
   border-radius: 5px;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+  transition: border-color 0.3s;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+  border-color: #007bff;
+  outline: none;
 }
 
 button {
   width: 100%;
-  padding: 12px;
+  padding: 0.75em;
   margin-top: 10px;
-  background-color: #007bff;
+  background-color: #102454;
   border: none;
   color: white;
   font-size: 1em;
   cursor: pointer;
   border-radius: 5px;
-  transition: background-color 0.3s, transform 0.2s;
+  transition: transform 0.3s;
+  position: relative;
+  overflow: hidden;
 }
 
 button:hover {
-  background-color: #0056b3;
-  transform: scale(1.02);
+  transform: scale(1.05);
 }
 
 button:active {
-  transform: scale(0.98);
+  transform: scale(0.95);
+}
+
+button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 200%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0) 100%);
+  transition: all 0.5s;
+}
+
+button:hover::before {
+  left: 100%;
+  transition: all 0.5s;
+  animation: shimmer 1.5s infinite;
 }
 
 .login-btn {
@@ -230,5 +303,3 @@ p {
   }
 }
 </style>
-
-../../backend/utils/loginTracker

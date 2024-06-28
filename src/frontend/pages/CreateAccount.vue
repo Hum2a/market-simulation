@@ -2,10 +2,6 @@
   <div class="create-account">
     <header class="header">
       <img src="../assets/LifeSmartLogo.png" alt="Logo" class="logo" />
-      <nav class="header-links">
-        <router-link to="/homepage" class="nav-link">Home</router-link>
-        <router-link to="/create-account" class="nav-link">Create Account</router-link>
-      </nav>
     </header>
     <main class="main-content">
       <h1>Create Account</h1>
@@ -40,7 +36,7 @@
           <label for="password">Password:</label>
           <input type="password" id="password" v-model="password" required />
         </div>
-        <button type="submit">Create Account</button>
+        <button type="submit" class="create-button">Create Account</button>
       </form>
       <MessageModal
         v-if="showModal"
@@ -56,12 +52,12 @@
 <script>
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
-import MessageModal from './stock_trading_platform/components/MessageModal.vue'; // Import the MessageModal component
+import MessageModal from './stock_trading_platform/components/MessageModal.vue';
 
 export default {
   name: 'CreateAccount',
   components: {
-    MessageModal // Register the MessageModal component
+    MessageModal
   },
   data() {
     return {
@@ -70,7 +66,7 @@ export default {
       email: '',
       classValue: '',
       school: '',
-      code: '', // Added code field
+      code: '',
       password: '',
       showModal: false,
       modalTitle: '',
@@ -102,7 +98,11 @@ export default {
           class: this.classValue,
           school: this.school,
           role: 'user',
-          userUID: user.uid
+          user: true,
+          admin: false,
+          developer: false,
+          userUID: user.uid,
+          groupCode: this.code,
         });
 
         await setDoc(doc(db, user.uid, "Profile"), {
@@ -112,7 +112,8 @@ export default {
           class: this.classValue,
           school: this.school,
           role: 'user',
-          userUID: user.uid
+          userUID: user.uid,
+          groupCode: this.code,
         });
 
         await setDoc(doc(db, user.uid, "Total Funds"), {
@@ -128,114 +129,138 @@ export default {
         this.showModal = true;
       }
     }
+  },
+  mounted() {
+    document.body.style.backgroundColor = '#1e3c72'; // Apply the desired background color to the body
+  },
+  beforeUnmount() {
+    document.body.style.backgroundColor = ''; // Reset the background color when the component is destroyed
   }
 };
 </script>
-  
-  <style scoped>
-  .create-account {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background-color: #f0f2f5;
-    height: 100vh;
-    padding: 0;
-    margin: 0;
+
+<style scoped>
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
   }
-  
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.2em;
-    background-color: #102454;
-    border-bottom-right-radius: 25px;
-    border-bottom-left-radius: 25px;
-    width: 100%;
-    margin: 0 auto;
+  100% {
+    background-position: 400px 0;
   }
-  
-  .logo {
-    width: 150px;
-    display: block;
-    margin-left: 0;
-    clip-path: polygon(0 0, 60% 0, 60% 100%, 0% 100%);
-  }
-  
-  .header-links {
-    display: flex;
-    gap: 1em;
-  }
-  
-  .nav-link {
-    color: #fff;
-    text-decoration: none;
-    font-size: 1em;
-    padding: 0.5em 1em;
-    border-radius: 5px;
-    transition: background-color 0.3s;
-  }
-  
-  .nav-link:hover {
-    background-color: #0d1b3f;
-  }
-  
-  .main-content {
-    width: 100%;
-    max-width: 600px;
-    margin: 2em auto;
-    text-align: center;
-    padding: 1em;
-    background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  }
-  
-  h1 {
-    color: #102454;
-    margin-bottom: 1em;
-  }
-  
-  .form-group {
-    margin-bottom: 1em;
-    text-align: left;
-  }
-  
-  .form-group-inline {
-    display: flex;
-    gap: 1em;
-  }
-  
-  .form-group-inline .form-group {
-    flex: 1;
-  }
-  
-  label {
-    display: block;
-    margin-bottom: 0.5em;
-    color: #333;
-  }
-  
-  input {
-    width: 100%;
-    padding: 0.75em;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    box-sizing: border-box;
-  }
-  
-  button {
-    background-color: #102454;
-    color: #fff;
-    padding: 0.75em 1.5em;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-  }
-  
-  button:hover {
-    background-color: #0d1b3f;
-  }
-  </style>
-  
+}
+
+.create-account {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  padding: 0;
+  margin: 0;
+}
+
+.header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 1em 0;
+  background-color: transparent;
+}
+
+.logo {
+  width: 200px;
+  margin: 0;
+}
+
+.main-content {
+  width: 100%;
+  max-width: 600px;
+  margin: 2em auto;
+  text-align: center;
+  padding: 2em;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.main-content h1 {
+  font-size: 2.5em;
+  color: #2c3e50;
+  margin-bottom: 1.5em;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.form-group-inline {
+  display: flex;
+  gap: 1em;
+  justify-content: space-between;
+}
+
+.form-group {
+  margin-bottom: 1em;
+  width: 100%;
+  text-align: left;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5em;
+  color: #333;
+  font-weight: bold;
+}
+
+input {
+  width: 100%;
+  padding: 0.75em;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  box-sizing: border-box;
+  transition: border-color 0.3s;
+}
+
+input:focus {
+  border-color: #007bff;
+  outline: none;
+}
+
+.create-button {
+  display: inline-block;
+  background-color: #102454;
+  color: #fff;
+  padding: 0.75em 1.5em;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: transform 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.create-button:hover {
+  transform: scale(1.05);
+}
+
+.create-button:active {
+  transform: scale(0.95);
+}
+
+.create-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 200%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0) 100%);
+  transition: all 0.5s;
+}
+
+.create-button:hover::before {
+  left: 100%;
+  transition: all 0.5s;
+  animation: shimmer 1.5s infinite;
+}
+</style>
