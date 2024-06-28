@@ -4,10 +4,8 @@
       <img src="../../assets/LifeSmartLogo.png" alt="Logo" class="logo" />
       <nav class="header-links">
         <router-link to="/stock-trading-select" class="nav-link">Stock Market Tool</router-link>
-        <button @click="showLogin = !showLogin" class="nav-link login-button">Login</button>
       </nav>
     </header>
-    <LoginPage v-if="showLogin" @close="showLogin = false" @login-success="handleLoginSuccess" />
     <main class="main-content">
       <div v-if="totalFunds === 0">
         <h2>You have no funds available to allocate.</h2>
@@ -54,13 +52,11 @@
 <script>
 import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
-import LoginPage from '../LoginPage.vue';
 import MessageModal from './components/MessageModal.vue';
 
 export default {
   name: 'PortfolioCreation',
   components: {
-    LoginPage,
     MessageModal
   },
   data() {
@@ -213,7 +209,7 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background-color: #f0f2f5;
+  background-color: #f4f6f9;
   height: 100vh;
   padding: 0;
   margin: 0;
@@ -223,77 +219,82 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.2em;
-  background-color: #102454;
-  border-bottom-right-radius: 25px;
-  border-bottom-left-radius: 25px;
+  padding: 0.5em;
+  background-color: #2c3e50;
+  border-bottom-right-radius: 15px;
+  border-bottom-left-radius: 15px;
   width: 100%;
 }
 
 .logo {
-  width: 150px;
+  width: 160px;
   margin-left: 0;
   clip-path: polygon(0 0, 60% 0, 60% 100%, 0% 100%);
 }
 
 .header-links {
   display: flex;
-  gap: 1em;
+  gap: 1.5em;
 }
 
 .nav-link {
-  color: #fff;
+  color: #ecf0f1;
   text-decoration: none;
-  font-size: 1em;
-  padding: 0.5em 1em;
+  font-size: 1.1em;
+  padding: 0.6em 1.2em;
   border-radius: 5px;
   transition: background-color 0.3s;
   cursor: pointer;
 }
 
 .nav-link:hover {
-  background-color: #0d1b3f;
+  background-color: #34495e;
 }
 
 .main-content {
   width: 100%;
   max-width: 1200px;
-  margin: 2em auto;
+  margin: 3em auto;
   text-align: center;
-  padding: 1em;
+  padding: 2em;
+  background-color: #ecf0f1;
+  border-radius: 10px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
 }
 
 .total-funds-display {
-  background-color: #ff9800;
+  background-color: #3498db;
   color: white;
   font-size: 2em;
   font-weight: bold;
-  padding: 1em;
+  padding: 1.5em;
   border-radius: 10px;
-  margin-bottom: 1em;
+  margin-bottom: 1.5em;
 }
 
 .main-content h1 {
-  font-size: 2em;
-  color: #102454;
-  margin-bottom: 0.5em;
+  font-size: 2.5em;
+  color: #2c3e50;
+  margin-bottom: 1em;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .main-content h2 {
-  font-size: 1em;
-  color: #102454;
-  margin-bottom: 0.5em;
+  font-size: 1.2em;
+  color: #2c3e50;
+  margin-bottom: 0.8em;
 }
 
 .main-content p {
-  font-size: 1.2em;
-  color: #333;
-  margin-bottom: 1em;
+  font-size: 1.3em;
+  color: #2c3e50;
+  margin-bottom: 1.5em;
 }
 
 .portfolio-form {
   background: #fff;
-  padding: 2em;
+  padding: 2.5em;
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
@@ -301,7 +302,7 @@ export default {
 .companies-container {
   display: flex;
   flex-wrap: wrap;
-  gap: 1em;
+  gap: 1.5em;
   justify-content: center;
 }
 
@@ -309,10 +310,10 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background-color: #e0e7ff;
-  padding: 1em;
+  background-color: #bdc3c7;
+  padding: 1.2em;
   border-radius: 8px;
-  width: 100px;
+  width: 110px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -321,42 +322,50 @@ export default {
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  color: #102454;
+  color: #2c3e50;
 }
 
 .company-logo {
-  height: 30px;
+  height: 40px;
   width: auto;
-  max-width: 99px;
-  margin-bottom: 0.5em;
+  max-width: 100px;
+  margin-bottom: 0.8em;
 }
 
 .company-value-input {
   text-align: center;
   font-weight: bold;
-  color: #102454;
-  border: none;
-  background: none;
-  width: 80px;
+  color: #2c3e50;
+  border: 1px solid #34495e;
+  border-radius: 5px;
+  background: #ecf0f1;
+  width: 90px;
+  padding: 0.5em;
+  transition: background 0.3s, border-color 0.3s;
+}
+
+.company-value-input:focus {
+  background: #fff;
+  border-color: #3498db;
 }
 
 .total-allocation {
-  margin-top: 1em;
-  font-size: 1.2em;
-  color: #333;
+  margin-top: 1.5em;
+  font-size: 1.4em;
+  color: #2c3e50;
 }
 
 .form-buttons {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 1em;
+  margin-top: 1.5em;
 }
 
 button {
-  background-color: #102454;
-  color: #fff;
-  padding: 0.5em 1em;
+  background-color: #2c3e50;
+  color: #ecf0f1;
+  padding: 0.7em 1.5em;
   border: none;
   border-radius: 5px;
   cursor: pointer;
@@ -364,7 +373,11 @@ button {
 }
 
 button:disabled {
-  background-color: #aaa;
+  background-color: #7f8c8d;
   cursor: not-allowed;
+}
+
+button:hover:not(:disabled) {
+  background-color: #34495e;
 }
 </style>

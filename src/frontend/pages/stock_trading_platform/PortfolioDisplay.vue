@@ -3,21 +3,22 @@
     <header class="header">
       <img src="../../assets/LifeSmartLogo.png" alt="Logo" class="logo" />
       <nav class="header-links">
+        <router-link to="/portfolio-append" class="nav-link">Append Portfolio</router-link>
         <router-link to="/stock-trading-select" class="nav-link">Stock Trading Tool</router-link>
         <button @click="refreshData" class="refresh-button">Refresh Data</button>
       </nav>
     </header>
     <main class="main-content">
-      <div class="wallet-card" v-if="totalFunds !== null">
-        Wallet = £{{ totalFunds }}
-      </div>
-      <div class="streak-div">
+      <div class="top-cards">
+        <div class="wallet-card" v-if="totalFunds !== null">
+          Wallet <br> £{{ totalFunds }}
+        </div>
         <div class="streak-card" v-if="loginStreak !== null">
           <h2>Login Streak</h2>
           <p>{{ loginStreak }} {{ loginStreak === 1 ? 'day' : 'days' }}</p>
         </div>
       </div>
-      <div class="request-counter-card">
+      <div class="request-counter-card" v-if="isDeveloper">
         Firestore Requests: {{ firestoreRequestCount }}
       </div>
       <div v-if="loading">
@@ -30,12 +31,12 @@
           <div class="summary-leaderboard">
             <div class="portfolio-summary-card">
               <h2>Portfolio Summary</h2>
-              <p>Amount Invested: £{{ roundedValue(originalValue) }}</p>
-              <p>Current Value: £{{ roundedValue(currentValue) }}</p>
-              <p>Percentage Gain/Loss: {{ roundedValue(percentageGainLoss) }}%</p>
-              <p>Best Performing Stock: {{ bestPerformingStock.name }} ({{ roundedValue(bestPerformingStock.percentageChange) }}%)</p>
-              <p>Worst Performing Stock: {{ worstPerformingStock.name }} ({{ roundedValue(worstPerformingStock.percentageChange) }}%)</p>
-              <p>Time Invested: {{ timeInvested }} days</p>
+              <p><strong>Amount Invested:</strong> <span>£{{ roundedValue(originalValue) }}</span></p>
+              <p><strong>Current Value:</strong> <span>£{{ roundedValue(currentValue) }}</span></p>
+              <p><strong>Percentage Gain/Loss:</strong> <span>{{ roundedValue(percentageGainLoss) }}%</span></p>
+              <p><strong>Best Performing Stock:</strong> <span>{{ bestPerformingStock.name }} (<span class="highlight">{{ roundedValue(bestPerformingStock.percentageChange) }}%</span>)</span></p>
+              <p><strong>Worst Performing Stock:</strong> <span>{{ worstPerformingStock.name }} (<span class="highlight">{{ roundedValue(worstPerformingStock.percentageChange) }}%</span>)</span></p>
+              <p><strong>Time Invested:</strong> <span>{{ timeInvested }} days</span></p>
             </div>
             <portfolio-leaderboard />
           </div>
@@ -136,6 +137,7 @@ export default {
       totalFunds: null,
       firestoreRequestCount: 0, // Counter for Firestore requests
       loginStreak: null, // Added data property for login streak
+      isDeveloper: false, // Added data property for developer status
       companies: [
         { name: 'Amazon', symbol: 'AMZN', allocation: 0, initialStockPrice: 0 },
         { name: 'Apple', symbol: 'AAPL', allocation: 0, initialStockPrice: 0 },
@@ -205,6 +207,7 @@ export default {
       this.$router.push('/stock-trading-select');
       return;
     }
+    await this.fetchDeveloperStatus(user); // Fetch developer status
     await this.setupCacheKey();
     const cachedData = this.getCachedData();
     if (cachedData) {
@@ -259,6 +262,14 @@ export default {
     }
   },
   methods: {
+    async fetchDeveloperStatus(user) {
+      const db = getFirestore();
+      const profileRef = doc(db, user.uid, 'Profile');
+      const profileSnap = await getDoc(profileRef);
+      if (profileSnap.exists()) {
+        this.isDeveloper = profileSnap.data().developer || false;
+      }
+    },
     async fetchExchangeRate() {
       const db = getFirestore();
       const docRef = doc(db, 'Currency Rates', 'USD-GBP');
@@ -833,7 +844,6 @@ export default {
 };
 </script>
 
-
 <style scoped>
 .portfolio-display {
   display: flex;
@@ -899,35 +909,65 @@ export default {
 
 .main-content {
   width: 100%;
-  margin: 2em auto;
   text-align: center;
+  margin: 2em auto;
   padding: 1em;
   display: flex;
   flex-direction: column;
   gap: 2em;
+  position: relative;
 }
 
-.wallet-card {
-  top: 1em;
-  left: 1em;
+.top-cards {
+  display: flex;
+  gap: 1em;
+  justify-content: center;
+  align-items: center;
+}
+
+.wallet-card, .streak-card {
   background: #ffffff;
-  padding: 0.5em 1em;
-  border-radius: 5px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 1em;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   font-weight: bold;
   color: #102454;
+  text-align: center;
+  transition: transform 0.3s, box-shadow 0.3s;
+  width: 150px;
+}
+
+.wallet-card:hover, .streak-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.streak-card h2 {
+  margin: 0;
+  font-size: 1.2em;
+}
+
+.streak-card p {
+  margin: 0;
+  font-size: 1em;
 }
 
 .request-counter-card {
-  top: 2em;
-  left: 1em;
   background: #ffffff;
-  padding: 0.5em 1em;
-  border-radius: 5px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 1em;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   font-weight: bold;
   color: #102454;
   position: fixed;
+  top: 1em;
+  left: 1em;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.request-counter-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
 }
 
 .portfolio-summary {
@@ -945,10 +985,21 @@ export default {
 .notice-board-card,
 .financial-courses-card {
   background: #fff;
-  padding: 1em;
+  padding: 2em;
   border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   text-align: left;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.portfolio-summary-card:hover,
+.portfolio-graph-card:hover,
+.portfolio-pie-card:hover,
+.portfolio-table-card:hover,
+.notice-board-card:hover,
+.financial-courses-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
 }
 
 .portfolio-summary-card h2,
@@ -958,12 +1009,43 @@ export default {
 .notice-board-card h2 {
   color: #102454;
   margin-bottom: 1em;
+  font-weight: bold;
+  border-bottom: 2px solid #102454;
+  padding-bottom: 0.5em;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .portfolio-summary-card p,
 .notice-board-card p {
   color: #333;
   margin-bottom: 0.5em;
+  font-size: 1.1em;
+  line-height: 1.5;
+}
+
+.portfolio-summary-card p strong {
+  font-weight: bold;
+}
+
+.portfolio-summary-card p em {
+  font-style: italic;
+}
+
+.portfolio-summary-card p span {
+  display: inline-block;
+  margin-top: 0.5em;
+  padding: 0.2em 0.4em;
+  border-radius: 5px;
+  background-color: #e3e7f1;
+  color: #102454;
+  font-weight: bold;
+}
+
+.portfolio-summary-card .highlight {
+  color: #e17858;
+  font-weight: bold;
+  text-transform: uppercase;
 }
 
 .portfolio-graph-card {
@@ -985,6 +1067,7 @@ export default {
 .portfolio-pie-card {
   width: 40%;
 }
+
 .portfolio-table-card {
   width: 60%;
   margin-right: 5%;
@@ -1035,12 +1118,31 @@ export default {
 
 .notice-board-card {
   width: 45%;
-  background-color: #e17858;
   padding: 1em;
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   text-align: left;
-  overflow: hidden; /* Add this to ensure content is contained */
+  overflow: hidden; /* Ensure content is contained */
+  background: linear-gradient(145deg, #f8e8c1, #f1d28d); /* Gradient background */
+  border: 5px solid #8b4513; /* Border to resemble a wooden frame */
+  position: relative;
+}
+
+.notice-board-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 2px solid #8b4513; /* Inner border to enhance the frame look */
+  border-radius: 10px;
+  pointer-events: none; /* Allow interactions with content */
+}
+
+.notice-board-card h2 {
+  color: #8b4513; /* Darker color for text */
+  margin-bottom: 1em;
 }
 
 .sticky-notes {
@@ -1054,8 +1156,8 @@ export default {
 .sticky-notes li {
   background: #ffeb3b;
   padding: 1em;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1), inset 0 0 10px rgba(0, 0, 0, 0.1);
   font-family: 'Comic Sans MS', cursive, sans-serif;
   display: flex;
   flex-direction: column;
@@ -1066,6 +1168,32 @@ export default {
   overflow-wrap: break-word;
   width: auto; /* Changed to auto to fit content */
   height: auto; /* Changed to auto to fit content */
+  position: relative;
+}
+
+.sticky-notes li::before {
+  content: '';
+  width: 40px;
+  height: 20px;
+  background: pink; /* Color of the tape */
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Shadow for the tape */
+  z-index: 1;
+}
+
+.sticky-notes li::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 4px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.1);
+  pointer-events: none; /* Allow interactions with content */
 }
 
 .sticky-notes li h3 {
@@ -1100,20 +1228,4 @@ export default {
   margin: 0.5em 0;
   font-size: 1em;
 }
-
-.streak-div {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.streak-card {
-  background-color: #ff903b;
-  border-radius: 10px;
-  padding: 1em;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  text-align: center;
-  margin-bottom: 1em;
-}
-
 </style>

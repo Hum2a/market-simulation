@@ -129,16 +129,33 @@ export default {
 <style scoped>
 .leaderboard-card {
   background: #fff;
-  padding: 1em;
+  padding: 2em;
   border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   text-align: left;
   margin-top: 20px;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.leaderboard-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.leaderboard-card h2 {
+  color: #102454;
+  margin-bottom: 1em;
+  font-weight: bold;
+  border-bottom: 2px solid #102454;
+  padding-bottom: 0.5em;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .leaderboard-table {
   width: 100%;
   border-collapse: collapse;
+  margin-top: 1em;
 }
 
 .leaderboard-table th, .leaderboard-table td {
@@ -150,11 +167,14 @@ export default {
 .leaderboard-table th {
   background-color: #102454;
   color: white;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .leaderboard-table td {
   background-color: #f9f9f9;
   color: #333;
+  font-size: 1em;
 }
 
 .leaderboard-table tr:nth-child(even) td {
@@ -163,10 +183,14 @@ export default {
 
 .highlighted {
   background-color: #ffeb3b !important;
+  font-weight: bold;
+  text-transform: uppercase;
 }
 
 .request-counter {
   margin-top: 20px;
   font-weight: bold;
+  color: #102454;
+  text-align: right;
 }
 </style>

@@ -4,7 +4,7 @@
       <img src="../../assets/LifeSmartLogo.png" alt="Logo" class="logo" />
       <nav class="header-links">
         <a @click="logout" class="nav-link">Log Out</a>
-        <template v-if="profile && profile.role === 'admin'">
+        <template v-if="profile && profile.admin">
           <router-link to="/groupcreation" class="nav-link">Group Creation</router-link>
         </template>
       </nav>
@@ -21,30 +21,25 @@
         </div>
       </div>
       <div class="options">
-        <router-link to="/portfolio-creation" :class="['option', 'user']">Create Your Portfolio</router-link>
-        <router-link to="/portfolio-append" :class="['option', 'user']"> Append Portfolio</router-link>
-        <router-link to="/portfolio-display" :class="['option', 'user']">View Your Portfolio</router-link>
+        <router-link to="/portfolio-creation" class="option user">Create Your Portfolio</router-link>
+        <router-link to="/portfolio-append" class="option user">Append Portfolio</router-link>
+        <router-link to="/portfolio-display" class="option user">View Your Portfolio</router-link>
       </div>
       <div class="options">
-        <template v-if="profile && profile.role === 'admin'">
-          <router-link to="/admin-portfolio-creation" :class="['option', 'admin']">Admin Portfolio Creation</router-link>
-          <router-link to="/admin-portfolio-assign" :class="['option', 'admin']">Assign Portfolios</router-link>
-          <router-link to="/sticky-note-creator" :class="['option', 'admin']">Sticky Note Creator</router-link>
-          <router-link to="/stock-market-today" :class="['option', 'admin']">Stock Market Today</router-link>
+        <template v-if="profile && profile.admin">
+          <router-link to="/admin-portfolio-creation" class="option admin">Admin Portfolio Creation</router-link>
+          <router-link to="/admin-portfolio-assign" class="option admin">Assign Portfolios</router-link>
+          <router-link to="/sticky-note-creator" class="option admin">Sticky Note Creator</router-link>
+          <router-link to="/stock-market-today" class="option admin">Stock Market Today</router-link>
         </template>
       </div>
       <div class="options">
-        <template v-if="profile && profile.role === 'admin'">
-          <router-link to="/code-manager" :class="['option', 'settings']">Code Manager</router-link>
-          <router-link to="/user-manager" :class="['option', 'settings']">User Manager</router-link>
+        <template v-if="profile && profile.admin">
+          <router-link to="/code-manager" class="option settings">Code Manager</router-link>
+          <router-link to="/user-manager" class="option settings">User Manager</router-link>
         </template>
       </div>
-      <!-- <div class="options">
-        <template v-if="profile && profile.role === 'admin'">
-          <router-link to="/portfolio-delete" :class="['option', 'delete']">Delete A Portfolio</router-link>
-        </template>
-      </div> -->
-      <button v-if="profile && profile.role === 'admin'" @click="deletePortfolio" class="delete-button">Delete Your Portfolio</button>
+      <button v-if="profile && profile.admin" @click="deletePortfolio" class="delete-button">Delete Your Portfolio</button>
     </main>
     <div v-if="userFunds !== null" class="total-funds">
       <p>Total Funds: £{{ userFunds }}</p>
@@ -60,7 +55,7 @@
 </template>
 
 <script>
-import MessageModal from './components/MessageModal.vue'; // Import the MessageModal component
+import MessageModal from './components/MessageModal.vue';
 import { getFirestore, collection, query, getDocs, deleteDoc, doc, updateDoc, getDoc, setDoc } from "firebase/firestore";
 import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 import { addDays, isSameDay } from 'date-fns';
@@ -69,7 +64,7 @@ import { trackUserLogout } from '../../../backend/utils/logoutTracker';
 export default {
   name: 'StockTradingSelect',
   components: {
-    MessageModal // Register the MessageModal component
+    MessageModal
   },
   data() {
     return {
@@ -152,7 +147,6 @@ export default {
 
         let initialPortfolioAllocation = 0;
 
-        // Find the "Initial Portfolio" document and get its total allocation
         portfolioSnapshot.forEach(docSnap => {
           const data = docSnap.data();
           if (docSnap.id === 'Initial Portfolio') {
@@ -160,11 +154,9 @@ export default {
           }
         });
 
-        // Delete all portfolio documents
         const deletePromises = portfolioSnapshot.docs.map(docSnap => deleteDoc(docSnap.ref));
         await Promise.all(deletePromises);
 
-        // Update the user's total funds
         const totalFundsRef = doc(db, user.uid, 'Total Funds');
         const totalFundsSnap = await getDoc(totalFundsRef);
 
@@ -172,7 +164,7 @@ export default {
           const totalFundsData = totalFundsSnap.data();
           const updatedFunds = totalFundsData.totalFunds + initialPortfolioAllocation;
           await updateDoc(totalFundsRef, { totalFunds: updatedFunds });
-          this.userFunds = updatedFunds; // Update the displayed total funds
+          this.userFunds = updatedFunds;
         }
 
         this.modalTitle = 'Success';
@@ -185,15 +177,15 @@ export default {
       }
     },
     async logout() {
-    const auth = getAuth();
-    const user = auth.currentUser;
+      const auth = getAuth();
+      const user = auth.currentUser;
 
-    if (user) {
-      await trackUserLogout(user.uid);
-      await signOut(auth);
-      this.$router.push('/startpage');
-    }
-  },
+      if (user) {
+        await trackUserLogout(user.uid);
+        await signOut(auth);
+        this.$router.push('/startpage');
+      }
+    },
   },
   beforeRouteEnter(to, from, next) {
     const auth = getAuth();
@@ -243,19 +235,17 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.2em;
+  padding: 0.5em 1em;
   background-color: #102454;
   border-bottom-right-radius: 25px;
   border-bottom-left-radius: 25px;
   width: 100%;
-  margin: 0 auto;
 }
 
 .logo {
   height: auto;
   width: 150px;
   display: block;
-  margin-left: 0;
   clip-path: polygon(0 0, 60% 0, 60% 100%, 0% 100%);
 }
 
@@ -267,15 +257,16 @@ export default {
 .nav-link {
   color: #fff;
   text-decoration: none;
-  font-size: 1em;
+  font-size: 1.2em;
   padding: 0.5em 1em;
   border-radius: 5px;
-  transition: background-color 0.3s;
+  transition: background-color 0.3s, transform 0.2s;
   cursor: pointer;
 }
 
 .nav-link:hover {
   background-color: #0d1b3f;
+  transform: scale(1.05);
 }
 
 .main-content {
@@ -283,18 +274,23 @@ export default {
   max-width: 1200px;
   margin: 2em auto;
   text-align: center;
-  padding: 1em;
+  padding: 2em;
+  background-color: #ecf0f1;
+  border-radius: 10px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
 }
 
 .main-content h1 {
-  font-size: 2em;
-  color: #102454;
-  margin-bottom: 0.5em;
+  font-size: 2.5em;
+  color: #2c3e50;
+  margin-bottom: 1em;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .welcome-message {
   font-size: 1.5em;
-  color: #102454;
+  color: #2c3e50;
   margin-bottom: 1em;
 }
 
@@ -302,22 +298,22 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
+  margin-bottom: 2em;
 }
 
 .streak-card {
   background-color: #ff903b;
   border-radius: 10px;
-  width: 20%;
+  width: 25%;
   padding: 1em;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   text-align: center;
-  margin-bottom: 1em;
 }
 
 .streak-card h2 {
   margin: 0;
   color: #333;
-  font-size: 1.2em;
+  font-size: 1.5em;
 }
 
 .streak-card p {
@@ -328,45 +324,42 @@ export default {
 
 .options {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  gap: 2em;
+  gap: 1.5em;
+  margin-bottom: 1.5em;
 }
 
 .option {
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 200px;
-  height: 100px;
-  background-color: #007bff;
+  width: 220px;
+  height: 120px;
   color: #fff;
   text-decoration: none;
   font-size: 1.2em;
   border-radius: 10px;
   transition: background-color 0.3s, transform 0.2s;
   cursor: pointer;
-  margin-bottom: 10px;
+  padding: 1em;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .user {
-  background-color: #7062c0;
+  background-color: #3498db;
 }
 
 .admin {
-  background-color: rgb(45, 118, 40);
+  background-color: #2ecc71;
 }
 
 .settings {
-  background-color: #727272;
-}
-
-.delete {
-  background-color: #dc3545;
+  background-color: #9b59b6;
 }
 
 .option:hover {
-  background-color: #0056b3;
   transform: scale(1.05);
 }
 
@@ -375,20 +368,18 @@ export default {
 }
 
 .delete-button {
-  background-color: #dc3545;
+  background-color: #e74c3c;
   color: #fff;
-  padding: 0.5em 1em;
+  padding: 1em 2em;
   border: none;
   border-radius: 10px;
   cursor: pointer;
   transition: background-color 0.3s, transform 0.2s;
   margin-top: 2em;
-  width: 200px;
-  height: 100px;
 }
 
 .delete-button:hover {
-  background-color: #c82333;
+  background-color: #c0392b;
   transform: scale(1.05);
 }
 
@@ -409,7 +400,7 @@ export default {
 
 .total-funds p {
   margin: 0;
-  font-size: 1.2em;
-  color: #333;
+  font-size: 1.5em;
+  color: #2c3e50;
 }
 </style>

@@ -76,24 +76,21 @@
           </form>
         </div>
       </div>
-      <div class="position-selector-card">
-        <h2>Sticky Note Position</h2>
-        <div class="position-selector" ref="positionSelector">
-          <div
-            class="sticky-note-box"
-            :style="{ left: `${stickyNotePosition.x}%`, top: `${stickyNotePosition.y}%` }"
-            @mousedown="startDrag"
-          ></div>
-        </div>
-      </div>
       <div class="existing-notes">
         <h2>Existing Notes</h2>
-        <ul>
-          <li v-for="note in existingNotes" :key="note.id">
-            <span @click="selectNoteForEditing(note)">{{ note.title }}</span>
-            <button @click="deleteNote(note.id)">Delete</button>
-          </li>
-        </ul>
+        <div class="notice-board">
+          <ul>
+            <li v-for="note in existingNotes" :key="note.id" class="sticky-note" @click="selectNoteForEditing(note)">
+              <div class="note-header">
+                <span>{{ note.title }}</span>
+                <button @click.stop="deleteNote(note.id)">Delete</button>
+              </div>
+              <p>{{ note.content }}</p>
+              <p v-if="note.date">Date: {{ formatDate(note.date) }}</p>
+              <a v-if="note.links" :href="note.links" target="_blank">{{ note.linkName || note.links }}</a>
+            </li>
+          </ul>
+        </div>
       </div>
     </main>
   </div>
@@ -114,7 +111,7 @@ export default {
       noteTitle: '',
       noteContent: '',
       noteDate: null,
-      noteLinkName: '', // Added link name field
+      noteLinkName: '',
       noteLinks: '',
       showForAllUsers: false,
       selectedUsers: [],
@@ -156,7 +153,7 @@ export default {
       const db = getFirestore();
       const querySnapshot = await getDocs(collection(db, 'Sticky Notes'));
       this.existingNotes = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      this.existingNotes.sort((a, b) => b.createdAt - a.createdAt); // Sort notes by creation date
+      this.existingNotes.sort((a, b) => b.createdAt - a.createdAt);
     },
     async fetchUsers() {
       const db = getFirestore();
@@ -169,7 +166,7 @@ export default {
         title: this.noteTitle,
         content: this.noteContent,
         date: this.noteDate,
-        linkName: this.noteLinkName, // Added link name to note data
+        linkName: this.noteLinkName,
         links: this.noteLinks,
         showForAllUsers: this.showForAllUsers,
         selectedUsers: this.selectedUsers,
@@ -180,7 +177,7 @@ export default {
       };
       try {
         await setDoc(doc(db, 'Sticky Notes', this.noteTitle), note);
-        await this.fetchExistingNotes(); // Refresh the list of existing notes
+        await this.fetchExistingNotes();
         this.resetForm();
       } catch (error) {
         console.error('Error creating or updating sticky note:', error);
@@ -190,7 +187,7 @@ export default {
       this.noteTitle = note.title;
       this.noteContent = note.content;
       this.noteDate = note.date;
-      this.noteLinkName = note.linkName || ''; // Set link name for editing
+      this.noteLinkName = note.linkName || '';
       this.noteLinks = note.links;
       this.showForAllUsers = note.showForAllUsers;
       this.selectedUsers = note.selectedUsers || [];
@@ -203,7 +200,7 @@ export default {
       const db = getFirestore();
       try {
         await deleteDoc(doc(db, 'Sticky Notes', noteId));
-        await this.fetchExistingNotes(); // Refresh the list of existing notes
+        await this.fetchExistingNotes();
       } catch (error) {
         console.error('Error deleting sticky note:', error);
       }
@@ -228,7 +225,7 @@ export default {
       this.noteTitle = '';
       this.noteContent = '';
       this.noteDate = null;
-      this.noteLinkName = ''; // Reset link name
+      this.noteLinkName = '';
       this.noteLinks = '';
       this.showForAllUsers = false;
       this.selectedUsers = [];
@@ -258,7 +255,15 @@ export default {
       this.isDragging = false;
       document.removeEventListener('mousemove', this.drag);
       document.removeEventListener('mouseup', this.stopDrag);
-    }
+    },
+    formatDate(date) {
+      if (date && date.toDate) {
+        const dateObj = date.toDate();
+        const options = { year: 'numeric', month: 'short', day: 'numeric' };
+        return dateObj.toLocaleDateString(undefined, options);
+      }
+      return date;
+    },
   }
 };
 </script>
@@ -317,6 +322,17 @@ export default {
   margin: 2em auto;
   text-align: center;
   padding: 1em;
+  background-color: #ecf0f1;
+  border-radius: 10px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.main-content h1 {
+  font-size: 2.5em;
+  color: #2c3e50;
+  margin-bottom: 1em;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .form-container {
@@ -328,7 +344,7 @@ export default {
 .options-card {
   flex: 1;
   background: #fff;
-  padding: 1em;
+  padding: 2em;
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
@@ -337,6 +353,8 @@ export default {
 .options-card h2 {
   color: #102454;
   margin-bottom: 1em;
+  text-transform: uppercase;
+  font-size: 1.5em;
 }
 
 .form-group {
@@ -360,7 +378,7 @@ select {
 }
 
 textarea#note-content {
-  height: 150px; /* Custom height for the note content textarea */
+  height: 150px;
 }
 
 button {
@@ -370,35 +388,40 @@ button {
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: background-color 0.3s, transform 0.2s;
 }
 
 button:hover {
   background-color: #0d1b3f;
+  transform: scale(1.05);
 }
 
-.stock-buttons, .user-buttons {
+.stock-buttons,
+.user-buttons {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5em;
 }
 
-.stock-buttons button, .user-buttons button {
-  background-color: transparent;
+.stock-buttons button,
+.user-buttons button {
+  background-color: #3498db;
   border: 1px solid #102454;
-  color: #102454;
+  color: #fff;
   padding: 0.5em;
   border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.3s, color 0.3s;
 }
 
-.stock-buttons button.selected, .user-buttons button.selected {
+.stock-buttons button.selected,
+.user-buttons button.selected {
   background-color: #f0e5d8;
   color: #102454;
 }
 
-.stock-buttons button:hover, .user-buttons button:hover {
+.stock-buttons button:hover,
+.user-buttons button:hover {
   background-color: #0d1b3f;
   color: #fff;
 }
@@ -406,7 +429,7 @@ button:hover {
 .position-selector-card {
   margin-top: 2em;
   background: #fff;
-  padding: 1em;
+  padding: 2em;
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
@@ -417,6 +440,8 @@ button:hover {
   border: 1px solid #ccc;
   position: relative;
   margin: 0 auto;
+  background: #ecf0f1;
+  border-radius: 5px;
 }
 
 .sticky-note-box {
@@ -426,39 +451,131 @@ button:hover {
   border: 1px solid #ccc;
   position: absolute;
   cursor: move;
+  border-radius: 5px;
 }
 
 .existing-notes {
   margin-top: 2em;
 }
 
-.existing-notes ul {
+.notice-board {
+  background: #fff;
+  padding: 1em;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border: 5px solid #8b4513;
+  position: relative;
+}
+
+.notice-board::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 2px solid #8b4513;
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+.notice-board ul {
   list-style-type: none;
   padding: 0;
 }
 
-.existing-notes li {
+.sticky-note {
+  background: #ffeb3b;
+  padding: 1em;
+  border-radius: 4px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1), inset 0 0 10px rgba(0, 0, 0, 0.1);
+  font-family: 'Comic Sans MS', cursive, sans-serif;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: break-word;
+  width: auto;
+  height: auto;
+  position: relative;
+  margin-bottom: 1em;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.sticky-note:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+.sticky-note:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1), inset 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.sticky-note::before {
+  content: '';
+  width: 40px;
+  height: 20px;
+  background: pink;
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+}
+
+.sticky-note::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 4px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+}
+
+.note-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #fff;
-  margin-bottom: 0.5em;
-  padding: 0.5em;
-  border-radius: 5px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
 }
 
-.existing-notes li span {
+.note-header span {
   cursor: pointer;
   flex-grow: 1;
+  text-align: left;
 }
 
-.existing-notes li button {
+.note-header button {
   margin-left: 1em;
   background-color: #e74c3c;
+  color: #fff;
+  border: none;
+  padding: 0.3em 0.5em;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
 }
 
-.existing-notes li button:hover {
+.note-header button:hover {
   background-color: #c0392b;
+  transform: scale(1.05);
+}
+
+.note-header button:active {
+  transform: scale(0.95);
+}
+
+.sticky-note p,
+.sticky-note a {
+  margin: 0.5em 0 0;
+  font-size: 1em;
+  color: #333;
 }
 </style>
