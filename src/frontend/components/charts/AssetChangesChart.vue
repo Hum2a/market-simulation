@@ -141,14 +141,13 @@ export default {
           data,
           fill: false,
           borderColor: lineColors[index],
-          hidden: this.assetVisibility[type], // Set the initial visibility based on assetVisibility
-          cubicInterpolationMode: 'monotone', // Add this line
-          tension: 0.4, // Add this line to make the lines more curved
+          hidden: this.assetVisibility[type],
+          cubicInterpolationMode: 'monotone',
+          tension: 0.4,
         };
       });
 
       const annotations = Object.entries(this.events).flatMap(([year, yearEvents]) => {
-        let alternatePosition = true;
         return Object.entries(yearEvents).map(([quarter, event]) => {
           const quarterIndex = this.quarters.indexOf(quarter) + 1;
           const yearIndex = parseInt(year, 10) - 1;
@@ -159,29 +158,24 @@ export default {
             return null;
           }
 
-          const position = alternatePosition ? "bottom" : "top";
-          alternatePosition = !alternatePosition;
-
           return {
             type: 'line',
             xMin: labels[labelIndex],
             xMax: labels[labelIndex],
             borderColor: '#DAC2C2',
-            borderWidth: 20, // Adjust border width
+            borderWidth: 20,
             label: {
-              display: true,
               content: event.name,
-              position: position,
+              enabled: true,
+              position: 'end', // Change position to start
               backgroundColor: 'rgba(114,93,255,1)',
-              color: '#HHH',
+              color: '#000',
               font: {
                 size: 12,
-                color: '#000'
-
               },
               padding: 4,
-              yAdjust: position === "bottom" ? -10 : 10 // Adjust label position to prevent overlap with the annotation line
-            }
+              // yAdjust: 20, // Adjust y position to move the label down
+            },
           };
         }).filter(annotation => annotation !== null);
       });
@@ -202,7 +196,7 @@ export default {
             scales: {
               x: {
                 grid: {
-                  display: false
+                  display: false,
                 },
               },
             },
@@ -248,7 +242,6 @@ export default {
       const labels = this.assetChangesChart.value.data.labels;
 
       const annotations = Object.entries(this.events).flatMap(([year, yearEvents]) => {
-        let alternatePosition = true;
         return Object.entries(yearEvents).map(([quarter, event]) => {
           const quarterIndex = this.quarters.indexOf(quarter) + 1;
           const yearIndex = parseInt(year, 10) - 1;
@@ -259,28 +252,24 @@ export default {
             return null;
           }
 
-          const position = alternatePosition ? "bottom" : "top";
-          alternatePosition = !alternatePosition;
-
           return {
             type: 'line',
             xMin: labels[labelIndex],
             xMax: labels[labelIndex],
             borderColor: '#DAC2C2',
-            borderWidth: 20, // Adjust border width
+            borderWidth: 20,
             label: {
-              display: true,
               content: event.name,
-              position: position,
+              enabled: true,
+              position: 'end', // Change position to start
               backgroundColor: 'rgba(114,93,255,1)',
-              color: '#HHH',
+              color: '#000',
               font: {
                 size: 12,
-                color: '#000'
               },
               padding: 4,
-              yAdjust: position === "bottom" ? -10 : 10 // Adjust label position to prevent overlap with the annotation line
-            }
+              // yAdjust: 20, // Adjust y position to move the label down
+            },
           };
         }).filter(annotation => annotation !== null);
       });
@@ -289,7 +278,6 @@ export default {
 
       this.assetChangesChart.value.options.plugins.annotation.annotations = annotations;
     },
-
 
     toggleAssetVisibility(assetType) {
       const dataset = this.assetChangesChart.value.data.datasets.find(d => d.label === assetType);
