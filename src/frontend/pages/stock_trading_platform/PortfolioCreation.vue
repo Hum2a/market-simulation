@@ -11,7 +11,7 @@
         <h2>You have no funds available to allocate.</h2>
       </div>
       <div v-else>
-        <h1>Create or Append to Your Portfolio</h1>
+        <h1>Create Your Portfolio</h1>
         <form @submit.prevent="submitPortfolio" class="portfolio-form">
           <div class="total-funds-display">
             <p>Total Funds: £{{ remainingFunds }}</p>
@@ -379,5 +379,40 @@ button:disabled {
 
 button:hover:not(:disabled) {
   background-color: #34495e;
+}
+
+/* Media query for mobile devices */
+@media (max-width: 600px) {
+  .main-content {
+    padding: 1em;
+    margin: 1em; /* Add margin to prevent content from touching screen edges */
+  }
+
+  .main-content h1 {
+    font-size: 2em;
+  }
+
+  .total-funds-display {
+    font-size: 1.5em;
+    padding: 1em;
+  }
+
+  .portfolio-form {
+    padding: 1.5em;
+  }
+
+  .companies-container {
+    flex-direction: column;
+    gap: 1em;
+  }
+
+  .company {
+    width: 100%;
+  }
+
+  .form-buttons {
+    flex-direction: column;
+    gap: 1em;
+  }
 }
 </style>

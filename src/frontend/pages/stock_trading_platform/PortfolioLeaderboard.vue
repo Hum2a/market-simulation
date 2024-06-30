@@ -1,13 +1,13 @@
 <template>
   <div class="leaderboard-card">
-    <h2>Leaderboard for {{ selectedDateFormatted }}</h2>
+    <h2>Leaderboard</h2>
     <table class="leaderboard-table">
       <thead>
         <tr>
           <th>Rank</th>
           <th>Name</th>
           <th>Portfolio Value</th>
-          <th>Date</th>
+          <!-- <th>Date</th> -->
         </tr>
       </thead>
       <tbody>
@@ -19,7 +19,7 @@
           <td>{{ index + 1 }}</td>
           <td>{{ `${user.firstName} ${user.lastName}` }}</td>
           <td>£{{ roundedValue(user.totalAllocation) }}</td>
-          <td>{{ user.portfolioDate }}</td>
+          <!-- <td>{{ user.portfolioDate }}</td> -->
         </tr>
         <tr v-if="currentUser && !isTopUser" class="highlighted">
           <td>{{ currentUserRank }}</td>
@@ -29,14 +29,14 @@
         </tr>
       </tbody>
     </table>
-    <div class="request-counter">
+    <div v-if="isDeveloper" class="request-counter">
       Total Firestore Requests: {{ requestCounter }}
     </div>
   </div>
 </template>
 
 <script>
-import { getFirestore, getDocs, doc, getDoc, collection } from "firebase/firestore";
+import { getFirestore, getDocs, doc, getDoc, collection, query, where } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { format, subDays, differenceInDays } from 'date-fns';
 
@@ -49,6 +49,8 @@ export default {
       currentUserRank: null,
       selectedDate: new Date(),
       requestCounter: 0, // Initialize the request counter
+      isDeveloper: false, // Initialize the isDeveloper flag
+      currentUserGroupCode: null // Initialize currentUserGroupCode
     };
   },
   computed: {
@@ -94,10 +96,26 @@ export default {
         return;
       }
 
-      this.requestCounter++; // Increment request counter for fetching users
-      console.log(`Fetching users collection (Request count: ${this.requestCounter})`);
+      // Fetch current user's profile to get groupCode
+      this.requestCounter++;
+      console.log(`Fetching current user profile (Request count: ${this.requestCounter})`);
 
-      const usersSnapshot = await getDocs(collection(db, 'Users'));
+      const currentUserProfileRef = doc(db, 'Users', currentUser.uid);
+      const currentUserProfileSnap = await getDoc(currentUserProfileRef);
+
+      if (currentUserProfileSnap.exists()) {
+        this.currentUserGroupCode = currentUserProfileSnap.data().groupCode;
+      } else {
+        console.error("Current user profile not found");
+        return;
+      }
+
+      // Fetch users with the same groupCode
+      this.requestCounter++; // Increment request counter for fetching users
+      console.log(`Fetching users collection with groupCode ${this.currentUserGroupCode} (Request count: ${this.requestCounter})`);
+
+      const usersQuery = query(collection(db, 'Users'), where('groupCode', '==', this.currentUserGroupCode));
+      const usersSnapshot = await getDocs(usersQuery);
       const users = usersSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
 
       const portfolioPromises = users.map(async (user) => {
@@ -114,6 +132,23 @@ export default {
       if (currentUserPortfolio) {
         this.currentUser = currentUserPortfolio;
         this.currentUserRank = sortedPortfolios.indexOf(currentUserPortfolio) + 1;
+      }
+
+      await this.checkDeveloperStatus();
+    },
+    async checkDeveloperStatus() {
+      const auth = getAuth();
+      const user = auth.currentUser;
+
+      if (user) {
+        const db = getFirestore();
+        const profileRef = doc(db, 'Users', user.uid);
+        const profileSnap = await getDoc(profileRef);
+
+        if (profileSnap.exists()) {
+          const profileData = profileSnap.data();
+          this.isDeveloper = profileData.role === 'developer';
+        }
       }
     },
     roundedValue(value) {

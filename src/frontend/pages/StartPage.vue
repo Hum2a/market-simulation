@@ -73,6 +73,7 @@ export default {
 .buttons-container {
   display: flex;
   gap: 2em;
+  flex-wrap: wrap; /* Allow buttons to wrap to the next line on smaller screens */
 }
 
 .start-button {
@@ -114,5 +115,22 @@ export default {
   left: 100%;
   transition: all 0.5s;
   animation: shimmer 1.5s infinite;
+}
+
+/* Media query for mobile devices */
+@media (max-width: 600px) {
+  .main-content h1 {
+    font-size: 2em;
+    margin-bottom: 1em;
+  }
+
+  .buttons-container {
+    flex-direction: column; /* Stack buttons vertically */
+    gap: 1em;
+  }
+
+  .start-button {
+    font-size: 1.2em;
+  }
 }
 </style>

@@ -25,7 +25,7 @@
         <div class="generate-random">
           <button type="button" @click="generateRandomPortfolio">Generate Random Portfolio</button>
         </div>
-        <div>
+        <div class="companies-container">
           <div v-for="company in companies" :key="company.name" class="company">
             <label :for="company.name" class="company-label">
               <img :src="getCompanyLogo(company.name)" :alt="company.name" class="company-logo" />
@@ -169,7 +169,6 @@ export default {
 };
 </script>
 
-
 <style scoped>
 .portfolio-creation {
   display: flex;
@@ -182,26 +181,20 @@ export default {
 }
 
 .header {
-  grid-column: 1 / -1;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.2em;
+  padding: 0.5em 1em;
   background-color: #102454;
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
   border-bottom-right-radius: 25px;
   border-bottom-left-radius: 25px;
-  position: relative;
   width: 100%;
-  margin: 0 auto;
 }
 
 .logo {
   height: auto;
   width: 150px;
   display: block;
-  margin-left: 0;
   clip-path: polygon(0 0, 60% 0, 60% 100%, 0% 100%);
 }
 
@@ -213,15 +206,16 @@ export default {
 .nav-link {
   color: #fff;
   text-decoration: none;
-  font-size: 1em;
+  font-size: 1.2em;
   padding: 0.5em 1em;
   border-radius: 5px;
-  transition: background-color 0.3s;
+  transition: background-color 0.3s, transform 0.2s;
   cursor: pointer;
 }
 
 .nav-link:hover {
   background-color: #0d1b3f;
+  transform: scale(1.05);
 }
 
 .main-content {
@@ -229,7 +223,44 @@ export default {
   max-width: 1200px;
   margin: 2em auto;
   text-align: center;
-  padding: 1em;
+  padding: 2em;
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.main-content h1 {
+  font-size: 2.5em;
+  color: #2c3e50;
+  margin-bottom: 1em;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.main-content p {
+  font-size: 1.2em;
+  color: #333;
+  margin-bottom: 1em;
+}
+
+.user-input {
+  margin-bottom: 1em;
+  text-align: left;
+}
+
+.user-input label {
+  display: block;
+  font-weight: bold;
+  color: #102454;
+  margin-bottom: 0.5em;
+}
+
+.user-input input {
+  width: 100%;
+  padding: 0.75em;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  box-sizing: border-box;
 }
 
 .total-funds-display {
@@ -242,44 +273,15 @@ export default {
   margin-bottom: 1em;
 }
 
-.main-content h1 {
-  font-size: 2em;
-  color: #102454;
-  margin-bottom: 0.5em;
-}
-
-.main-content p {
-  font-size: 1.2em;
-  color: #333;
-  margin-bottom: 1em;
-}
-
-.funds-input,
-.user-input {
-  margin-bottom: 1em;
-}
-
-.funds-input label,
-.user-input label {
-  color: #102454;
-}
-
-.funds-input input,
-.user-input input {
-  width: 100%;
-  margin-top: 0.5em;
-  padding: 0.5em;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  box-sizing: border-box;
-}
-
 .date-picker {
   margin-bottom: 1em;
 }
 
 .date-picker label {
   color: #102454;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 0.5em;
 }
 
 .generate-random {
@@ -289,15 +291,20 @@ export default {
 .generate-random button {
   background-color: #28a745;
   color: #fff;
-  padding: 0.5em 1em;
+  padding: 0.75em 1.5em;
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: background-color 0.3s, transform 0.2s;
 }
 
 .generate-random button:hover {
   background-color: #218838;
+  transform: scale(1.05);
+}
+
+.generate-random button:active {
+  transform: scale(0.95);
 }
 
 .portfolio-form {
@@ -307,14 +314,21 @@ export default {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
+.companies-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1em;
+  justify-content: center;
+}
+
 .company {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
   background-color: #e0e7ff;
   padding: 1em;
   border-radius: 8px;
-  margin-bottom: 1em;
+  width: 100px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -322,27 +336,23 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: 1;
-  text-align: left;
   font-weight: bold;
   color: #102454;
 }
 
 .company-logo {
   height: 30px;
-  display: block;
-  margin: 0 auto;
+  width: auto;
+  margin-bottom: 0.5em;
 }
 
 .company-value-input {
-  flex: 1;
-  text-align: right;
+  text-align: center;
   font-weight: bold;
   color: #102454;
   border: none;
   background: none;
   width: 80px;
-  text-align: center;
 }
 
 .total-allocation {
@@ -361,16 +371,24 @@ export default {
 button {
   background-color: #102454;
   color: #fff;
-  padding: 0.5em 1em;
+  padding: 0.75em 1.5em;
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: background-color 0.3s, transform 0.2s;
 }
 
 button:disabled {
   background-color: #aaa;
   cursor: not-allowed;
 }
-</style>
 
+button:hover {
+  background-color: #0d1b3f;
+  transform: scale(1.05);
+}
+
+button:active {
+  transform: scale(0.95);
+}
+</style>

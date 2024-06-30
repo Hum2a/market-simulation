@@ -33,7 +33,7 @@
 </template>
 
 <script>
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
 import { format, differenceInCalendarDays } from "date-fns";
 import { trackUserLogin } from '../../backend/utils/loginTracker';
@@ -96,17 +96,8 @@ export default {
         });
       }
     },
-    async handleRegister() {
-      const auth = getAuth();
-      const identifier = this.username;
-      const password = this.password;
-      
-      try {
-        await createUserWithEmailAndPassword(auth, identifier, password);
-        this.errorMessage = "";
-      } catch (error) {
-        this.errorMessage = error.message;
-      }
+    handleRegister() {
+      this.$router.push({ name: 'CreateAccount' });
     }
   },
   mounted() {
@@ -117,6 +108,7 @@ export default {
   }
 };
 </script>
+
 
 <style scoped>
 @keyframes shimmer {
@@ -210,13 +202,14 @@ button {
   font-size: 1em;
   cursor: pointer;
   border-radius: 5px;
-  transition: transform 0.3s;
+  transition: transform 0.3s, background-color 0.3s;
   position: relative;
   overflow: hidden;
 }
 
 button:hover {
   transform: scale(1.05);
+  background-color: #0d1b3f; /* Darker shade on hover */
 }
 
 button:active {
@@ -230,7 +223,7 @@ button::before {
   left: -100%;
   width: 200%;
   height: 100%;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0) 100%);
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 100%);
   transition: all 0.5s;
 }
 
@@ -300,6 +293,33 @@ p {
 @keyframes fill {
   100% {
     box-shadow: inset 0px 0px 0px 30px #4CAF50;
+  }
+}
+
+/* Media query for mobile devices */
+@media (max-width: 600px) {
+  .main-content {
+    padding: 1em;
+    margin: 1em; /* Add margin to prevent content from touching screen edges */
+  }
+
+  .login-or-register {
+    font-size: 1.5em;
+    margin-bottom: 1em;
+  }
+
+  input[type="text"],
+  input[type="password"] {
+    font-size: 1em; /* Adjust font size for input fields */
+  }
+
+  button {
+    padding: 1em;
+    font-size: 1.2em; /* Adjust font size for the button */
+  }
+
+  p {
+    font-size: 0.8em; /* Adjust font size for error message */
   }
 }
 </style>

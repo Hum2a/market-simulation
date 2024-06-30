@@ -112,6 +112,9 @@ export default {
           class: this.classValue,
           school: this.school,
           role: 'user',
+          user: true,
+          admin: false,
+          developer: false,
           userUID: user.uid,
           groupCode: this.code,
         });
@@ -262,5 +265,36 @@ input:focus {
   left: 100%;
   transition: all 0.5s;
   animation: shimmer 1.5s infinite;
+}
+
+/* Media query for mobile devices */
+@media (max-width: 600px) {
+  .main-content {
+    padding: 1em;
+    margin: 1em; /* Add margin to prevent content from touching screen edges */
+  }
+
+  .main-content h1 {
+    font-size: 2em;
+    margin-bottom: 1em;
+  }
+
+  .form-group-inline {
+    flex-direction: column;
+  }
+
+  .form-group-inline .form-group {
+    width: 100%;
+  }
+
+  input {
+    font-size: 1em; /* Adjust font size for input fields */
+  }
+
+  .create-button {
+    width: 100%;
+    padding: 1em;
+    font-size: 1.2em; /* Adjust font size for the button */
+  }
 }
 </style>

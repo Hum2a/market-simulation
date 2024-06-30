@@ -15,20 +15,17 @@
         Welcome back, {{ profile.firstName }}!
       </div>
       <div class="streak-div">
-        <div v-if="streak !== null" class="streak-card">
-          <h2>Login Streak</h2>
-          <p>{{ streak }} days</p>
-        </div>
+        <LoginStreak />
       </div>
       <div class="options">
-        <router-link to="/portfolio-creation" class="option user">Create Your Portfolio</router-link>
-        <router-link to="/portfolio-append" class="option user">Append Portfolio</router-link>
-        <router-link to="/portfolio-display" class="option user">View Your Portfolio</router-link>
+        <router-link :to="portfolioCreationRoute" class="option user">Create Your Portfolio</router-link>
+        <router-link :to="portfolioAppendRoute" class="option user">Append Portfolio</router-link>
+        <router-link :to="portfolioDisplayRoute" class="option user">View Your Portfolio</router-link>
       </div>
       <div class="options">
         <template v-if="profile && profile.admin">
-          <router-link to="/admin-portfolio-creation" class="option admin">Admin Portfolio Creation</router-link>
-          <router-link to="/admin-portfolio-assign" class="option admin">Assign Portfolios</router-link>
+          <!-- <router-link to="/admin-portfolio-creation" class="option admin">Admin Portfolio Creation</router-link> -->
+          <!-- <router-link to="/admin-portfolio-assign" class="option admin">Assign Portfolios</router-link> -->
           <router-link to="/sticky-note-creator" class="option admin">Sticky Note Creator</router-link>
           <router-link to="/stock-market-today" class="option admin">Stock Market Today</router-link>
         </template>
@@ -56,15 +53,16 @@
 
 <script>
 import MessageModal from './components/MessageModal.vue';
-import { getFirestore, collection, query, getDocs, deleteDoc, doc, updateDoc, getDoc, setDoc } from "firebase/firestore";
+import LoginStreak from './components/LoginStreak.vue'; // Import the LoginStreak component
+import { getFirestore, collection, query, getDocs, deleteDoc, doc, updateDoc, getDoc } from "firebase/firestore";
 import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
-import { addDays, isSameDay } from 'date-fns';
 import { trackUserLogout } from '../../../backend/utils/logoutTracker';
 
 export default {
   name: 'StockTradingSelect',
   components: {
-    MessageModal
+    MessageModal,
+    LoginStreak // Register the LoginStreak component
   },
   data() {
     return {
@@ -74,13 +72,8 @@ export default {
       modalTitle: '',
       modalMessage: '',
       profile: null,
-      streak: null
+      isMobile: window.innerWidth <= 600
     };
-  },
-  async created() {
-    await this.fetchUserProfile();
-    await this.fetchUserFunds();
-    await this.fetchLoginStreak();
   },
   methods: {
     async fetchUserProfile() {
@@ -106,33 +99,6 @@ export default {
 
         if (totalFundsSnap.exists()) {
           this.userFunds = totalFundsSnap.data().totalFunds;
-        }
-      }
-    },
-    async fetchLoginStreak() {
-      const auth = getAuth();
-      const user = auth.currentUser;
-      if (user) {
-        const db = getFirestore();
-        const streakRef = doc(db, 'Login Streak', user.uid);
-        const streakSnap = await getDoc(streakRef);
-
-        if (streakSnap.exists()) {
-          const streakData = streakSnap.data();
-          const today = new Date();
-          const lastLoginDate = streakData.lastLogin.toDate();
-          if (isSameDay(today, lastLoginDate)) {
-            this.streak = streakData.streak;
-          } else if (isSameDay(today, addDays(lastLoginDate, 1))) {
-            this.streak = streakData.streak + 1;
-            await setDoc(streakRef, { streak: this.streak, lastLogin: today }, { merge: true });
-          } else {
-            this.streak = 1;
-            await setDoc(streakRef, { streak: this.streak, lastLogin: today }, { merge: true });
-          }
-        } else {
-          this.streak = 1;
-          await setDoc(streakRef, { streak: this.streak, lastLogin: new Date() });
         }
       }
     },
@@ -186,6 +152,34 @@ export default {
         this.$router.push('/startpage');
       }
     },
+    handleResize() {
+      this.isMobile = window.innerWidth <= 600;
+    }
+  },
+  computed: {
+    portfolioCreationRoute() {
+      return this.isMobile ? '/portfolio-creation-m' : '/portfolio-creation';
+    },
+    portfolioAppendRoute() {
+      return this.isMobile ? '/portfolio-append-M' : '/portfolio-append';
+    },
+    portfolioDisplayRoute() {
+      return this.isMobile ? '/portfolio-display-M' : '/portfolio-display';
+    }
+  },
+  async created() {
+    await this.fetchUserProfile();
+    await this.fetchUserFunds();
+    window.addEventListener('resize', this.handleResize);
+
+    // Redirect to the appropriate route based on the device type
+    if (this.$route.path === '/portfolio-creation' || this.$route.path === '/portfolio-creation-m') {
+      const targetRoute = this.isMobile ? '/portfolio-creation-m' : '/portfolio-creation';
+      this.$router.replace(targetRoute);
+    }
+  },
+  beforeUnmount() {
+    window.removeEventListener('resize', this.handleResize);
   },
   beforeRouteEnter(to, from, next) {
     const auth = getAuth();
@@ -199,14 +193,16 @@ export default {
 
         if (profileSnap.exists()) {
           const profile = profileSnap.data();
-          if (profile.role === 'user') {
+          if (!profile.admin && !profile.developer) {
             const portfolioDocRef = doc(db, user.uid, 'Stock Trading Platform', 'Portfolio', 'Initial Portfolio');
             const portfolioDocSnap = await getDoc(portfolioDocRef);
 
             if (portfolioDocSnap.exists()) {
-              next('/portfolio-display');
+              const isMobile = window.innerWidth <= 600;
+              next(isMobile ? '/portfolio-display-M' : '/portfolio-display');
             } else {
-              next('/portfolio-creation');
+              const isMobile = window.innerWidth <= 600;
+              next(isMobile ? '/portfolio-creation-m' : '/portfolio-creation');
             }
           } else {
             next();
@@ -225,7 +221,6 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background-color: #f0f2f5;
   height: 100vh;
   padding: 0;
   margin: 0;
@@ -302,24 +297,64 @@ export default {
 }
 
 .streak-card {
-  background-color: #ff903b;
+  background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
   border-radius: 10px;
-  width: 25%;
-  padding: 1em;
+  width: 70%;
+  padding: 1.5em;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   text-align: center;
 }
 
 .streak-card h2 {
   margin: 0;
-  color: #333;
-  font-size: 1.5em;
+  color: #fff;
+  font-size: 1.8em;
 }
 
 .streak-card p {
   margin: 0.5em 0 0;
   font-size: 1.5em;
-  color: #333;
+  color: #fff;
+}
+
+.streak-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 1em 0;
+  position: relative;
+}
+
+.bubble-container {
+  display: flex;
+  align-items: center;
+}
+
+.bubble {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: bold;
+  font-size: 1.2em;
+}
+
+.bubble.filled {
+  background-color: #4caf50;
+}
+
+.bubble.fiery {
+  background-color: orange;
+}
+
+.line {
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, orange, red);
 }
 
 .options {
@@ -402,5 +437,49 @@ export default {
   margin: 0;
   font-size: 1.5em;
   color: #2c3e50;
+}
+
+body {
+  background-color: #ecf0f1;
+}
+
+/* Media query for mobile devices */
+@media (max-width: 600px) {
+  .main-content {
+    padding: 1em;
+    margin: 1em; /* Add margin to prevent content from touching screen edges */
+  }
+
+  .main-content h1 {
+    font-size: 2em;
+  }
+
+  .options {
+    flex-direction: column;
+    gap: 1em;
+  }
+
+  .option {
+    width: 100%;
+    height: auto;
+    padding: 1em;
+  }
+
+  .streak-card {
+    width: 100%;
+    padding: 1em;
+  }
+
+  .streak-card h2 {
+    font-size: 1.5em;
+  }
+
+  .streak-card p {
+    font-size: 1.2em;
+  }
+
+  .streak-line {
+    flex-direction: column;
+  }
 }
 </style>
