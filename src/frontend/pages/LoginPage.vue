@@ -16,7 +16,7 @@
         </div>
         <button type="submit" class="login-btn">Login</button>
         <button type="button" @click="handleRegister" class="register-btn">Register</button>
-
+        <button type="button" @click="showForgotPasswordModal" class="forgot-password-btn">Forgot Password?</button>
         <!-- Success animation -->
         <transition name="fade">
           <div class="success-animation" v-if="loginSuccess">
@@ -29,11 +29,29 @@
       </form>
       <p v-if="errorMessage">{{ errorMessage }}</p>
     </main>
+
+    <!-- Forgot Password Modal -->
+    <transition name="fade">
+      <div v-if="isForgotPasswordModalVisible" class="modal">
+        <div class="modal-content">
+          <span @click="hideForgotPasswordModal" class="close-btn">&times;</span>
+          <h2>Forgot Password</h2>
+          <form @submit.prevent="handleForgotPassword">
+            <div class="form-group">
+              <label for="reset-email">Enter your email:</label>
+              <input type="email" id="reset-email" v-model="resetEmail" required placeholder="Email">
+            </div>
+            <button type="submit" class="reset-btn">Send Reset Link</button>
+          </form>
+          <p v-if="resetMessage">{{ resetMessage }}</p>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script>
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
 import { format, differenceInCalendarDays } from "date-fns";
 import { trackUserLogin } from '../../backend/utils/loginTracker';
@@ -44,8 +62,11 @@ export default {
     return {
       username: "",
       password: "",
+      resetEmail: "",
       errorMessage: "",
-      loginSuccess: false
+      resetMessage: "",
+      loginSuccess: false,
+      isForgotPasswordModalVisible: false
     };
   },
   methods: {
@@ -53,7 +74,7 @@ export default {
       const auth = getAuth();
       const identifier = this.username;
       const password = this.password;
-      
+
       try {
         const userCredential = await signInWithEmailAndPassword(auth, identifier, password);
         this.$emit('login-success', userCredential.user);
@@ -66,13 +87,22 @@ export default {
         this.loginSuccess = false;
       }
     },
+    async handleForgotPassword() {
+      const auth = getAuth();
+      try {
+        await sendPasswordResetEmail(auth, this.resetEmail);
+        this.resetMessage = "Password reset link sent to your email.";
+      } catch (error) {
+        this.resetMessage = error.message;
+      }
+    },
     async updateLoginStreak(userId) {
       const db = getFirestore();
       const streakRef = doc(db, userId, 'Login Streak');
       const streakSnap = await getDoc(streakRef);
       const today = new Date();
       const formattedToday = format(today, 'yyyy-MM-dd');
-      
+
       if (streakSnap.exists()) {
         const streakData = streakSnap.data();
         const lastLoginDate = new Date(streakData.lastLogin);
@@ -98,6 +128,14 @@ export default {
     },
     handleRegister() {
       this.$router.push({ name: 'CreateAccount' });
+    },
+    showForgotPasswordModal() {
+      this.isForgotPasswordModalVisible = true;
+    },
+    hideForgotPasswordModal() {
+      this.isForgotPasswordModalVisible = false;
+      this.resetEmail = "";
+      this.resetMessage = "";
     }
   },
   mounted() {
@@ -273,6 +311,92 @@ p {
   stroke-dasharray: 48;
   stroke-dashoffset: 48;
   animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+}
+.forgot-password-btn {
+  background-color: transparent;
+  color: #007bff;
+  border: none;
+  cursor: pointer;
+  text-align: center;
+  display: block;
+  margin: 10px auto;
+  font-size: 0.9em;
+}
+
+.forgot-password-btn:hover {
+  text-decoration: underline;
+}
+
+.modal {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #fff;
+  padding: 2em;
+  border-radius: 10px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  max-width: 400px;
+  width: 100%;
+}
+
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  font-size: 1.5em;
+  cursor: pointer;
+}
+
+.reset-btn {
+  width: 100%;
+  padding: 0.75em;
+  margin-top: 10px;
+  background-color: #102454;
+  border: none;
+  color: white;
+  font-size: 1em;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: transform 0.3s, background-color 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.reset-btn:hover {
+  transform: scale(1.05);
+  background-color: #0d1b3f; /* Darker shade on hover */
+}
+
+.reset-btn:active {
+  transform: scale(0.95);
+}
+
+.reset-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 200%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 100%);
+  transition: all 0.5s;
+}
+
+.reset-btn:hover::before {
+  left: 100%;
+  transition: all 0.5s;
+  animation: shimmer 1.5s infinite;
 }
 
 @keyframes stroke {
