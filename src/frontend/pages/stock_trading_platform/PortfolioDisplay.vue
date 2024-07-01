@@ -101,7 +101,7 @@
               </li>
             </div>
           </div>
-          <router-link to="/basics-of-investing" class="financial-courses-card">
+          <router-link v-if="showFinancialCoursesCard" to="/basics-of-investing" class="financial-courses-card">
             <div class="card-content">
               <h3>Basics of Investing</h3>
               <p>25 minutes</p>
@@ -152,6 +152,7 @@ export default {
       isAdmin: false,
       isDeveloper: false, // Added data property for developer status
       showModal: false, // Add this line
+      showFinancialCoursesCard: true, // New data property
       companies: [
         { name: 'Amazon', symbol: 'AMZN', allocation: 0, initialStockPrice: 0 },
         { name: 'Apple', symbol: 'AAPL', allocation: 0, initialStockPrice: 0 },
@@ -232,6 +233,7 @@ export default {
     await this.updateStockPrices();
     await this.fetchStickyNotes();
     await this.fetchTotalFunds();
+    await this.checkCompletedCourses(user);
     await this.fetchLoginStreak(); // Fetch login streak
     this.adjustStickyNotesHeight();
   },
@@ -314,6 +316,16 @@ export default {
           } else {
             this.loginStreak = 0;
           }
+        }
+      },
+      async checkCompletedCourses(user) {
+        const db = getFirestore();
+        const coursesRef = doc(db, user.uid, 'Completed Courses');
+        const coursesDoc = await getDoc(coursesRef);
+        if (coursesDoc.exists() && coursesDoc.data()['Basics of Investing']) {
+          this.showFinancialCoursesCard = false;
+        } else {
+          this.showFinancialCoursesCard = true;
         }
       },
       incrementRequestCount() {
