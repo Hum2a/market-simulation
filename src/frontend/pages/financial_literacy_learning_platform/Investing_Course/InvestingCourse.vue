@@ -12,7 +12,8 @@
         <p class="animate-text">This course will guide you through the basics of investing. Click the button below to start learning!</p>
         <div class="buttons">
           <button @click="startCourse" class="animate-button">Course Content</button>
-          <button :class="{ disabled: !examEnabled }" :disabled="!examEnabled" @click="startExam">Exam</button>
+          <button :class="{ disabled: !examEnabled || passed }" :disabled="!examEnabled || passed" @click="startExam">Exam</button>
+          <button v-if="courseCompleted && passed" @click="completeCourse" class="animate-button">Completed Course</button>
         </div>
       </div>
     </transition>
@@ -35,7 +36,7 @@
 </template>
 
 <script>
-import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { getFirestore, doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import InvestingCourseContent from './InvestingCourseContent.vue';
 import InvestingCourseExam from './InvestingCourseExam.vue';
@@ -50,7 +51,10 @@ export default {
     return {
       showContent: false,
       showExam: false,
-      examEnabled: false
+      examEnabled: false,
+      passed: false,
+      contentCompleted: false,
+      courseCompleted: false
     };
   },
   async mounted() {
@@ -74,7 +78,49 @@ export default {
         const courseRef = doc(db, user.uid, 'Financial Literacy Courses', 'Basics of Investing', 'Course Content');
         const courseDoc = await getDoc(courseRef);
         if (courseDoc.exists()) {
-          this.examEnabled = courseDoc.data().Completed || false;
+          this.contentCompleted = courseDoc.data().Completed || false;
+        }
+
+        const examRef = doc(db, user.uid, 'Financial Literacy Courses', 'Basics of Investing', 'Exam Results');
+        const examDoc = await getDoc(examRef);
+        if (examDoc.exists()) {
+          this.passed = examDoc.data().Passed || false;
+        }
+
+        const completeRef = doc(db, user.uid, 'Completed Courses');
+        const completeDoc = await getDoc(completeRef);
+        if (completeDoc.exists()) {
+          this.courseCompleted = completeDoc.data().['Basics Of Investing'] || false; 
+        }
+
+        if (this.courseCompleted) {
+          this.$router.push('/stock-trading-select');
+        } else {
+          this.examEnabled = this.contentCompleted && !this.passed;
+        }
+      }
+    },
+    async completeCourse() {
+      const db = getFirestore();
+      const auth = getAuth();
+      const user = auth.currentUser;
+
+      if (user) {
+        const fundsRef = doc(db, user.uid, 'Total Funds');
+        const userDoc = await getDoc(fundsRef);
+
+        const ccRef = doc(db, user.uid, 'Completed Courses');
+        await setDoc(ccRef, {
+          'Basics of Investing': true
+        });
+
+        if (userDoc.exists()) {
+          const totalFunds = userDoc.data().totalFunds || 0;
+          await updateDoc(fundsRef, {
+            totalFunds: totalFunds + 100
+          });
+
+          this.$router.push('/stock-trading-select');
         }
       }
     },
@@ -102,7 +148,6 @@ html, body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 100vh;
   background: #f0f4f8;
   border-radius: 8px;
   text-align: center;
