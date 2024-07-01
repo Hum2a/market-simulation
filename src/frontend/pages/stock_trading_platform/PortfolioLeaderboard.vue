@@ -1,6 +1,17 @@
 <template>
   <div class="leaderboard-card">
     <h2>Leaderboard</h2>
+
+    <!-- Dropdown Picker for Group Code, visible only to admin or developer users -->
+    <div v-if="isAdminOrDeveloper" class="group-code-picker">
+      <label for="groupCode">Select Group Code:</label>
+      <select id="groupCode" v-model="selectedGroupCode" @change="fetchLeaderboard">
+        <option v-for="code in groupCodes" :key="code.code" :value="code.code">
+          {{ code.code }} ({{ code.count }} users)
+        </option>
+      </select>
+    </div>
+
     <table class="leaderboard-table">
       <thead>
         <tr>
@@ -48,9 +59,12 @@ export default {
       currentUser: null,
       currentUserRank: null,
       selectedDate: new Date(),
-      requestCounter: 0, // Initialize the request counter
-      isDeveloper: false, // Initialize the isDeveloper flag
-      currentUserGroupCode: null // Initialize currentUserGroupCode
+      requestCounter: 0,
+      isDeveloper: false,
+      isAdmin: false,
+      currentUserGroupCode: null,
+      selectedGroupCode: null,
+      groupCodes: [] // Initialize groupCodes array with counts
     };
   },
   computed: {
@@ -59,6 +73,9 @@ export default {
     },
     isTopUser() {
       return this.currentUser && this.topUsers.some(user => user.uid === this.currentUser.uid);
+    },
+    isAdminOrDeveloper() {
+      return this.isAdmin || this.isDeveloper;
     }
   },
   methods: {
@@ -69,7 +86,7 @@ export default {
       }
 
       const db = getFirestore();
-      this.requestCounter++; // Increment request counter
+      this.requestCounter++;
       console.log(`Fetching portfolio for user: ${uid} on date: ${date} (Request count: ${this.requestCounter})`);
 
       const portfolioDocRef = doc(db, uid, 'Stock Trading Platform', 'Portfolio', `${date} Portfolio`);
@@ -79,12 +96,29 @@ export default {
         return { totalAllocation: portfolioDoc.data().totalAllocation, date };
       } else {
         const previousDate = subDays(new Date(date), 1);
-        if (differenceInDays(this.selectedDate, previousDate) > 30) { // Limit the number of retries
+        if (differenceInDays(this.selectedDate, previousDate) > 30) {
           console.warn(`Exceeded 30 days of retries for user: ${uid}`);
           return { totalAllocation: 0, date: null };
         }
         return await this.fetchPortfolioForDate(uid, format(previousDate, 'yyyy-MM-dd'), retries - 1);
       }
+    },
+    async fetchGroupCodes() {
+      const db = getFirestore();
+      const codesSnapshot = await getDocs(collection(db, 'Login Codes'));
+
+      const groupCodes = [];
+      for (const doc of codesSnapshot.docs) {
+        const groupCode = doc.id;
+
+        const usersQuery = query(collection(db, 'Users'), where('groupCode', '==', groupCode));
+        const usersSnapshot = await getDocs(usersQuery);
+        const userCount = usersSnapshot.size;
+
+        groupCodes.push({ code: groupCode, count: userCount });
+      }
+
+      this.groupCodes = groupCodes;
     },
     async fetchLeaderboard() {
       const db = getFirestore();
@@ -96,7 +130,6 @@ export default {
         return;
       }
 
-      // Fetch current user's profile to get groupCode
       this.requestCounter++;
       console.log(`Fetching current user profile (Request count: ${this.requestCounter})`);
 
@@ -105,16 +138,18 @@ export default {
 
       if (currentUserProfileSnap.exists()) {
         this.currentUserGroupCode = currentUserProfileSnap.data().groupCode;
+        if (!this.selectedGroupCode) {
+          this.selectedGroupCode = this.currentUserGroupCode;
+        }
       } else {
         console.error("Current user profile not found");
         return;
       }
 
-      // Fetch users with the same groupCode
-      this.requestCounter++; // Increment request counter for fetching users
-      console.log(`Fetching users collection with groupCode ${this.currentUserGroupCode} (Request count: ${this.requestCounter})`);
+      this.requestCounter++;
+      console.log(`Fetching users collection with groupCode ${this.selectedGroupCode} (Request count: ${this.requestCounter})`);
 
-      const usersQuery = query(collection(db, 'Users'), where('groupCode', '==', this.currentUserGroupCode));
+      const usersQuery = query(collection(db, 'Users'), where('groupCode', '==', this.selectedGroupCode));
       const usersSnapshot = await getDocs(usersQuery);
       const users = usersSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
 
@@ -148,6 +183,7 @@ export default {
         if (profileSnap.exists()) {
           const profileData = profileSnap.data();
           this.isDeveloper = profileData.role === 'developer';
+          this.isAdmin = profileData.role === 'admin';
         }
       }
     },
@@ -156,6 +192,7 @@ export default {
     }
   },
   async created() {
+    await this.fetchGroupCodes();
     await this.fetchLeaderboard();
   }
 };
@@ -185,6 +222,23 @@ export default {
   padding-bottom: 0.5em;
   text-transform: uppercase;
   letter-spacing: 1px;
+}
+
+.group-code-picker {
+  margin-bottom: 1em;
+}
+
+.group-code-picker label {
+  margin-right: 1em;
+  font-weight: bold;
+  color: #102454;
+}
+
+.group-code-picker select {
+  padding: 0.5em;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 1em;
 }
 
 .leaderboard-table {
