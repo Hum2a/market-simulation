@@ -75,7 +75,7 @@
               </div>
               <button @click="updateAllGroupValues(index)" class="modern-button enter-all-btn">Enter All</button>
             </div>
-            <button @click="generateRandomValues(index)" class="modern-button">Generate Random Values</button>
+            <!-- <button @click="generateRandomValues(index)" class="modern-button">Generate Random Values</button> -->
             <div class="pie-chart-container">
                 <canvas :id="'pieChart_' + index"></canvas>
             </div>

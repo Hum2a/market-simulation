@@ -85,7 +85,7 @@ export default {
     rankedResults() {
       if (!this.dataReady) return [];
       return this.finalResults.map((result, index) => {
-        const numberOfYears = this.calculateNumberOfYears();
+        // const numberOfYears = this.calculateNumberOfYears();
         const initialTotalWorth = this.getInitialTotalWorth(index);
         const finalTotalWorth = [
           result.equity,
@@ -96,7 +96,8 @@ export default {
         ].reduce((acc, value) => acc + Number(value), 0);
         const totalGains = finalTotalWorth - initialTotalWorth;
         const roi = ((finalTotalWorth - initialTotalWorth) / initialTotalWorth) * 100;
-        const annualizedReturn = (Math.pow((finalTotalWorth / initialTotalWorth), 1 / numberOfYears) - 1) * 100;
+        // const annualizedReturn = (Math.pow((finalTotalWorth / initialTotalWorth), 1 / numberOfYears) - 1) * 100;
+        const annualizedReturn = roi / 5;
 
         const mostGainsAsset = this.calculateMostGainsAsset(index);
 
