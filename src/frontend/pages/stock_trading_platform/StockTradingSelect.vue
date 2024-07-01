@@ -27,7 +27,7 @@
           <!-- <router-link to="/admin-portfolio-creation" class="option admin">Admin Portfolio Creation</router-link> -->
           <!-- <router-link to="/admin-portfolio-assign" class="option admin">Assign Portfolios</router-link> -->
           <router-link to="/sticky-note-creator" class="option admin">Sticky Note Creator</router-link>
-          <router-link to="/stock-market-today" class="option admin">Stock Market Today</router-link>
+          <!-- <router-link to="/stock-market-today" class="option admin">Stock Market Today</router-link> -->
         </template>
       </div>
       <div class="options">
