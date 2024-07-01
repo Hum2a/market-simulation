@@ -1,7 +1,10 @@
 <template>
     <div class="content-container">
-      <transition name="fade">
-        <component :is="currentPageComponent" @next="nextPage" @complete="completeCourse" />
+      <transition
+        name="fade"
+        mode="out-in"
+      >
+        <component :is="currentPageComponent" :key="currentPage" @next="nextPage" @complete="completeCourse" />
       </transition>
     </div>
   </template>

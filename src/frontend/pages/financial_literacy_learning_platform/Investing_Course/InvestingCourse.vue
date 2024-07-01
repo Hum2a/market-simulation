@@ -23,12 +23,12 @@
     </transition>
     <transition name="slide-fade">
       <div v-if="showContent">
-        <InvestingCourseContent @complete="checkExamEligibility" />
+        <InvestingCourseContent @complete="handleComplete" />
       </div>
     </transition>
     <transition name="slide-fade">
       <div v-if="showExam">
-        <InvestingCourseExam />
+        <InvestingCourseExam @back-to-course="handleComplete" />
       </div>
     </transition>
   </div>
@@ -78,6 +78,11 @@ export default {
         }
       }
     },
+    handleComplete() {
+      this.checkExamEligibility();
+      this.showContent = false;
+      this.showExam = false;
+    },
     goBack() {
       this.showContent = false;
       this.showExam = false;
@@ -87,51 +92,17 @@ export default {
 </script>
 
 <style scoped>
-/* Keyframes for animations */
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slide-in {
-  from { transform: translateY(-100%); }
-  to { transform: translateY(0); }
-}
-
-@keyframes pop-in {
-  0% { transform: scale(0); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-}
-
-@keyframes button-hover {
-  0% { background-color: #0056b3; }
-  100% { background-color: #007bff; }
-}
-
-/* Transitions */
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.5s;
-}
-.fade-enter, .fade-leave-to {
-  opacity: 0;
-}
-
-.slide-fade-enter-active {
-  animation: slide-in 0.5s forwards;
-}
-.slide-fade-leave-active {
-  transition: transform 0.5s;
-}
-.slide-fade-enter, .slide-fade-leave-to {
-  transform: translateY(-100%);
+/* Ensure html and body take full height */
+html, body {
+  height: 100%;
+  margin: 0;
 }
 
 .course-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 100vh;
   background: #f0f4f8;
   border-radius: 8px;
   text-align: center;
@@ -251,5 +222,49 @@ button.disabled {
   border-radius: 8px;
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
   margin-top: 20px;
+}
+
+/* Keyframes for animations */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-in {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes pop-in {
+  0% { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes button-hover {
+  0% { background-color: #0056b3; }
+  100% { background-color: #007bff; }
+}
+
+/* Transitions */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.5s;
+}
+.fade-enter, .fade-leave-to {
+  opacity: 0;
+}
+
+.slide-fade-enter-active {
+  animation: slide-in 0.5s forwards;
+}
+.slide-fade-leave-active {
+  transition: transform 0.5s;
+}
+.slide-fade-enter, .slide-fade-leave-to {
+  transform: translateY(-100%);
 }
 </style>
