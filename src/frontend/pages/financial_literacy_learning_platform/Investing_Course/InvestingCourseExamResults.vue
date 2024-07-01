@@ -1,22 +1,91 @@
 <template>
     <div class="results-container">
-      <h2>Exam Results</h2>
-      <p>You have completed the exam!</p>
-      <p>Your Score: {{ score }} / 10</p>
-      <button @click="goBackToCourse">Back to Course</button>
+      <div class="score-card">
+        <h2>Exam Results</h2>
+        <p class="score">Your Score: {{ score }} / 10</p>
+        <p class="status">{{ passed ? 'Congratulations, you passed!' : 'Unfortunately, you did not pass.' }}</p>
+      </div>
+      <div class="results-list">
+        <div v-for="(result, index) in results" :key="index" class="result-card">
+          <p class="question-text">Question {{ index + 1 }}</p>
+          <p :class="result.correct ? 'correct-answer' : 'incorrect-answer'">
+            Your answer: {{ result.userAnswer }}
+          </p>
+          <p v-if="!result.correct" class="correct-answer">
+            Correct answer: {{ result.correctAnswer }}
+          </p>
+        </div>
+      </div>
+      <button @click="goBackToCourse" class="back-button">Back to Course</button>
     </div>
   </template>
   
   <script>
+  import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
+  import { getAuth } from "firebase/auth";
+  
   export default {
     name: 'ExamResults',
-    props: {
-      score: {
-        type: Number,
-        required: true
-      }
+    data() {
+      return {
+        results: [],
+        score: 0,
+        passed: false
+      };
+    },
+    async mounted() {
+      await this.fetchResults();
     },
     methods: {
+      async fetchResults() {
+        const db = getFirestore();
+        const auth = getAuth();
+        const user = auth.currentUser;
+  
+        if (user) {
+          const examRef = doc(db, user.uid, 'Financial Literacy Courses', 'Basics of Investing', 'Exam Results');
+          const examDoc = await getDoc(examRef);
+  
+          if (examDoc.exists()) {
+            const answers = examDoc.data();
+            const correctAnswers = {
+              1: 'B',
+              2: 'B',
+              3: 'B',
+              4: 'B',
+              5: 'B',
+              6: 'A',
+              7: 'B',
+              8: 'B',
+              9: 'A',
+              10: 'B'
+            };
+            let score = 0;
+  
+            for (let i = 1; i <= 10; i++) {
+              const userAnswer = answers[`Question ${i}`];
+              const correctAnswer = correctAnswers[i];
+              const correct = userAnswer === correctAnswer;
+              if (correct) {
+                score++;
+              }
+              this.results.push({
+                question: i,
+                userAnswer,
+                correctAnswer,
+                correct
+              });
+            }
+  
+            this.score = score;
+            this.passed = score >= 7;
+            await this.updatePassStatus(this.passed ? 'Passed' : 'Failed', examRef);
+          }
+        }
+      },
+      async updatePassStatus(status, examRef) {
+        await setDoc(examRef, { [status]: true }, { merge: true });
+      },
       goBackToCourse() {
         this.$emit('back-to-course');
       }
@@ -27,19 +96,61 @@
   <style scoped>
   .results-container {
     padding: 20px;
-    background: #ecf0f1;
+    background: #f0f4f8;
     border-radius: 8px;
     text-align: center;
     animation: fade-in 1s ease-out;
+    font-family: 'Arial, sans-serif';
+  }
+  
+  .score-card {
+    background: #2c3e50;
+    color: #ecf0f1;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
     box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
   }
   
-  h2 {
-    color: #34495e;
-    margin-bottom: 20px;
+  .score {
+    font-size: 1.5em;
+    margin: 0;
   }
   
-  button {
+  .status {
+    font-size: 1.2em;
+    margin-top: 10px;
+  }
+  
+  .results-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .result-card {
+    background: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
+    text-align: left;
+  }
+  
+  .question-text {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin: 0 0 10px;
+  }
+  
+  .correct-answer {
+    color: #27ae60;
+  }
+  
+  .incorrect-answer {
+    color: #c0392b;
+  }
+  
+  .back-button {
     padding: 10px 20px;
     font-size: 1.1em;
     border: none;
@@ -49,15 +160,22 @@
     background-color: #3498db;
     color: white;
     box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    margin-top: 20px;
   }
   
-  button:hover {
+  .back-button:hover {
     background: #2980b9;
     color: #fff;
   }
   
-  button:active {
+  .back-button:active {
     transform: scale(0.95);
+  }
+  
+  /* Keyframes for animations */
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
   </style>
   

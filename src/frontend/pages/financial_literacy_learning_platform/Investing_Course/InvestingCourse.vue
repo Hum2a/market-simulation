@@ -13,7 +13,7 @@
         <div class="buttons">
           <button @click="startCourse" class="animate-button">Course Content</button>
           <button :class="{ disabled: !examEnabled || passed }" :disabled="!examEnabled || passed" @click="startExam">Exam</button>
-          <button v-if="courseCompleted && passed" @click="completeCourse" class="animate-button">Completed Course</button>
+          <button v-if="contentCompleted && passed" @click="completeCourse" class="animate-button">Completed Course</button>
         </div>
       </div>
     </transition>
@@ -90,7 +90,7 @@ export default {
         const completeRef = doc(db, user.uid, 'Completed Courses');
         const completeDoc = await getDoc(completeRef);
         if (completeDoc.exists()) {
-          this.courseCompleted = completeDoc.data().['Basics Of Investing'] || false; 
+          this.courseCompleted = completeDoc.data()['Basics of Investing'] || false;
         }
 
         if (this.courseCompleted) {

@@ -10,9 +10,6 @@
   </template>
   
   <script>
-  import { getFirestore, doc, setDoc } from "firebase/firestore";
-  import { getAuth } from "firebase/auth";
-  
   // Import all question pages
   import CourseQuestion1 from './questions/Question1.vue';
   import CourseQuestion2 from './questions/Question2.vue';
@@ -55,28 +52,21 @@
     },
     methods: {
       async nextQuestion(answer) {
-        await this.saveAnswer(this.currentPage, answer);
+        console.log(`nextQuestion called with answer: ${answer}`);
+        console.log(`Current page before increment: ${this.currentPage}`);
         if (this.currentPage < this.totalPages) {
           this.currentPage++;
+          console.log(`Current page after increment: ${this.currentPage}`);
         } else {
           this.completeExam();
         }
       },
-      async saveAnswer(questionNumber, answer) {
-        const db = getFirestore();
-        const auth = getAuth();
-        const user = auth.currentUser;
-        if (user) {
-          const examRef = doc(db, user.uid, 'Financial Literacy Courses', 'Basics of Investing', 'Exam Results');
-          await setDoc(examRef, {
-            [`Question ${questionNumber}`]: answer
-          }, { merge: true });
-        }
-      },
       completeExam() {
+        console.log('Exam completed');
         this.showResults = true;
       },
       backToCourse() {
+        console.log('Back to course');
         this.$emit('back-to-course');
       }
     }
