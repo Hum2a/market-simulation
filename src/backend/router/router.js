@@ -28,6 +28,7 @@ import PortfolioDelete from '../../frontend/pages/stock_trading_platform/Portfol
 import UserManager from '../../frontend/pages/UserManager.vue';
 import CodeManager from '../../frontend/pages/CodeManager.vue';
 import BasicOfFinancialLiteracy from '../../frontend/pages/financial_literacy_learning_platform/BasicOfFinancialLiteracy.vue';
+import BasicsOfInvesting from '../../frontend/pages/financial_literacy_learning_platform/Investing_Course/InvestingCourse.vue';
 import StockMarketToday from '../../frontend/pages/stock_trading_platform/StockMarketToday.vue';
 
 import { getAuth } from "firebase/auth";
@@ -201,6 +202,11 @@ const routes = [
     path: '/basics-of-financial-literacy',
     name: 'BasicsOfFinancialLiteracy',
     component: BasicOfFinancialLiteracy
+  },
+  {
+    path: '/basics-of-investing',
+    name: 'BasicsOfInvesting',
+    component: BasicsOfInvesting,
   },
   {
     path: '/stock-market-today',
