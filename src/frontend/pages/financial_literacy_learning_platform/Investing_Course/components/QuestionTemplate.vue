@@ -1,53 +1,84 @@
 <template>
-    <div class="question-container">
-      <h2>{{ question.text }}</h2>
-      <ul>
-        <li v-for="option in question.options" :key="option">
-          <button @click="selectAnswer(option)">{{ option }}</button>
-        </li>
-      </ul>
-    </div>
-  </template>
-  
-  <script>
-  export default {
-    name: 'QuestionTemplate',
-    props: {
-      question: {
-        type: Object,
-        required: true
-      }
-    },
-    methods: {
-      selectAnswer(option) {
-        this.$emit('answered', option);
-      }
+  <div class="question-container">
+    <h2 class="question-text">{{ question.text }}</h2>
+    <ul class="options-list">
+      <li v-for="option in question.options" :key="option" class="option-item">
+        <button @click="selectAnswer(option)" class="option-button">{{ option }}</button>
+      </li>
+    </ul>
+  </div>
+</template>
+
+<script>
+export default {
+  name: 'QuestionTemplate',
+  props: {
+    question: {
+      type: Object,
+      required: true
     }
-  };
-  </script>
-  
-  <style scoped>
-  .question-container {
-    background: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  },
+  methods: {
+    selectAnswer(option) {
+      this.$emit('answered', option);
+    }
   }
-  
-  button {
-    display: block;
-    width: 100%;
-    margin: 10px 0;
-    padding: 10px;
-    background: #007bff;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  
-  button:hover {
-    background: #0056b3;
-  }
-  </style>
-  
+};
+</script>
+
+<style scoped>
+.question-container {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  animation: fade-in 0.5s ease-out;
+  max-width: 600px;
+  margin: 40px auto;
+}
+
+.question-text {
+  color: #34495e;
+  margin-bottom: 20px;
+}
+
+.options-list {
+  list-style-type: none;
+  padding: 0;
+}
+
+.option-item {
+  margin: 10px 0;
+}
+
+.option-button {
+  display: block;
+  width: 100%;
+  padding: 15px;
+  background: #3498db;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.3s ease;
+  font-size: 1em;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.option-button:hover {
+  background: #2980b9;
+  transform: scale(1.05);
+}
+
+.option-button:active {
+  background: #1d6fa5;
+  transform: scale(0.95);
+}
+
+/* Keyframes for animations */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+</style>
