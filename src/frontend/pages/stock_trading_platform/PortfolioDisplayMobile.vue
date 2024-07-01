@@ -1,109 +1,121 @@
 <template>
-    <div class="portfolio-display">
-      <header class="header">
-        <img src="../../assets/LifeSmartLogo.png" alt="Logo" class="logo" />
-        <nav class="header-links">
-          <router-link v-if="isAdmin || isDeveloper" to="/stock-trading-select" class="nav-link">Stock Trading Tool</router-link>
-          <button @click="refreshData" class="refresh-button">Refresh Data</button>
-        </nav>
-      </header>
-      <main class="main-content">
-        <div class="top-cards">
-          <div class="wallet-card" v-if="totalFunds !== null">
+  <div class="portfolio-display">
+    <header class="header">
+      <img src="../../assets/LifeSmartLogo.png" alt="Logo" class="logo" />
+      <nav class="header-links">
+        <router-link v-if="isAdmin || isDeveloper" to="/stock-trading-select" class="nav-link">Stock Trading Tool</router-link>
+        <button @click="refreshData" class="refresh-button">Refresh Data</button>
+      </nav>
+    </header>
+    <main class="main-content">
+      <div class="top-cards">
+        <div class="wallet-card" v-if="totalFunds !== null">
+          <div class="wallet-header">
             Wallet <br> £{{ totalFunds }}
-            <router-link v-if="totalFunds > 0" to="/portfolio-append-M" class="button-link">Invest</router-link>
+            <span class="info-icon" @click="showModal = true">i</span>
           </div>
-          <LoginStreak v-if="loginStreak !== null" />
+          <router-link v-if="totalFunds > 0" to="/portfolio-append" class="button-link">Invest</router-link>
         </div>
-        <div class="request-counter-card" v-if="isDeveloper">
-          Firestore Requests: {{ firestoreRequestCount }}
-        </div>
-        <div v-if="loading">
-          <p>Loading...</p>
-          <progress :value="loadingProgress" max="100"></progress>
-        </div>
-        <div v-else-if="!portfolio">No portfolio found.</div>
-        <div v-else>
-          <div class="portfolio-summary">
-            <div class="summary-leaderboard">
-              <div class="portfolio-summary-card">
-                <h2>Portfolio Summary</h2>
-                <p><strong>Amount Invested:</strong> <span>£{{ roundedValue(originalValue) }}</span></p>
-                <p><strong>Current Value:</strong> <span>£{{ roundedValue(currentValue) }}</span></p>
-                <p><strong>Percentage Gain/Loss:</strong> <span>{{ roundedValue(percentageGainLoss) }}%</span></p>
-                <p><strong>Best Performing Stock:</strong> <span>{{ bestPerformingStock.name }} (<span class="highlight">{{ roundedValue(bestPerformingStock.percentageChange) }}%</span>)</span></p>
-                <p><strong>Worst Performing Stock:</strong> <span>{{ worstPerformingStock.name }} (<span class="highlight">{{ roundedValue(worstPerformingStock.percentageChange) }}%</span>)</span></p>
-                <p><strong>Time Invested:</strong> <span>{{ timeInvested }} days</span></p>
-              </div>
-              <portfolio-leaderboard />
+        <LoginStreak v-if="loginStreak !== null" />
+      </div>
+      <p class="login-streak-info" v-if="loginStreak !== null">Log in 5 days in a row to receive an extra £100</p>
+      <MessageModal 
+        v-if="showModal"
+        :isVisible="showModal" 
+        title="Information"
+        message="Log-in 5 days in a row to get an extra £100 to invest. 
+        Complete a course available below to get an extra £100 to invest"
+        @close="showModal = false"
+      />
+      <div class="request-counter-card" v-if="isDeveloper">
+        Firestore Requests: {{ firestoreRequestCount }}
+      </div>
+      <div v-if="loading">
+        <p>Loading...</p>
+        <progress :value="loadingProgress" max="100"></progress>
+      </div>
+      <div v-else-if="!portfolio">No portfolio found.</div>
+      <div v-else>
+        <div class="portfolio-summary">
+          <div class="summary-leaderboard">
+            <div class="portfolio-summary-card">
+              <h2>Portfolio Summary</h2>
+              <p><strong>Amount Invested:</strong> <span>£{{ roundedValue(originalValue) }}</span></p>
+              <p><strong>Current Value:</strong> <span>£{{ roundedValue(currentValue) }}</span></p>
+              <p><strong>Percentage Gain/Loss:</strong> <span>{{ roundedValue(percentageGainLoss) }}%</span></p>
+              <p><strong>Best Performing Stock:</strong> <span>{{ bestPerformingStock.name }} (<span class="highlight">{{ roundedValue(bestPerformingStock.percentageChange) }}%</span>)</span></p>
+              <p><strong>Worst Performing Stock:</strong> <span>{{ worstPerformingStock.name }} (<span class="highlight">{{ roundedValue(worstPerformingStock.percentageChange) }}%</span>)</span></p>
+              <p><strong>Time Invested:</strong> <span>{{ timeInvested }} days</span></p>
             </div>
-            <div class="portfolio-graph-card">
-              <h2>Portfolio Value Over Time</h2>
-              <line-chart v-if="portfolioChartData" :chart-data="portfolioChartData" :chart-options="chartOptions"></line-chart>
-            </div>
+            <portfolio-leaderboard />
           </div>
-          <div class="portfolio-details">
-            <div class="portfolio-pie-card">
-              <h2>Portfolio Distribution</h2>
-              <pie-chart v-if="pieChartData" :chart-data="pieChartData" :chart-options="pieChartOptions" class="pie-chart"></pie-chart>
-            </div>
-            <div class="portfolio-table-card">
-              <h2>Portfolio Details</h2>
-              <table class="portfolio-table">
-                <thead>
-                  <tr>
-                    <th>Stock</th>
-                    <th>Original Value</th>
-                    <th>Initial Stock Price</th>
-                    <th>Current Value</th>
-                    <th>Current Stock Price (Real Time)</th>
+          <div class="portfolio-graph-card">
+            <h2>Portfolio Value Over Time</h2>
+            <line-chart v-if="portfolioChartData" :chart-data="portfolioChartData" :chart-options="chartOptions"></line-chart>
+          </div>
+        </div>
+        <div class="portfolio-details">
+          <div class="portfolio-pie-card">
+            <h2>Portfolio Distribution</h2>
+            <pie-chart v-if="pieChartData" :chart-data="pieChartData" :chart-options="pieChartOptions" class="pie-chart"></pie-chart>
+          </div>
+          <div class="portfolio-table-card">
+            <h2>Portfolio Details</h2>
+            <table class="portfolio-table">
+              <thead>
+                <tr>
+                  <th>Stock</th>
+                  <th>Original Value</th>
+                  <th>Initial Stock Price</th>
+                  <th>Current Value</th>
+                  <th>Current Stock Price (Real Time)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template v-for="company in filteredCompanies" :key="company.name">
+                  <tr @click="toggleStock(company)">
+                    <td>{{ company.name }}</td>
+                    <td>£{{ roundedValue(company.allocation) }}</td>
+                    <td>${{ company.initialStockPrice }}</td>
+                    <td>£{{ roundedValue(company.currentValue || 0) }}</td>
+                    <td>${{ roundedValue(company.currentStockPrice) }}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  <template v-for="company in filteredCompanies" :key="company.name">
-                    <tr @click="toggleStock(company)">
-                      <td>{{ company.name }}</td>
-                      <td>£{{ roundedValue(company.allocation) }}</td>
-                      <td>${{ company.initialStockPrice }}</td>
-                      <td>£{{ roundedValue(company.currentValue || 0) }}</td>
-                      <td>${{ roundedValue(company.currentStockPrice) }}</td>
-                    </tr>
-                    <tr v-if="expandedStock === company.symbol" class="expanded-row">
-                      <td colspan="5">
-                        <line-chart ref="lineChart" :chart-data="officialChartData" v-if="officialChartData && expandedStock === company.symbol"></line-chart>
-                      </td>
-                    </tr>
-                  </template>
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <div class="additional-info">
-            <div class="notice-board-card">
-              <h2>Notice Board</h2>
-              <div class="sticky-notes">
-                <li v-for="note in stickyNotes" :key="note.id" class="sticky-note">
-                  <h3>{{ note.title }}</h3>
-                  <p>{{ note.content }}</p>
-                  <p v-if="note.date">Date: {{ formatDate(note.date) }}</p>
-                  <a v-if="note.links" :href="note.links" target="_blank">{{ note.linkName || note.links }}</a>
-                </li>
-              </div>
-            </div>
-            <router-link to="/basics-of-financial-literacy" class="financial-courses-card">
-              <div class="card-content">
-                <h3>Basics of Financial Literacy</h3>
-                <p>15 minutes</p>
-                <p>Gain £300</p>
-              </div>
-            </router-link>
+                  <tr v-if="expandedStock === company.symbol" class="expanded-row">
+                    <td colspan="5">
+                      <line-chart ref="lineChart" :chart-data="officialChartData" v-if="officialChartData && expandedStock === company.symbol"></line-chart>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
           </div>
         </div>
-      </main>
-    </div>
-  </template>
+        <div class="additional-info">
+          <div class="notice-board-card">
+            <h2>Notice Board</h2>
+            <div class="sticky-notes">
+              <li v-for="note in stickyNotes" :key="note.id" class="sticky-note">
+                <h3>{{ note.title }}</h3>
+                <p>{{ note.content }}</p>
+                <p v-if="note.date">Date: {{ formatDate(note.date) }}</p>
+                <a v-if="note.links" :href="note.links" target="_blank">{{ note.linkName || note.links }}</a>
+              </li>
+            </div>
+          </div>
+          <!-- <router-link to="/basics-of-financial-literacy" class="financial-courses-card">
+            <div class="card-content">
+              <h3>Basics of Financial Literacy</h3>
+              <p>15 minutes</p>
+              <p>Gain £300</p>
+            </div>
+          </router-link> -->
+        </div>
+      </div>
+    </main>
+  </div>
+</template>
   
-  <script>
+<script>
   import { getFirestore, doc, getDocs, collection, query, orderBy, getDoc, setDoc } from "firebase/firestore";
   import { getAuth } from "firebase/auth";
   import { format, differenceInDays } from 'date-fns';
@@ -111,6 +123,7 @@
   import PieChart from './components/PieChart.vue';
   import PortfolioLeaderboard from './PortfolioLeaderboard.vue';
   import LoginStreak from './components/LoginStreak.vue';
+  import MessageModal from "./components/MessageModal.vue";
   
   export default {
     name: 'PortfolioDisplay',
@@ -118,7 +131,8 @@
       LineChart,
       PieChart,
       PortfolioLeaderboard,
-      LoginStreak
+      LoginStreak,
+      MessageModal
     },
     data() {
       return {
@@ -138,6 +152,7 @@
         loginStreak: null, // Added data property for login streak
         isAdmin: false,
         isDeveloper: false, // Added data property for developer status
+        showModal: false, // Add this line
         companies: [
           { name: 'Amazon', symbol: 'AMZN', allocation: 0, initialStockPrice: 0 },
           { name: 'Apple', symbol: 'AAPL', allocation: 0, initialStockPrice: 0 },
@@ -859,9 +874,9 @@
       }
   
   };
-  </script>
+</script>
   
-  <style scoped>
+<style scoped>
 body {
   background-color: #f0f2f5; /* Same as the .portfolio-display background color */
   margin: 0;
@@ -1019,6 +1034,50 @@ body {
 
 .wallet-card a.button-link {
   width: 100%;
+}
+
+.wallet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+}
+
+.info-icon {
+  background-color: #3498db;
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  font-size: 14px;
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.info-icon:hover {
+  background-color: #2980b9; /* Slightly darker blue on hover */
+  transform: scale(1.2); /* Enlarge slightly */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Add a shadow */
+}
+
+.info-icon:active {
+  background-color: #1c598a; /* Even darker blue on active */
+  transform: scale(1.5) rotate(360deg); /* Enlarge and rotate */
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3); /* Stronger shadow */
+  transition: transform 0.2s ease-in-out; /* Faster transition on active */
+}
+
+.login-streak-info {
+  color: #333;
+  font-size: 0.9em;
+  margin-top: -1em; /* Adjust the margin as needed */
+  text-align: center;
 }
 
 .request-counter-card {
@@ -1361,6 +1420,5 @@ body {
     font-size: 1em; /* Adjust font size for mobile */
   }
 }
-
-  </style>
+</style>
   

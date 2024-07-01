@@ -10,11 +10,22 @@
     <main class="main-content">
       <div class="top-cards">
         <div class="wallet-card" v-if="totalFunds !== null">
-          Wallet <br> £{{ totalFunds }}
+          <div class="wallet-header">
+            Wallet <br> £{{ totalFunds }}
+            <span class="info-icon" @click="showModal = true">i</span>
+          </div>
           <router-link v-if="totalFunds > 0" to="/portfolio-append" class="button-link">Invest</router-link>
         </div>
         <LoginStreak v-if="loginStreak !== null" />
       </div>
+      <MessageModal 
+        v-if="showModal"
+        :isVisible="showModal" 
+        title="Information"
+        message="Log-in 5 days in a row to get an extra £100 to invest. 
+        Complete a course available below to get an extra £100 to invest"
+        @close="showModal = false"
+      />
       <div class="request-counter-card" v-if="isDeveloper">
         Firestore Requests: {{ firestoreRequestCount }}
       </div>
@@ -90,11 +101,11 @@
               </li>
             </div>
           </div>
-          <router-link to="/basics-of-financial-literacy" class="financial-courses-card">
+          <router-link to="/basics-of-investing" class="financial-courses-card">
             <div class="card-content">
-              <h3>Basics of Financial Literacy</h3>
-              <p>15 minutes</p>
-              <p>Gain £300</p>
+              <h3>Basics of Investing</h3>
+              <p>25 minutes</p>
+              <p>Gain £100</p>
             </div>
           </router-link>
         </div>
@@ -111,6 +122,7 @@ import LineChart from './components/LineChart.vue';
 import PieChart from './components/PieChart.vue';
 import PortfolioLeaderboard from './PortfolioLeaderboard.vue';
 import LoginStreak from './components/LoginStreak.vue';
+import MessageModal from './components/MessageModal.vue';
 
 export default {
   name: 'PortfolioDisplay',
@@ -118,7 +130,8 @@ export default {
     LineChart,
     PieChart,
     PortfolioLeaderboard,
-    LoginStreak
+    LoginStreak,
+    MessageModal
   },
   data() {
     return {
@@ -138,6 +151,7 @@ export default {
       loginStreak: null, // Added data property for login streak
       isAdmin: false,
       isDeveloper: false, // Added data property for developer status
+      showModal: false, // Add this line
       companies: [
         { name: 'Amazon', symbol: 'AMZN', allocation: 0, initialStockPrice: 0 },
         { name: 'Apple', symbol: 'AAPL', allocation: 0, initialStockPrice: 0 },
@@ -929,6 +943,44 @@ body {
   transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s; /* Smooth transitions */
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
 }
+
+.wallet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+}
+
+.info-icon {
+  background-color: #3498db;
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  font-size: 14px;
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.info-icon:hover {
+  background-color: #2980b9; /* Slightly darker blue on hover */
+  transform: scale(1.2); /* Enlarge slightly */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Add a shadow */
+}
+
+.info-icon:active {
+  background-color: #1c598a; /* Even darker blue on active */
+  transform: scale(1.5) rotate(360deg); /* Enlarge and rotate */
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3); /* Stronger shadow */
+  transition: transform 0.2s ease-in-out; /* Faster transition on active */
+}
+
 
 .refresh-button:hover {
   background-color: #2980b9; /* Darker shade for hover effect */
