@@ -1,14 +1,11 @@
 <template>
-    <div>
-      <QuestionTemplate :question="question" @answered="handleAnswer" />
-      <p v-if="showAnswer" class="correct-answer">
-        Correct Answer: {{ correctAnswer }} - {{ explanation }}
-      </p>
-    </div>
+    <QuestionTemplate :question="question" @answered="selectAnswer" />
   </template>
   
   <script>
   import QuestionTemplate from '../components/QuestionTemplate.vue';
+  import { getFirestore, doc, setDoc } from "firebase/firestore";
+  import { getAuth } from "firebase/auth";
   
   export default {
     name: 'CourseQuestion9',
@@ -18,31 +15,38 @@
     data() {
       return {
         question: {
-          text: 'What is a bond in terms of investing?',
+          text: 'What is a stock exchange?',
           options: [
-            'A promise by a company or government to pay back money borrowed from investors with interest.',
-            'A type of digital currency.',
-            'A long-term rental agreement.',
-            'A guarantee that an investment will be profitable.'
+            'A) A market where securities are bought and sold',
+            'B) A type of mutual fund',
+            'C) A government bond',
+            'D) A certificate of deposit'
           ]
-        },
-        correctAnswer: 'A',
-        explanation: 'Exactly! A bond is like lending money to a company or government. They promise to pay you back with interest after some time. It\'s a safer kind of investment.'
+        }
       };
     },
     methods: {
-      handleAnswer(option) {
-        this.showAnswer = true;
-        this.$emit('answered', option);
+      async selectAnswer(option) {
+        console.log(`selectAnswer called with option: ${option}`);
+        const answerLetter = option.charAt(0); // Extract the letter
+        await this.saveAnswer(9, answerLetter); // Save the answer to Firestore
+        console.log(`Emitting answered with: ${answerLetter}`);
+        this.$emit('answered', answerLetter);
+      },
+      async saveAnswer(questionNumber, answer) {
+        console.log(`Saving answer for question ${questionNumber}: ${answer}`);
+        const db = getFirestore();
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (user) {
+          const examRef = doc(db, user.uid, 'Financial Literacy Courses', 'Basics of Investing', 'Exam Results');
+          await setDoc(examRef, {
+            [`Question ${questionNumber}`]: answer
+          }, { merge: true });
+          console.log(`Answer for question ${questionNumber} saved: ${answer}`);
+        }
       }
     }
   };
   </script>
-  
-  <style scoped>
-  .correct-answer {
-    margin-top: 20px;
-    color: #2c3e50;
-  }
-  </style>
   

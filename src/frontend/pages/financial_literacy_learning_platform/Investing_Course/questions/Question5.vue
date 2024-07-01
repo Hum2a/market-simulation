@@ -1,48 +1,51 @@
 <template>
-    <div>
-      <QuestionTemplate :question="question" @answered="handleAnswer" />
-      <p v-if="showAnswer" class="correct-answer">
-        Correct Answer: {{ correctAnswer }} - {{ explanation }}
-      </p>
-    </div>
-  </template>
-  
-  <script>
-  import QuestionTemplate from '../components/QuestionTemplate.vue';
-  
-  export default {
-    name: 'CourseQuestion5',
-    components: {
-      QuestionTemplate
+  <QuestionTemplate :question="question" @answered="selectAnswer" />
+</template>
+
+<script>
+import QuestionTemplate from '../components/QuestionTemplate.vue';
+import { getFirestore, doc, setDoc } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+
+export default {
+  name: 'CourseQuestion5',
+  components: {
+    QuestionTemplate
+  },
+  data() {
+    return {
+      question: {
+        text: 'What is a mutual fund?',
+        options: [
+          'A) A type of bond',
+          'B) A pool of money from many investors to buy a diversified portfolio of stocks and bonds',
+          'C) A savings account',
+          'D) A retirement account'
+        ]
+      }
+    };
+  },
+  methods: {
+    async selectAnswer(option) {
+      console.log(`selectAnswer called with option: ${option}`);
+      const answerLetter = option.charAt(0); // Extract the letter
+      await this.saveAnswer(5, answerLetter); // Save the answer to Firestore
+      console.log(`Emitting answered with: ${answerLetter}`);
+      this.$emit('answered', answerLetter);
     },
-    data() {
-      return {
-        question: {
-          text: 'Which of the following is considered an asset class?',
-          options: [
-            'A bank loan',
-            'A stock investment',
-            'A monthly allowance',
-            'A shopping voucher'
-          ]
-        },
-        correctAnswer: 'B',
-        explanation: 'Spot on! A stock is an asset class where you buy a small part of a company. If the company does well and makes money, so does your investment!'
-      };
-    },
-    methods: {
-      handleAnswer(option) {
-        this.showAnswer = true;
-        this.$emit('answered', option);
+    async saveAnswer(questionNumber, answer) {
+      console.log(`Saving answer for question ${questionNumber}: ${answer}`);
+      const db = getFirestore();
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (user) {
+        const examRef = doc(db, user.uid, 'Financial Literacy Courses', 'Basics of Investing', 'Exam Results');
+        await setDoc(examRef, {
+          [`Question ${questionNumber}`]: answer
+        }, { merge: true });
+        console.log(`Answer for question ${questionNumber} saved: ${answer}`);
       }
     }
-  };
-  </script>
-  
-  <style scoped>
-  .correct-answer {
-    margin-top: 20px;
-    color: #2c3e50;
   }
-  </style>
-  
+};
+</script>

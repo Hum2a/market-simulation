@@ -27,11 +27,14 @@ export default {
   },
   methods: {
     async selectAnswer(option) {
+      console.log(`selectAnswer called with option: ${option}`);
       const answerLetter = option.charAt(0); // Extract the letter
       await this.saveAnswer(2, answerLetter); // Save the answer to Firestore
+      console.log(`Emitting answered with: ${answerLetter}`);
       this.$emit('answered', answerLetter);
     },
     async saveAnswer(questionNumber, answer) {
+      console.log(`Saving answer for question ${questionNumber}: ${answer}`);
       const db = getFirestore();
       const auth = getAuth();
       const user = auth.currentUser;
@@ -40,6 +43,7 @@ export default {
         await setDoc(examRef, {
           [`Question ${questionNumber}`]: answer
         }, { merge: true });
+        console.log(`Answer for question ${questionNumber} saved: ${answer}`);
       }
     }
   }

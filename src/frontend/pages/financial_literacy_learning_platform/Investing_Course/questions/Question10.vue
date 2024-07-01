@@ -1,14 +1,11 @@
 <template>
-    <div>
-      <QuestionTemplate :question="question" @answered="handleAnswer" />
-      <p v-if="showAnswer" class="correct-answer">
-        Correct Answer: {{ correctAnswer }} - {{ explanation }}
-      </p>
-    </div>
+    <QuestionTemplate :question="question" @answered="selectAnswer" />
   </template>
   
   <script>
   import QuestionTemplate from '../components/QuestionTemplate.vue';
+  import { getFirestore, doc, setDoc } from "firebase/firestore";
+  import { getAuth } from "firebase/auth";
   
   export default {
     name: 'CourseQuestion10',
@@ -18,31 +15,38 @@
     data() {
       return {
         question: {
-          text: 'Why is it important to consider the risk before investing?',
+          text: 'What is capital gain?',
           options: [
-            'To ensure you always make a profit.',
-            'To understand how much money you could lose.',
-            'To make the investment process longer.',
-            'To impress your friends with your knowledge.'
+            'A) The original amount of money invested',
+            'B) The profit made from selling an asset for more than it was purchased',
+            'C) The interest earned on a bond',
+            'D) The dividends received from a stock'
           ]
-        },
-        correctAnswer: 'B',
-        explanation: 'Right on! Before you invest, it\'s important to think about the risk. This means figuring out how much you could lose. Knowing this helps you choose investments that you\'re comfortable with and that can help you reach your money goals.'
+        }
       };
     },
     methods: {
-      handleAnswer(option) {
-        this.showAnswer = true;
-        this.$emit('answered', option);
+      async selectAnswer(option) {
+        console.log(`selectAnswer called with option: ${option}`);
+        const answerLetter = option.charAt(0); // Extract the letter
+        await this.saveAnswer(10, answerLetter); // Save the answer to Firestore
+        console.log(`Emitting answered with: ${answerLetter}`);
+        this.$emit('answered', answerLetter);
+      },
+      async saveAnswer(questionNumber, answer) {
+        console.log(`Saving answer for question ${questionNumber}: ${answer}`);
+        const db = getFirestore();
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (user) {
+          const examRef = doc(db, user.uid, 'Financial Literacy Courses', 'Basics of Investing', 'Exam Results');
+          await setDoc(examRef, {
+            [`Question ${questionNumber}`]: answer
+          }, { merge: true });
+          console.log(`Answer for question ${questionNumber} saved: ${answer}`);
+        }
       }
     }
   };
   </script>
-  
-  <style scoped>
-  .correct-answer {
-    margin-top: 20px;
-    color: #2c3e50;
-  }
-  </style>
   
