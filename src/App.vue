@@ -11,6 +11,7 @@ import { fetchAndSaveConversionRate } from './backend/api/ConversionRateChecker'
 import './backend/api/FinnHubAPI'; // Importing the script to ensure it runs
 import { trackUserLogin, stopTrackingUserLogin } from './backend/utils/loginTracker';
 import { trackUserLogout } from './backend/utils/logoutTracker';
+import { useRouter } from 'vue-router';
 
 // Alpha Vantage API key
 const API_KEY = 'Z2G35L67NYNFFXHT';
@@ -35,7 +36,7 @@ export default {
         { name: 'Amazon', symbol: 'AMZN' },
         { name: 'Apple', symbol: 'AAPL' },
         { name: 'Barclays', symbol: 'BCS' },
-        { name: 'Boeing', symbol: 'BA'},
+        { name: 'Boeing', symbol: 'BA' },
         { name: 'Coca-Cola', symbol: 'KO' },
         { name: 'Disney', symbol: 'DIS' },
         { name: 'IBM', symbol: 'IBM' },
@@ -55,6 +56,8 @@ export default {
   },
   async created() {
     const auth = getAuth();
+    const router = useRouter();
+
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         this.user = user;
@@ -66,7 +69,7 @@ export default {
           await stopTrackingUserLogin(this.user.uid);
         }
         this.user = null;
-        this.$router.push({ name: 'StartPage' });
+        router.push({ name: 'StartPage' });
       }
       this.loading = false;
     });
@@ -76,6 +79,13 @@ export default {
 
     // Run the conversion rate checker
     await fetchAndSaveConversionRate();
+
+    // Add a global error handler for navigation errors
+    router.onError((error) => {
+      if (/Loading chunk \d+ failed/.test(error.message)) {
+        router.push({ name: 'StartPage' });
+      }
+    });
   },
   beforeUnmount() {
     // Remove beforeunload event listener
@@ -102,7 +112,7 @@ export default {
     },
     async fetchAndSaveStockData(symbol) {
       // Fetch stock data from Alpha Vantage API
-      const stockData = await getStockData(symbol); 
+      const stockData = await getStockData(symbol);
       // Save to Firestore
       await saveStockDataToFirestore(symbol, stockData);
     },
