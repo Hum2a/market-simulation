@@ -14,7 +14,7 @@ import { trackUserLogout } from './backend/utils/logoutTracker';
 import { useRouter } from 'vue-router';
 
 // Alpha Vantage API key
-const API_KEY = 'Z2G35L67NYNFFXHT';
+const API_KEY = process.env.VUE_APP_ALPHAVANTAGE_API_KEY;
 
 const getStockData = async (symbol) => {
   try {

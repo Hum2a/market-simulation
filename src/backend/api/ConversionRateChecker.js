@@ -1,7 +1,7 @@
 import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import axios from 'axios';
 
-const API_KEY = 'fca_live_Jp1PZbhg6qf8qr6qMakl4OyaJv9wv6S101zAxzN7';
+const API_KEY = process.env.VUE_APP_CURRENCY_API_KEY;
 
 export const fetchAndSaveConversionRate = async () => {
   const db = getFirestore();

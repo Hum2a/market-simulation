@@ -2,7 +2,7 @@ import axios from 'axios';
 import { getFirestore, doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 
 const db = getFirestore();
-const API_KEY = 'cpu4iihr01qj8qq112j0cpu4iihr01qj8qq112jg';
+const API_KEY = process.env.VUE_APP_FINNHUB_API_KEY;
 
 // List of companies to fetch real-time data for
 const companies = [

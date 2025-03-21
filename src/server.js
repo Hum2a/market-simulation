@@ -5,7 +5,11 @@ const db = require('./backend/firebase/initAdmin');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-const API_KEY = 'Z2G35L67NYNFFXHT';
+// Read environment variables
+require('dotenv').config();
+
+// Replace hardcoded API key with environment variable
+const API_KEY = process.env.VUE_APP_ALPHAVANTAGE_API_KEY;
 
 // Fetch and Cache Stock Data
 async function fetchAndCacheStockData(symbol) {
